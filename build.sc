@@ -13,8 +13,7 @@ object core extends BaseModule {
 
   def ivyDeps = Agg(
     ivy"org.scalameta::scalameta::4.3.21",
-    ivy"io.swagger.parser.v3:swagger-parser:2.0.24",
-    ivy"org.scalameta::scalafmt-dynamic::2.7.5"
+    ivy"io.swagger.parser.v3:swagger-parser:2.0.24"
   )
   object test extends Tests with CommonTestModule
 }
