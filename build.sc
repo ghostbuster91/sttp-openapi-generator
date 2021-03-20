@@ -9,10 +9,15 @@ import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.9:0.1.1`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 object core extends BaseModule {
-  def ivyDeps = Agg(ivy"org.typelevel::cats-parse::0.2.0")
+  def scalaVersion = "2.13.3"
+
+  def ivyDeps = Agg(
+    ivy"org.scalameta::scalameta::4.3.21",
+    ivy"io.swagger.parser.v3:swagger-parser:2.0.24",
+    ivy"org.scalameta::scalafmt-dynamic::2.7.5"
+  )
   object test extends Tests with CommonTestModule
 }
-
 
 trait CommonTestModule extends BaseModule with TestModule {
   def ivyDeps = Agg(
@@ -34,4 +39,3 @@ trait BaseModule
     )
   }
 }
-
