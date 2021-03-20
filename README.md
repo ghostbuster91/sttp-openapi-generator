@@ -1,0 +1,1 @@
+# sttp-openapi-generator
