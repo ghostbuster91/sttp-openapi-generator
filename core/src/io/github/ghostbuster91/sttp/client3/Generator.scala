@@ -30,7 +30,13 @@ object Generator {
     val tree =
       q"""package io.github.ghostbuster91.sttp.client3.example {
 
-          import sttp.client3._
+          import _root_.sttp.client3._
+          import _root_.sttp.model._
+          import _root_.sttp.client3.circe._
+          import _root_.io.circe.generic.auto._
+
+          ..${model.values.toList}
+
           class Api(serverUrl: String) {
             ..$ops
           }
@@ -105,14 +111,14 @@ object Generator {
 
   private def processParams(name: String, schema: Schema[_]): Term.Param =
     schema match {
-      case s: StringSchema =>
+      case _: StringSchema =>
         Term.Param(
           Nil,
           Term.Name(name),
           Some(Type.Name("String")),
           None
         )
-      case s: IntegerSchema =>
+      case _: IntegerSchema =>
         Term.Param(
           Nil,
           Term.Name(name),

@@ -22,7 +22,12 @@ trait CommonTestModule extends BaseModule with TestModule {
   def ivyDeps = Agg(
     ivy"com.lihaoyi::utest::0.7.7",
     ivy"com.softwaremill.diffx::diffx-utest::0.4.4",
-    ivy"com.softwaremill.diffx::diffx-cats::0.4.4"
+    ivy"com.softwaremill.diffx::diffx-cats::0.4.4",
+    ivy"com.softwaremill.sttp.client3::core::3.1.9",
+    ivy"com.softwaremill.sttp.client3::circe::3.1.9",
+    ivy"io.circe::circe-core::0.13.0",
+    ivy"io.circe::circe-generic::0.13.0",
+    ivy"io.circe::circe-parser::0.13.0"
   )
   def testFrameworks = Seq("utest.runner.Framework")
 }
