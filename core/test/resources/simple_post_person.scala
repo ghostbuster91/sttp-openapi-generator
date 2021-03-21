@@ -9,7 +9,7 @@ case class Person(name: String, age: Int)
 
 class Api(baseUrl: String) {
   def createPerson(aPerson: Person): Request[Person, Any] = basicRequest
-    .post(uri"https://$baseUrl/")
+    .post(uri"https://$baseUrl")
     .body(aPerson)
     .response(asJson[Person].getRight)
 }

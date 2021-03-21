@@ -9,6 +9,6 @@ case class Person(name: String, age: Int)
 
 class Api(baseUrl: String) {
   def getRoot(): Request[Person, Any] = basicRequest
-    .get(uri"https://$baseUrl/")
+    .get(uri"https://$baseUrl")
     .response(asJson[Person].getRight)
 }

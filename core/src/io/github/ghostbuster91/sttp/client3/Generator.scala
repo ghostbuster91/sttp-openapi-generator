@@ -12,6 +12,8 @@ import io.swagger.v3.oas.models.media.IntegerSchema
 import scala.meta._
 import _root_.io.swagger.v3.oas.models.Operation
 import _root_.io.swagger.v3.oas.models.media.ArraySchema
+import _root_.io.swagger.v3.oas.models.parameters.Parameter
+import _root_.io.swagger.v3.oas.models.parameters.QueryParameter
 
 case class SchemaRef(key: String)
 object SchemaRef {
@@ -37,9 +39,12 @@ object Generator {
     }.toMap
     val ops = openApi.getPaths.asScala.toList.flatMap { case (path, item) =>
       List(
-        Option(item.getGet).map(processGetOperation(_, model)),
-        Option(item.getPut()).map(processPutOperation(_, model)),
-        Option(item.getPost()).map(processPostOperation(_, model))
+        Option(item.getGet).map(processGetOperation(_, model, modelClassNames)),
+        Option(item.getPut())
+          .map(processPutOperation(_, model, modelClassNames)),
+        Option(item.getPost()).map(
+          processPostOperation(_, model, modelClassNames)
+        )
       ).flatten
     }
     val tree =
@@ -61,44 +66,77 @@ object Generator {
     code
   }
 
-  private def processGetOperation(
-      operation: Operation,
-      model: Map[SchemaRef, Defn.Class]
-  ) = {
-    val uri = constructUrl(operation)
-    val basicRequestWithMethod = q"basicRequest.get($uri)"
-    processOperation(operation, model, basicRequestWithMethod)
-  }
-
-  private def constructUrl(operation: Operation) =
+  private def constructUrl(params: List[Parameter]) = {
+    val queryParams = params.collect { case q: QueryParameter => q }
     Term.Interpolate(
       Term.Name("uri"),
-      List(Lit.String("https://"), Lit.String("/")),
-      List(Term.Name("baseUrl"))
+      List(Lit.String("https://")) ++ queryParams.headOption.map(qp =>
+        Lit.String(s"?${qp.getName()}=")
+      ) ++ queryParams
+        .drop(1)
+        .map(qp => Lit.String(s"&${qp.getName()}=")) :+ Lit.String(""),
+      List(Term.Name("baseUrl")) ++ queryParams.map(qp =>
+        Term.Name(qp.getName())
+      )
     )
+  }
+
+  private def processGetOperation(
+      operation: Operation,
+      model: Map[SchemaRef, Defn.Class],
+      schemaRefToClassName: Map[SchemaRef, String]
+  ) = {
+    val uri = constructUrl(
+      Option(operation.getParameters).toList.flatMap(_.asScala.toList)
+    )
+    val basicRequestWithMethod = q"basicRequest.get($uri)"
+    processOperation(
+      operation,
+      model,
+      basicRequestWithMethod,
+      schemaRefToClassName
+    )
+  }
 
   private def processPutOperation(
       operation: Operation,
-      model: Map[SchemaRef, Defn.Class]
+      model: Map[SchemaRef, Defn.Class],
+      schemaRefToClassName: Map[SchemaRef, String]
   ) = {
-    val uri = constructUrl(operation)
+    val uri = constructUrl(
+      Option(operation.getParameters).toList.flatMap(_.asScala.toList)
+    )
     val basicRequestWithMethod = q"basicRequest.put($uri)"
-    processOperation(operation, model, basicRequestWithMethod)
+    processOperation(
+      operation,
+      model,
+      basicRequestWithMethod,
+      schemaRefToClassName
+    )
   }
 
   private def processPostOperation(
       operation: Operation,
-      model: Map[SchemaRef, Defn.Class]
+      model: Map[SchemaRef, Defn.Class],
+      schemaRefToClassName: Map[SchemaRef, String]
   ) = {
-    val uri = constructUrl(operation)
+    val uri = constructUrl(
+      Option(operation.getParameters).toList.flatMap(_.asScala.toList)
+    )
     val basicRequestWithMethod = q"basicRequest.post($uri)"
-    processOperation(operation, model, basicRequestWithMethod)
+    processOperation(
+      operation,
+      model,
+      basicRequestWithMethod,
+      schemaRefToClassName
+    )
   }
 
   def processOperation(
       operation: Operation,
       model: Map[SchemaRef, Defn.Class],
-      basicRequestWithMethod: Term
+      basicRequestWithMethod: Term,
+      schemaRefToClassName: Map[SchemaRef, String]
   ) = {
     val operationId = operation.getOperationId
     val responseClassName = operation.getResponses.asScala
@@ -111,7 +149,7 @@ object Generator {
       .flatten
       .get
 
-    val parameter = Option(operation.getRequestBody)
+    val bodyParameter = Option(operation.getRequestBody)
       .map(_.getContent.asScala)
       .flatMap(_.collectFirst { case ("application/json", jsonRequest) =>
         model(SchemaRef(jsonRequest.getSchema().get$ref())).name.value
@@ -123,12 +161,24 @@ object Generator {
         param"$paramName : $paramType"
       }
 
+    val queryParameters = Option(operation.getParameters).toList
+      .flatMap(_.asScala.toList)
+      .collect { case queryParam: QueryParameter =>
+        val paramName = Term.Name(queryParam.getName())
+        val paramType = optionApplication(
+          schemaToType(queryParam.getSchema(), schemaRefToClassName),
+          queryParam.getRequired()
+        )
+        param"$paramName : $paramType"
+      }
+    val parameters = queryParameters ++ bodyParameter.toList
+
     val functionName = Term.Name(operationId)
     val responseClassType = Type.Name(responseClassName)
 
     val body: Term = Term.Apply(
       Term.Select(
-        parameter
+        bodyParameter
           .map(p =>
             Term.Apply(
               Term.Select(basicRequestWithMethod, Term.Name("body")),
@@ -140,19 +190,7 @@ object Generator {
       ),
       List(q"asJson[$responseClassType].getRight")
     )
-    Defn.Def(
-      List.empty,
-      functionName,
-      List.empty,
-      List(parameter.toList),
-      Some(
-        Type.Apply(
-          Type.Name("Request"),
-          List(responseClassType, Type.Name("Any"))
-        )
-      ),
-      body
-    )
+    q"def $functionName(..$parameters): Request[$responseClassType, Any] = $body"
   }
 
   private def loadOpenApi(yaml: String): OpenAPI = {
@@ -206,11 +244,11 @@ object Generator {
       schemaRefToClassName: Map[SchemaRef, String],
       isRequired: Boolean
   ): Term.Param = {
-    val declType = declTypeFromSchema(schema, schemaRefToClassName)
+    val declType = schemaToType(schema, schemaRefToClassName)
     paramDeclFromType(name, optionApplication(declType, isRequired))
   }
 
-  private def declTypeFromSchema(
+  private def schemaToType(
       schema: Schema[_],
       schemaRefToClassName: Map[SchemaRef, String]
   ): Type =
@@ -220,7 +258,7 @@ object Generator {
       case _: IntegerSchema =>
         Type.Name("Int")
       case s: ArraySchema =>
-        t"List[${declTypeFromSchema(s.getItems(), schemaRefToClassName)}]"
+        t"List[${schemaToType(s.getItems(), schemaRefToClassName)}]"
       case s: Schema[_] =>
         Option(s.get$ref) match {
           case Some(value) =>
