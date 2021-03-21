@@ -38,7 +38,8 @@ object Generator {
     val ops = openApi.getPaths.asScala.toList.flatMap { case (path, item) =>
       List(
         Option(item.getGet).map(processGetOperation(_, model)),
-        Option(item.getPut()).map(processPutOperation(_, model))
+        Option(item.getPut()).map(processPutOperation(_, model)),
+        Option(item.getPost()).map(processPostOperation(_, model))
       ).flatten
     }
     val tree =
@@ -51,7 +52,7 @@ object Generator {
 
           ..${model.values.toList.reverse}
 
-          class Api(serverUrl: String) {
+          class Api(baseUrl: String) {
             ..$ops
           }
         }
@@ -76,22 +77,44 @@ object Generator {
       .get
     val variableName = Pat.Var(Term.Name(operationId))
     val responseClassType = Type.Name(responseClassName)
-    q"""val $variableName = basicRequest.get(
-                    Uri.unsafeApply("https",
-                        serverUrl,
-                        Seq.empty,
-                    )
-                )
+    val uri = constructUrl(getOperation)
+    q"""val $variableName = basicRequest.get($uri)
                   .response(asJson[$responseClassType])
           """
   }
 
-  def processPutOperation(
-      putOperation: Operation,
+  private def constructUrl(operation: Operation) =
+    Term.Interpolate(
+      Term.Name("uri"),
+      List(Lit.String("https://"), Lit.String("/")),
+      List(Term.Name("baseUrl"))
+    )
+
+  private def processPutOperation(
+      operation: Operation,
       model: Map[SchemaRef, Defn.Class]
   ) = {
-    val operationId = putOperation.getOperationId
-    val responseClassName = putOperation.getResponses.asScala
+    val uri = constructUrl(operation)
+    val basicRequestWithMethod = q"basicRequest.put($uri)"
+    processOperationWithRequestBody(operation, model, basicRequestWithMethod)
+  }
+
+  private def processPostOperation(
+      operation: Operation,
+      model: Map[SchemaRef, Defn.Class]
+  ) = {
+    val uri = constructUrl(operation)
+    val basicRequestWithMethod = q"basicRequest.post($uri)"
+    processOperationWithRequestBody(operation, model, basicRequestWithMethod)
+  }
+
+  def processOperationWithRequestBody(
+      operation: Operation,
+      model: Map[SchemaRef, Defn.Class],
+      basicRequestWithMethod: Term
+  ) = {
+    val operationId = operation.getOperationId
+    val responseClassName = operation.getResponses.asScala
       .collectFirst { case ("200", response) =>
         response.getContent.asScala.collectFirst {
           case ("application/json", jsonResponse) =>
@@ -102,7 +125,7 @@ object Generator {
       .get
 
     val requestClassName =
-      putOperation.getRequestBody
+      operation.getRequestBody
         .getContent()
         .asScala
         .collectFirst { case ("application/json", jsonRequest) =>
@@ -117,12 +140,8 @@ object Generator {
 
     val functionName = Term.Name(operationId)
     val responseClassType = Type.Name(responseClassName)
-    q"""def $functionName($parameter) = basicRequest.put(
-                    Uri.unsafeApply("https",
-                        serverUrl,
-                        Seq.empty,
-                    )
-                  )
+
+    q"""def $functionName($parameter) = $basicRequestWithMethod
                   .body($paramName)
                   .response(asJson[$responseClassType])
           """

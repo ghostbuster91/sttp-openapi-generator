@@ -4,7 +4,7 @@ info:
   version: "1.0"
 paths:
   /person:
-    put:
+    post:
       tags:
         - person
       summary: Create an existing person

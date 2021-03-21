@@ -7,8 +7,8 @@ import _root_.io.circe.generic.auto._
 
 case class Person(name: String, age: Option[Int])
 
-class Api(serverUrl: String) {
+class Api(baseUrl: String) {
   val getRoot = basicRequest
-    .get(Uri.unsafeApply("https", serverUrl, Seq.empty))
+    .get(uri"https://$baseUrl/")
     .response(asJson[Person])
 }

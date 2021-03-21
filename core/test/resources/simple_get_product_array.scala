@@ -17,8 +17,8 @@ case class Pet(
     status: String
 )
 
-class Api(serverUrl: String) {
+class Api(baseUrl: String) {
   val getRoot = basicRequest
-    .get(Uri.unsafeApply("https", serverUrl, Seq.empty))
+    .get(uri"https://$baseUrl/")
     .response(asJson[Pet])
 }

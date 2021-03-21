@@ -7,9 +7,9 @@ import _root_.io.circe.generic.auto._
 
 case class Person(name: String, age: Int)
 
-class Api(serverUrl: String) {
+class Api(baseUrl: String) {
   def updatePerson(aPerson: Person) = basicRequest
-    .put(Uri.unsafeApply("https", serverUrl, Seq.empty))
+    .put(uri"https://$baseUrl/")
     .body(aPerson)
     .response(asJson[Person])
 }
