@@ -6,7 +6,7 @@ import scala.tools.reflect.ToolBox
 
 object GeneratorTest extends TestSuite {
   val tests = Tests {
-    "should parse path with GET method and object response" - {
+    "static get with response object" - {
       val yaml = load("simple_get_person.yaml")
       val result = Generator.generateUnsafe(yaml).parse[Source].get
       val expected = load("simple_get_person_expected.scala")
@@ -14,10 +14,18 @@ object GeneratorTest extends TestSuite {
       expected.shouldCompile()
     }
 
-    "should parse path with PUT method and object response" - {
+    "put request & response objects " - {
       val yaml = load("simple_put_person.yaml")
       val result = Generator.generateUnsafe(yaml).parse[Source].get
       val expected = load("simple_put_person_expected.scala")
+      assert(result.structure == expected.parse[Source].get.structure)
+      expected.shouldCompile()
+    }
+
+    "post request & response objects" - {
+      val yaml = load("simple_post_person.yaml")
+      val result = Generator.generateUnsafe(yaml).parse[Source].get
+      val expected = load("simple_post_person_expected.scala")
       assert(result.structure == expected.parse[Source].get.structure)
       expected.shouldCompile()
     }
