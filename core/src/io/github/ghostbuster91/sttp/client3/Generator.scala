@@ -15,6 +15,7 @@ import _root_.io.swagger.v3.oas.models.media.ArraySchema
 import _root_.io.swagger.v3.oas.models.parameters.Parameter
 import _root_.io.swagger.v3.oas.models.parameters.QueryParameter
 import scala.collection.immutable
+import _root_.io.swagger.v3.oas.models.parameters.PathParameter
 
 case class SchemaRef(key: String)
 object SchemaRef {
@@ -77,10 +78,15 @@ object Generator {
         }
       }
       .map(Lit.String(_))
+    val pathParams = params.collect { case p: PathParameter =>
+      Term.Name(p.getName())
+    }
+    val pathSeparators = pathParams.map(_ => Lit.String("/"))
     Term.Interpolate(
       Term.Name("uri"),
-      List(Lit.String("https://")) ++ querySegments :+ Lit.String(""),
-      List(Term.Name("baseUrl")) ++ queryParams.map(Term.Name(_))
+      List(Lit.String("https://")) ++ pathSeparators ++ querySegments :+ Lit
+        .String(""),
+      List(Term.Name("baseUrl")) ++ pathParams ++ queryParams.map(Term.Name(_))
     )
   }
 
@@ -152,33 +158,12 @@ object Generator {
       .flatten
       .get
 
-    val bodyParameter = Option(operation.getRequestBody)
-      .map(_.getContent.asScala)
-      .flatMap(_.collectFirst { case ("application/json", jsonRequest) =>
-        model(SchemaRef(jsonRequest.getSchema().get$ref())).name.value
-      })
-      .map { requestClassName =>
-        val paramName = Term.Name(s"a$requestClassName")
-        val paramType = Type.Name(requestClassName)
-
-        param"$paramName : $paramType"
-      }
-
-    val queryParameters = Option(operation.getParameters).toList
-      .flatMap(_.asScala.toList)
-      .collect { case queryParam: QueryParameter =>
-        val paramName = Term.Name(queryParam.getName())
-        val paramType = optionApplication(
-          schemaToType(queryParam.getSchema(), schemaRefToClassName),
-          queryParam.getRequired()
-        )
-        param"$paramName : $paramType"
-      }
-    val parameters = queryParameters ++ bodyParameter.toList
-
     val functionName = Term.Name(operationId)
     val responseClassType = Type.Name(responseClassName)
-
+    val queryParameters = queryParameter(operation, schemaRefToClassName)
+    val pathParameters = pathparameter(operation, schemaRefToClassName)
+    val bodyParameter = requestBodyParameter(operation, model)
+    val parameters = pathParameters ++ queryParameters ++ bodyParameter
     val body: Term = Term.Apply(
       Term.Select(
         bodyParameter
@@ -195,6 +180,52 @@ object Generator {
     )
     q"def $functionName(..$parameters): Request[$responseClassType, Any] = $body"
   }
+
+  private def pathparameter(
+      operation: Operation,
+      schemaRefToClassName: Map[SchemaRef, String]
+  ) =
+    Option(operation.getParameters).toList
+      .flatMap(_.asScala.toList)
+      .collect { case pathParam: PathParameter =>
+        val paramName = Term.Name(pathParam.getName())
+        val paramType = optionApplication(
+          schemaToType(pathParam.getSchema(), schemaRefToClassName),
+          pathParam.getRequired()
+        )
+        param"$paramName : $paramType"
+      }
+
+  private def queryParameter(
+      operation: Operation,
+      schemaRefToClassName: Map[SchemaRef, String]
+  ) =
+    Option(operation.getParameters).toList
+      .flatMap(_.asScala.toList)
+      .collect { case queryParam: QueryParameter =>
+        val paramName = Term.Name(queryParam.getName())
+        val paramType = optionApplication(
+          schemaToType(queryParam.getSchema(), schemaRefToClassName),
+          queryParam.getRequired()
+        )
+        param"$paramName : $paramType"
+      }
+
+  private def requestBodyParameter(
+      operation: Operation,
+      model: Map[SchemaRef, Defn.Class]
+  ) =
+    Option(operation.getRequestBody)
+      .map(_.getContent.asScala)
+      .flatMap(_.collectFirst { case ("application/json", jsonRequest) =>
+        model(SchemaRef(jsonRequest.getSchema().get$ref())).name.value
+      })
+      .map { requestClassName =>
+        val paramName = Term.Name(s"a$requestClassName")
+        val paramType = Type.Name(requestClassName)
+
+        param"$paramName : $paramType"
+      }
 
   private def loadOpenApi(yaml: String): OpenAPI = {
     val parser = new OpenAPIParser
