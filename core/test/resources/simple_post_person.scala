@@ -8,8 +8,8 @@ import _root_.io.circe.generic.auto._
 case class Person(name: String, age: Int)
 
 class Api(baseUrl: String) {
-  def createPerson(aPerson: Person) = basicRequest
+  def createPerson(aPerson: Person): Request[Person, Any] = basicRequest
     .post(uri"https://$baseUrl/")
     .body(aPerson)
-    .response(asJson[Person])
+    .response(asJson[Person].getRight)
 }

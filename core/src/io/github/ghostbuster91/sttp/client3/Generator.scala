@@ -62,25 +62,12 @@ object Generator {
   }
 
   private def processGetOperation(
-      getOperation: Operation,
+      operation: Operation,
       model: Map[SchemaRef, Defn.Class]
   ) = {
-    val operationId = getOperation.getOperationId
-    val responseClassName = getOperation.getResponses.asScala
-      .collectFirst { case ("200", response) =>
-        response.getContent.asScala.collectFirst {
-          case ("application/json", jsonResponse) =>
-            model(SchemaRef(jsonResponse.getSchema().get$ref())).name.value
-        }
-      }
-      .flatten
-      .get
-    val variableName = Pat.Var(Term.Name(operationId))
-    val responseClassType = Type.Name(responseClassName)
-    val uri = constructUrl(getOperation)
-    q"""val $variableName = basicRequest.get($uri)
-                  .response(asJson[$responseClassType])
-          """
+    val uri = constructUrl(operation)
+    val basicRequestWithMethod = q"basicRequest.get($uri)"
+    processOperation(operation, model, basicRequestWithMethod)
   }
 
   private def constructUrl(operation: Operation) =
@@ -96,7 +83,7 @@ object Generator {
   ) = {
     val uri = constructUrl(operation)
     val basicRequestWithMethod = q"basicRequest.put($uri)"
-    processOperationWithRequestBody(operation, model, basicRequestWithMethod)
+    processOperation(operation, model, basicRequestWithMethod)
   }
 
   private def processPostOperation(
@@ -105,10 +92,10 @@ object Generator {
   ) = {
     val uri = constructUrl(operation)
     val basicRequestWithMethod = q"basicRequest.post($uri)"
-    processOperationWithRequestBody(operation, model, basicRequestWithMethod)
+    processOperation(operation, model, basicRequestWithMethod)
   }
 
-  def processOperationWithRequestBody(
+  def processOperation(
       operation: Operation,
       model: Map[SchemaRef, Defn.Class],
       basicRequestWithMethod: Term
@@ -124,27 +111,48 @@ object Generator {
       .flatten
       .get
 
-    val requestClassName =
-      operation.getRequestBody
-        .getContent()
-        .asScala
-        .collectFirst { case ("application/json", jsonRequest) =>
-          model(SchemaRef(jsonRequest.getSchema().get$ref())).name.value
-        }
-        .get
+    val parameter = Option(operation.getRequestBody)
+      .map(_.getContent.asScala)
+      .flatMap(_.collectFirst { case ("application/json", jsonRequest) =>
+        model(SchemaRef(jsonRequest.getSchema().get$ref())).name.value
+      })
+      .map { requestClassName =>
+        val paramName = Term.Name(s"a$requestClassName")
+        val paramType = Type.Name(requestClassName)
 
-    val paramName = Term.Name(s"a$requestClassName")
-    val paramType = Type.Name(requestClassName)
-
-    val parameter = param"$paramName : $paramType"
+        param"$paramName : $paramType"
+      }
 
     val functionName = Term.Name(operationId)
     val responseClassType = Type.Name(responseClassName)
 
-    q"""def $functionName($parameter) = $basicRequestWithMethod
-                  .body($paramName)
-                  .response(asJson[$responseClassType])
-          """
+    val body: Term = Term.Apply(
+      Term.Select(
+        parameter
+          .map(p =>
+            Term.Apply(
+              Term.Select(basicRequestWithMethod, Term.Name("body")),
+              List(Term.Name(p.name.value))
+            )
+          )
+          .getOrElse(basicRequestWithMethod),
+        Term.Name("response")
+      ),
+      List(q"asJson[$responseClassType].getRight")
+    )
+    Defn.Def(
+      List.empty,
+      functionName,
+      List.empty,
+      List(parameter.toList),
+      Some(
+        Type.Apply(
+          Type.Name("Request"),
+          List(responseClassType, Type.Name("Any"))
+        )
+      ),
+      body
+    )
   }
 
   private def loadOpenApi(yaml: String): OpenAPI = {

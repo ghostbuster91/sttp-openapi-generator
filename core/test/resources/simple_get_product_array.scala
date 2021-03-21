@@ -18,7 +18,7 @@ case class Pet(
 )
 
 class Api(baseUrl: String) {
-  val getRoot = basicRequest
+  def getRoot(): Request[Pet, Any] = basicRequest
     .get(uri"https://$baseUrl/")
-    .response(asJson[Pet])
+    .response(asJson[Pet].getRight)
 }
