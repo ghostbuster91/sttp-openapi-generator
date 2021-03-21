@@ -6,45 +6,20 @@ import scala.tools.reflect.ToolBox
 
 object GeneratorTest extends TestSuite {
   val tests = Tests {
-    "static get with response object" - {
-      val yaml = load("simple_get_person.yaml")
-      val result = Generator.generateUnsafe(yaml).parse[Source].get
-      val expected = load("simple_get_person.scala")
-      assert(result.structure == expected.parse[Source].get.structure)
-      expected.shouldCompile()
-    }
+    "simple_get_person" - test()
+    "simple_put_person" - test()
+    "simple_post_person" - test()
+    "simple_get_nested_products" - test()
+    "simple_get_person_optional" - test()
+  }
 
-    "put request & response objects " - {
-      val yaml = load("simple_put_person.yaml")
-      val result = Generator.generateUnsafe(yaml).parse[Source].get
-      val expected = load("simple_put_person.scala")
-      assert(result.structure == expected.parse[Source].get.structure)
-      expected.shouldCompile()
-    }
-
-    "post request & response objects" - {
-      val yaml = load("simple_post_person.yaml")
-      val result = Generator.generateUnsafe(yaml).parse[Source].get
-      val expected = load("simple_post_person.scala")
-      assert(result.structure == expected.parse[Source].get.structure)
-      expected.shouldCompile()
-    }
-
-    "static get - nested products" - {
-      val yaml = load("simple_get_nested_products.yaml")
-      val result = Generator.generateUnsafe(yaml).parse[Source].get
-      val expected = load("simple_get_nested_products.scala")
-      assert(result.structure == expected.parse[Source].get.structure)
-      expected.shouldCompile()
-    }
-
-    "static get - optional values" - {
-      val yaml = load("simple_get_person_optional.yaml")
-      val result = Generator.generateUnsafe(yaml).parse[Source].get
-      val expected = load("simple_get_person_optional.scala")
-      assert(result.structure == expected.parse[Source].get.structure)
-      expected.shouldCompile()
-    }
+  def test()(implicit testPath: utest.framework.TestPath) = {
+    val testName = testPath.value.last
+    val yaml = load(s"$testName.yaml")
+    val result = Generator.generateUnsafe(yaml).parse[Source].get
+    val expected = load(s"$testName.scala")
+    assert(result.structure == expected.parse[Source].get.structure)
+    expected.shouldCompile()
   }
 
   private def load(fileName: String): String =
