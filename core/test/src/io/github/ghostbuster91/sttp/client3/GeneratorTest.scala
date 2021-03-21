@@ -9,7 +9,7 @@ object GeneratorTest extends TestSuite {
     "static get with response object" - {
       val yaml = load("simple_get_person.yaml")
       val result = Generator.generateUnsafe(yaml).parse[Source].get
-      val expected = load("simple_get_person_expected.scala")
+      val expected = load("simple_get_person.scala")
       assert(result.structure == expected.parse[Source].get.structure)
       expected.shouldCompile()
     }
@@ -17,7 +17,7 @@ object GeneratorTest extends TestSuite {
     "put request & response objects " - {
       val yaml = load("simple_put_person.yaml")
       val result = Generator.generateUnsafe(yaml).parse[Source].get
-      val expected = load("simple_put_person_expected.scala")
+      val expected = load("simple_put_person.scala")
       assert(result.structure == expected.parse[Source].get.structure)
       expected.shouldCompile()
     }
@@ -25,7 +25,7 @@ object GeneratorTest extends TestSuite {
     "post request & response objects" - {
       val yaml = load("simple_post_person.yaml")
       val result = Generator.generateUnsafe(yaml).parse[Source].get
-      val expected = load("simple_post_person_expected.scala")
+      val expected = load("simple_post_person.scala")
       assert(result.structure == expected.parse[Source].get.structure)
       expected.shouldCompile()
     }
@@ -34,6 +34,14 @@ object GeneratorTest extends TestSuite {
       val yaml = load("simple_get_nested_products.yaml")
       val result = Generator.generateUnsafe(yaml).parse[Source].get
       val expected = load("simple_get_nested_products.scala")
+      assert(result.structure == expected.parse[Source].get.structure)
+      expected.shouldCompile()
+    }
+
+    "static get - optional values" - {
+      val yaml = load("simple_get_person_optional.yaml")
+      val result = Generator.generateUnsafe(yaml).parse[Source].get
+      val expected = load("simple_get_person_optional.scala")
       assert(result.structure == expected.parse[Source].get.structure)
       expected.shouldCompile()
     }

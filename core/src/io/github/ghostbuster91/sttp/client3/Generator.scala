@@ -160,7 +160,12 @@ object Generator {
         Name(""),
         List(
           schema.getProperties.asScala.map { case (k, v) =>
-            processParams(k, v, schemaRefToClassName)
+            processParams(
+              k,
+              v,
+              schemaRefToClassName,
+              schema.getRequired().asScala.contains(k)
+            )
           }.toList
         )
       ),
@@ -170,35 +175,37 @@ object Generator {
   private def processParams(
       name: String,
       schema: Schema[_],
-      schemaRefToClassName: Map[SchemaRef, String]
-  ): Term.Param =
-    schema match {
+      schemaRefToClassName: Map[SchemaRef, String],
+      isRequired: Boolean
+  ): Term.Param = {
+    val declType = schema match {
       case _: StringSchema =>
-        Term.Param(
-          Nil,
-          Term.Name(name),
-          Some(Type.Name("String")),
-          None
-        )
+        Type.Name("String")
       case _: IntegerSchema =>
-        Term.Param(
-          Nil,
-          Term.Name(name),
-          Some(Type.Name("Int")),
-          None
-        )
+        Type.Name("Int")
       case s: Schema[_] =>
         Option(s.get$ref) match {
           case Some(value) =>
-            Term.Param(
-              Nil,
-              Term.Name(name),
-              Some(Type.Name(schemaRefToClassName(SchemaRef(value)))),
-              None
-            )
+            Type.Name(schemaRefToClassName(SchemaRef(value)))
           case None =>
             throw new IllegalArgumentException(s"Schema without reference $s")
         }
     }
+    paramDeclFromType(name, optionApplication(declType, isRequired))
+  }
 
+  private def optionApplication(declType: Type, isRequired: Boolean): Type =
+    if (isRequired) {
+      declType
+    } else {
+      t"Option[$declType]"
+    }
+
+  private def paramDeclFromType(paramName: String, declType: Type) =
+    Term.Param(
+      Nil,
+      Term.Name(paramName),
+      Some(declType),
+      None
+    )
 }
