@@ -13,13 +13,26 @@ import scala.meta._
 import _root_.io.swagger.v3.oas.models.Operation
 
 case class SchemaRef(key: String)
+object SchemaRef {
+  def fromKey(key: String): SchemaRef =
+    SchemaRef(s"#/components/schemas/$key")
+}
 
 object Generator {
   def generateUnsafe(openApiYaml: String): String = {
     val openApi = loadOpenApi(openApiYaml)
+    val modelClassNames = openApi.getComponents.getSchemas.asScala.map {
+      case (key, _) =>
+        SchemaRef.fromKey(key) -> key
+    }.toMap
     val model = openApi.getComponents.getSchemas.asScala.map {
       case (key, schema: ObjectSchema) =>
-        SchemaRef(s"#/components/schemas/$key") -> schemaToClassDef(key, schema)
+        val schemaRef = SchemaRef.fromKey(key)
+        schemaRef -> schemaToClassDef(
+          modelClassNames(schemaRef),
+          schema,
+          modelClassNames
+        )
     }.toMap
     val ops = openApi.getPaths.asScala.toList.flatMap { case (path, item) =>
       List(
@@ -35,7 +48,7 @@ object Generator {
           import _root_.sttp.client3.circe._
           import _root_.io.circe.generic.auto._
 
-          ..${model.values.toList}
+          ..${model.values.toList.reverse}
 
           class Api(serverUrl: String) {
             ..$ops
@@ -133,7 +146,11 @@ object Generator {
     }
   }
 
-  private def schemaToClassDef(name: String, schema: ObjectSchema) =
+  private def schemaToClassDef(
+      name: String,
+      schema: ObjectSchema,
+      schemaRefToClassName: Map[SchemaRef, String]
+  ) =
     Defn.Class(
       List(Mod.Case()),
       Type.Name(name),
@@ -143,14 +160,18 @@ object Generator {
         Name(""),
         List(
           schema.getProperties.asScala.map { case (k, v) =>
-            processParams(k, v)
+            processParams(k, v, schemaRefToClassName)
           }.toList
         )
       ),
       Template(Nil, Nil, Self(Name(""), None), Nil)
     )
 
-  private def processParams(name: String, schema: Schema[_]): Term.Param =
+  private def processParams(
+      name: String,
+      schema: Schema[_],
+      schemaRefToClassName: Map[SchemaRef, String]
+  ): Term.Param =
     schema match {
       case _: StringSchema =>
         Term.Param(
@@ -166,6 +187,18 @@ object Generator {
           Some(Type.Name("Int")),
           None
         )
+      case s: Schema[_] =>
+        Option(s.get$ref) match {
+          case Some(value) =>
+            Term.Param(
+              Nil,
+              Term.Name(name),
+              Some(Type.Name(schemaRefToClassName(SchemaRef(value)))),
+              None
+            )
+          case None =>
+            throw new IllegalArgumentException(s"Schema without reference $s")
+        }
     }
 
 }

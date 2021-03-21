@@ -29,6 +29,14 @@ object GeneratorTest extends TestSuite {
       assert(result.structure == expected.parse[Source].get.structure)
       expected.shouldCompile()
     }
+
+    "static get - nested products" - {
+      val yaml = load("simple_get_nested_products.yaml")
+      val result = Generator.generateUnsafe(yaml).parse[Source].get
+      val expected = load("simple_get_nested_products.scala")
+      assert(result.structure == expected.parse[Source].get.structure)
+      expected.shouldCompile()
+    }
   }
 
   private def load(fileName: String): String =
