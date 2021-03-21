@@ -13,6 +13,7 @@ object GeneratorTest extends TestSuite {
     "simple_get_person_optional" - test()
     "simple_get_product_array" - test()
     "get_with_query_param" - test()
+    "get_with_multiple_query_param" - test()
   }
 
   def test()(implicit testPath: utest.framework.TestPath) = {

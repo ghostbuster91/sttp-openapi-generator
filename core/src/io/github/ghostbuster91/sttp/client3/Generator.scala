@@ -14,6 +14,7 @@ import _root_.io.swagger.v3.oas.models.Operation
 import _root_.io.swagger.v3.oas.models.media.ArraySchema
 import _root_.io.swagger.v3.oas.models.parameters.Parameter
 import _root_.io.swagger.v3.oas.models.parameters.QueryParameter
+import scala.collection.immutable
 
 case class SchemaRef(key: String)
 object SchemaRef {
@@ -67,17 +68,19 @@ object Generator {
   }
 
   private def constructUrl(params: List[Parameter]) = {
-    val queryParams = params.collect { case q: QueryParameter => q }
+    val queryParams = params.collect { case q: QueryParameter => q.getName() }
+    val querySegments = queryParams
+      .foldLeft(List.empty[String]) { (acc, item) =>
+        acc match {
+          case list if list.nonEmpty => list :+ s"&$item="
+          case immutable.Nil         => List(s"?$item=")
+        }
+      }
+      .map(Lit.String(_))
     Term.Interpolate(
       Term.Name("uri"),
-      List(Lit.String("https://")) ++ queryParams.headOption.map(qp =>
-        Lit.String(s"?${qp.getName()}=")
-      ) ++ queryParams
-        .drop(1)
-        .map(qp => Lit.String(s"&${qp.getName()}=")) :+ Lit.String(""),
-      List(Term.Name("baseUrl")) ++ queryParams.map(qp =>
-        Term.Name(qp.getName())
-      )
+      List(Lit.String("https://")) ++ querySegments :+ Lit.String(""),
+      List(Term.Name("baseUrl")) ++ queryParams.map(Term.Name(_))
     )
   }
 
@@ -230,7 +233,7 @@ object Generator {
               k,
               v,
               schemaRefToClassName,
-              schema.getRequired().asScala.contains(k)
+              schema.getRequired.asScala.contains(k)
             )
           }.toList
         )
