@@ -61,7 +61,7 @@ object Generator {
         }
         .flatten
         .get
-      val variableName = Pat.Var(Term.Name(s"get$responseClassName"))
+      val variableName = Pat.Var(Term.Name(operationId))
       val responseClassType = Type.Name(responseClassName)
       q"""val $variableName = basicRequest.get(
                     Uri.unsafeApply("https",
