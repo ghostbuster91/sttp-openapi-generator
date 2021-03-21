@@ -6,15 +6,15 @@ import scala.tools.reflect.ToolBox
 
 object GeneratorTest extends TestSuite {
   val tests = Tests {
-    // "simple_get_person" - test()
-    // "simple_put_person" - test()
-    // "simple_post_person" - test()
-    // "simple_get_nested_products" - test()
-    // "simple_get_person_optional" - test()
-    // "simple_get_product_array" - test()
-    // "get_with_query_param" - test()
-    // "get_with_multiple_query_param" - test()
-    // "get_with_path_param" - test()
+    "simple_get_person" - test()
+    "simple_put_person" - test()
+    "simple_post_person" - test()
+    "simple_get_nested_products" - test()
+    "simple_get_person_optional" - test()
+    "simple_get_product_array" - test()
+    "get_with_query_param" - test()
+    "get_with_multiple_query_param" - test()
+    "get_with_path_param" - test()
     "get_with_multiple_path_param" - test()
   }
 
