@@ -11,6 +11,7 @@ import io.swagger.v3.oas.models.media.Schema
 import io.swagger.v3.oas.models.media.IntegerSchema
 import scala.meta._
 import _root_.io.swagger.v3.oas.models.Operation
+import _root_.io.swagger.v3.oas.models.media.ArraySchema
 
 case class SchemaRef(key: String)
 object SchemaRef {
@@ -178,11 +179,21 @@ object Generator {
       schemaRefToClassName: Map[SchemaRef, String],
       isRequired: Boolean
   ): Term.Param = {
-    val declType = schema match {
+    val declType = declTypeFromSchema(schema, schemaRefToClassName)
+    paramDeclFromType(name, optionApplication(declType, isRequired))
+  }
+
+  private def declTypeFromSchema(
+      schema: Schema[_],
+      schemaRefToClassName: Map[SchemaRef, String]
+  ): Type =
+    schema match {
       case _: StringSchema =>
         Type.Name("String")
       case _: IntegerSchema =>
         Type.Name("Int")
+      case s: ArraySchema =>
+        t"List[${declTypeFromSchema(s.getItems(), schemaRefToClassName)}]"
       case s: Schema[_] =>
         Option(s.get$ref) match {
           case Some(value) =>
@@ -191,8 +202,6 @@ object Generator {
             throw new IllegalArgumentException(s"Schema without reference $s")
         }
     }
-    paramDeclFromType(name, optionApplication(declType, isRequired))
-  }
 
   private def optionApplication(declType: Type, isRequired: Boolean): Type =
     if (isRequired) {

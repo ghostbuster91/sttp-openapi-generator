@@ -11,6 +11,7 @@ object GeneratorTest extends TestSuite {
     "simple_post_person" - test()
     "simple_get_nested_products" - test()
     "simple_get_person_optional" - test()
+    "simple_get_product_array" - test()
   }
 
   def test()(implicit testPath: utest.framework.TestPath) = {
