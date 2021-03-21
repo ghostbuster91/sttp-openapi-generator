@@ -9,8 +9,8 @@ import io.swagger.v3.oas.models.media.ObjectSchema
 import io.swagger.v3.oas.models.media.StringSchema
 import io.swagger.v3.oas.models.media.Schema
 import io.swagger.v3.oas.models.media.IntegerSchema
-import io.swagger.v3.oas.models.PathItem
 import scala.meta._
+import _root_.io.swagger.v3.oas.models.Operation
 
 case class SchemaRef(key: String)
 
@@ -21,12 +21,12 @@ object Generator {
       case (key, schema: ObjectSchema) =>
         SchemaRef(s"#/components/schemas/$key") -> schemaToClassDef(key, schema)
     }.toMap
-    val ops = openApi.getPaths.asScala
-      .map { case (path, item) =>
-        processGetOperation(item, model)
-      }
-      .toList
-      .flatten
+    val ops = openApi.getPaths.asScala.toList.flatMap { case (path, item) =>
+      List(
+        Option(item.getGet).map(processGetOperation(_, model)),
+        Option(item.getPut()).map(processPutOperation(_, model))
+      ).flatten
+    }
     val tree =
       q"""package io.github.ghostbuster91.sttp.client3.example {
 
@@ -47,23 +47,22 @@ object Generator {
   }
 
   private def processGetOperation(
-      item: PathItem,
+      getOperation: Operation,
       model: Map[SchemaRef, Defn.Class]
-  ) =
-    Option(item.getGet()).map { getOperation =>
-      val operationId = getOperation.getOperationId
-      val responseClassName = getOperation.getResponses.asScala
-        .collectFirst { case ("200", response) =>
-          response.getContent.asScala.collectFirst {
-            case ("application/json", jsonResponse) =>
-              model(SchemaRef(jsonResponse.getSchema().get$ref())).name.value
-          }
+  ) = {
+    val operationId = getOperation.getOperationId
+    val responseClassName = getOperation.getResponses.asScala
+      .collectFirst { case ("200", response) =>
+        response.getContent.asScala.collectFirst {
+          case ("application/json", jsonResponse) =>
+            model(SchemaRef(jsonResponse.getSchema().get$ref())).name.value
         }
-        .flatten
-        .get
-      val variableName = Pat.Var(Term.Name(operationId))
-      val responseClassType = Type.Name(responseClassName)
-      q"""val $variableName = basicRequest.get(
+      }
+      .flatten
+      .get
+    val variableName = Pat.Var(Term.Name(operationId))
+    val responseClassType = Type.Name(responseClassName)
+    q"""val $variableName = basicRequest.get(
                     Uri.unsafeApply("https",
                         serverUrl,
                         Seq.empty,
@@ -71,7 +70,49 @@ object Generator {
                 )
                   .response(asJson[$responseClassType])
           """
-    }
+  }
+
+  def processPutOperation(
+      putOperation: Operation,
+      model: Map[SchemaRef, Defn.Class]
+  ) = {
+    val operationId = putOperation.getOperationId
+    val responseClassName = putOperation.getResponses.asScala
+      .collectFirst { case ("200", response) =>
+        response.getContent.asScala.collectFirst {
+          case ("application/json", jsonResponse) =>
+            model(SchemaRef(jsonResponse.getSchema().get$ref())).name.value
+        }
+      }
+      .flatten
+      .get
+
+    val requestClassName =
+      putOperation.getRequestBody
+        .getContent()
+        .asScala
+        .collectFirst { case ("application/json", jsonRequest) =>
+          model(SchemaRef(jsonRequest.getSchema().get$ref())).name.value
+        }
+        .get
+
+    val paramName = Term.Name(s"a$requestClassName")
+    val paramType = Type.Name(requestClassName)
+
+    val parameter = param"$paramName : $paramType"
+
+    val functionName = Term.Name(operationId)
+    val responseClassType = Type.Name(responseClassName)
+    q"""def $functionName($parameter) = basicRequest.put(
+                    Uri.unsafeApply("https",
+                        serverUrl,
+                        Seq.empty,
+                    )
+                  )
+                  .body($paramName)
+                  .response(asJson[$responseClassType])
+          """
+  }
 
   private def loadOpenApi(yaml: String): OpenAPI = {
     val parser = new OpenAPIParser

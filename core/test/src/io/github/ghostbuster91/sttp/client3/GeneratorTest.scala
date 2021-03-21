@@ -13,6 +13,14 @@ object GeneratorTest extends TestSuite {
       assert(result.structure == expected.parse[Source].get.structure)
       expected.shouldCompile()
     }
+
+    "should parse path with PUT method and object response" - {
+      val yaml = load("simple_put_person.yaml")
+      val result = Generator.generateUnsafe(yaml).parse[Source].get
+      val expected = load("simple_put_person_expected.scala")
+      assert(result.structure == expected.parse[Source].get.structure)
+      expected.shouldCompile()
+    }
   }
 
   private def load(fileName: String): String =
