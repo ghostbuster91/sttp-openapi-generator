@@ -5,6 +5,8 @@ import _root_.sttp.model._
 import _root_.sttp.client3.circe._
 import _root_.io.circe.generic.auto._
 
+import _root_.java.io.File
+
 case class Category(
     id: Int,
     name: String
@@ -19,6 +21,6 @@ case class Pet(
 
 class Api(baseUrl: String) {
   def getRoot(): Request[Pet, Any] = basicRequest
-    .get(uri"https://$baseUrl")
+    .get(uri"$baseUrl")
     .response(asJson[Pet].getRight)
 }

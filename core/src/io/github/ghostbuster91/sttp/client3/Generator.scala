@@ -26,26 +26,31 @@ object SchemaRef {
 object Generator {
   def generateUnsafe(openApiYaml: String): String = {
     val openApi = loadOpenApi(openApiYaml)
-    val modelClassNames = openApi.getComponents.getSchemas.asScala.map {
-      case (key, _) =>
+    val safeSchemaComponents =
+      Option(openApi.getComponents)
+        .map(_.getSchemas.asScala)
+        .getOrElse(Map.empty[String, Schema[_]])
+    val modelClassNames =
+      safeSchemaComponents.map { case (key, _) =>
         SchemaRef.fromKey(key) -> key
-    }.toMap
-    val model = openApi.getComponents.getSchemas.asScala.map {
-      case (key, schema: ObjectSchema) =>
-        val schemaRef = SchemaRef.fromKey(key)
-        schemaRef -> schemaToClassDef(
-          modelClassNames(schemaRef),
-          schema,
-          modelClassNames
-        )
+      }.toMap
+    val model = safeSchemaComponents.map { case (key, schema: ObjectSchema) =>
+      val schemaRef = SchemaRef.fromKey(key)
+      schemaRef -> schemaToClassDef(
+        modelClassNames(schemaRef),
+        schema,
+        modelClassNames
+      )
     }.toMap
     val ops = openApi.getPaths.asScala.toList.flatMap { case (path, item) =>
       List(
-        Option(item.getGet).map(processGetOperation(_, model, modelClassNames)),
+        Option(item.getGet).map(
+          processGetOperation(_, path, model, modelClassNames)
+        ),
         Option(item.getPut())
-          .map(processPutOperation(_, model, modelClassNames)),
+          .map(processPutOperation(_, path, model, modelClassNames)),
         Option(item.getPost()).map(
-          processPostOperation(_, model, modelClassNames)
+          processPostOperation(_, path, model, modelClassNames)
         )
       ).flatten
     }
@@ -56,6 +61,7 @@ object Generator {
           import _root_.sttp.model._
           import _root_.sttp.client3.circe._
           import _root_.io.circe.generic.auto._
+          import _root_.java.io.File
 
           ..${model.values.toList.reverse}
 
@@ -68,7 +74,12 @@ object Generator {
     code
   }
 
-  private def constructUrl(params: List[Parameter]) = {
+  private def constructUrl(path: String, params: List[Parameter]) = {
+    val pathList =
+      path
+        .split("\\{[^/]*\\}")
+        .toList
+        .dropWhile(_ == "/")
     val queryParams = params.collect { case q: QueryParameter => q.getName() }
     val querySegments = queryParams
       .foldLeft(List.empty[String]) { (acc, item) =>
@@ -77,25 +88,43 @@ object Generator {
           case immutable.Nil         => List(s"?$item=")
         }
       }
-      .map(Lit.String(_))
+
     val pathParams = params.collect { case p: PathParameter =>
       Term.Name(p.getName())
     }
-    val pathSeparators = pathParams.map(_ => Lit.String("/"))
+    val pathAndQuery = (pathList.dropRight(1) ++ List(
+      pathList.lastOption.getOrElse("") ++ querySegments.headOption.getOrElse(
+        ""
+      )
+    ) ++ querySegments.drop(1))
+      .map(Lit.String(_))
+    val pathAndQueryAdjusted = if (pathList.isEmpty && querySegments.isEmpty) {
+      List(Lit.String(""))
+    } else if (pathParams.isEmpty && queryParams.nonEmpty) {
+      querySegments.map(Lit.String(_)) :+ Lit.String("")
+    } else if (querySegments.isEmpty && pathParams.nonEmpty) {
+      pathList.map(Lit.String(_)) :+ Lit.String("")
+    } else if (querySegments.isEmpty && pathList.nonEmpty) {
+      pathList.map(Lit.String(_))
+    } else {
+      pathAndQuery :+ Lit.String("")
+    }
+
     Term.Interpolate(
       Term.Name("uri"),
-      List(Lit.String("https://")) ++ pathSeparators ++ querySegments :+ Lit
-        .String(""),
+      List(Lit.String("")) ++ pathAndQueryAdjusted,
       List(Term.Name("baseUrl")) ++ pathParams ++ queryParams.map(Term.Name(_))
     )
   }
 
   private def processGetOperation(
       operation: Operation,
+      path: String,
       model: Map[SchemaRef, Defn.Class],
       schemaRefToClassName: Map[SchemaRef, String]
   ) = {
     val uri = constructUrl(
+      path,
       Option(operation.getParameters).toList.flatMap(_.asScala.toList)
     )
     val basicRequestWithMethod = q"basicRequest.get($uri)"
@@ -109,10 +138,12 @@ object Generator {
 
   private def processPutOperation(
       operation: Operation,
+      path: String,
       model: Map[SchemaRef, Defn.Class],
       schemaRefToClassName: Map[SchemaRef, String]
   ) = {
     val uri = constructUrl(
+      path,
       Option(operation.getParameters).toList.flatMap(_.asScala.toList)
     )
     val basicRequestWithMethod = q"basicRequest.put($uri)"
@@ -126,10 +157,12 @@ object Generator {
 
   private def processPostOperation(
       operation: Operation,
+      path: String,
       model: Map[SchemaRef, Defn.Class],
       schemaRefToClassName: Map[SchemaRef, String]
   ) = {
     val uri = constructUrl(
+      path,
       Option(operation.getParameters).toList.flatMap(_.asScala.toList)
     )
     val basicRequestWithMethod = q"basicRequest.post($uri)"
@@ -148,20 +181,20 @@ object Generator {
       schemaRefToClassName: Map[SchemaRef, String]
   ) = {
     val operationId = operation.getOperationId
-    val responseClassName = operation.getResponses.asScala
-      .collectFirst { case ("200", response) =>
-        response.getContent.asScala.collectFirst {
-          case ("application/json", jsonResponse) =>
-            model(SchemaRef(jsonResponse.getSchema().get$ref())).name.value
-        }
-      }
-      .flatten
-      .get
-
+    val responseClassType = operation.getResponses.asScala.collectFirst {
+      case ("200", response) =>
+        Option(response.getContent)
+          .flatMap(_.asScala.collectFirst {
+            case ("application/json", jsonResponse) =>
+              Type.Name(
+                model(SchemaRef(jsonResponse.getSchema().get$ref())).name.value
+              )
+          })
+          .getOrElse(Type.Name("Unit"))
+    }.head
     val functionName = Term.Name(operationId)
-    val responseClassType = Type.Name(responseClassName)
     val queryParameters = queryParameter(operation, schemaRefToClassName)
-    val pathParameters = pathparameter(operation, schemaRefToClassName)
+    val pathParameters = pathParameter(operation, schemaRefToClassName)
     val bodyParameter = requestBodyParameter(operation, model)
     val parameters = pathParameters ++ queryParameters ++ bodyParameter
     val body: Term = Term.Apply(
@@ -181,7 +214,7 @@ object Generator {
     q"def $functionName(..$parameters): Request[$responseClassType, Any] = $body"
   }
 
-  private def pathparameter(
+  private def pathParameter(
       operation: Operation,
       schemaRefToClassName: Map[SchemaRef, String]
   ) =
@@ -216,15 +249,23 @@ object Generator {
       model: Map[SchemaRef, Defn.Class]
   ) =
     Option(operation.getRequestBody)
-      .map(_.getContent.asScala)
-      .flatMap(_.collectFirst { case ("application/json", jsonRequest) =>
-        model(SchemaRef(jsonRequest.getSchema().get$ref())).name.value
-      })
-      .map { requestClassName =>
-        val paramName = Term.Name(s"a$requestClassName")
-        val paramType = Type.Name(requestClassName)
-
-        param"$paramName : $paramType"
+      .flatMap { requestBody =>
+        val content = requestBody.getContent().asScala
+        content
+          .collectFirst {
+            case ("application/json", jsonRequest) =>
+              model(SchemaRef(jsonRequest.getSchema().get$ref())).name.value
+            case ("application/octet-stream", _) =>
+              "File"
+          }
+          .map { requestClassName =>
+            val paramName = Term.Name(s"a$requestClassName")
+            val paramType = optionApplication(
+              Type.Name(requestClassName),
+              requestBody.getRequired()
+            )
+            param"$paramName : $paramType"
+          }
       }
 
   private def loadOpenApi(yaml: String): OpenAPI = {

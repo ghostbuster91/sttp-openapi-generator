@@ -5,6 +5,8 @@ import _root_.sttp.model._
 import _root_.sttp.client3.circe._
 import _root_.io.circe.generic.auto._
 
+import _root_.java.io.File
+
 case class Person(name: String, age: Int)
 
 class Api(baseUrl: String) {
@@ -12,6 +14,6 @@ class Api(baseUrl: String) {
       personId: Int,
       personName: Option[String]
   ): Request[Person, Any] = basicRequest
-    .get(uri"https://$baseUrl/$personId/$personName")
+    .get(uri"$baseUrl/person/$personId/$personName")
     .response(asJson[Person].getRight)
 }
