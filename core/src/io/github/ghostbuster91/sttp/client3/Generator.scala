@@ -44,15 +44,22 @@ object Generator {
     }.toMap
     val ops = openApi.getPaths.asScala.toList.flatMap { case (path, item) =>
       List(
-        Option(item.getGet).map(
-          processGetOperation(_, path, model, modelClassNames)
-        ),
-        Option(item.getPut())
-          .map(processPutOperation(_, path, model, modelClassNames)),
-        Option(item.getPost()).map(
-          processPostOperation(_, path, model, modelClassNames)
+        Option(item.getGet).map(op => op -> Method.Get),
+        Option(item.getPut()).map(op => op -> Method.Put),
+        Option(item.getPost()).map(op => op -> Method.Post)
+      ).flatten.map { case (operation, method) =>
+        val uri = constructUrl(
+          path,
+          Option(operation.getParameters).toList.flatMap(_.asScala.toList)
         )
-      ).flatten
+        val request = createRequestCall(method, uri)
+        processOperation(
+          operation,
+          model,
+          request,
+          modelClassNames
+        )
+      }
     }
     val tree =
       q"""package io.github.ghostbuster91.sttp.client3.example {
@@ -70,8 +77,7 @@ object Generator {
           }
         }
       """
-    val code = tree.toString
-    code
+    tree.toString
   }
 
   private def constructUrl(path: String, params: List[Parameter]) = {
@@ -117,64 +123,17 @@ object Generator {
     )
   }
 
-  private def processGetOperation(
-      operation: Operation,
-      path: String,
-      model: Map[SchemaRef, Defn.Class],
-      schemaRefToClassName: Map[SchemaRef, String]
-  ) = {
-    val uri = constructUrl(
-      path,
-      Option(operation.getParameters).toList.flatMap(_.asScala.toList)
-    )
-    val basicRequestWithMethod = q"basicRequest.get($uri)"
-    processOperation(
-      operation,
-      model,
-      basicRequestWithMethod,
-      schemaRefToClassName
-    )
-  }
+  private def createRequestCall(method: Method, uri: Term) =
+    method match {
+      case Method.Put    => q"basicRequest.put($uri)"
+      case Method.Get    => q"basicRequest.get($uri)"
+      case Method.Post   => q"basicRequest.post($uri)"
+      case Method.Delete => q"basicRequest.delete($uri)"
+      case Method.Head   => q"basicRequest.head($uri)"
+      case Method.Patch  => q"basicRequest.patch($uri)"
+    }
 
-  private def processPutOperation(
-      operation: Operation,
-      path: String,
-      model: Map[SchemaRef, Defn.Class],
-      schemaRefToClassName: Map[SchemaRef, String]
-  ) = {
-    val uri = constructUrl(
-      path,
-      Option(operation.getParameters).toList.flatMap(_.asScala.toList)
-    )
-    val basicRequestWithMethod = q"basicRequest.put($uri)"
-    processOperation(
-      operation,
-      model,
-      basicRequestWithMethod,
-      schemaRefToClassName
-    )
-  }
-
-  private def processPostOperation(
-      operation: Operation,
-      path: String,
-      model: Map[SchemaRef, Defn.Class],
-      schemaRefToClassName: Map[SchemaRef, String]
-  ) = {
-    val uri = constructUrl(
-      path,
-      Option(operation.getParameters).toList.flatMap(_.asScala.toList)
-    )
-    val basicRequestWithMethod = q"basicRequest.post($uri)"
-    processOperation(
-      operation,
-      model,
-      basicRequestWithMethod,
-      schemaRefToClassName
-    )
-  }
-
-  def processOperation(
+  private def processOperation(
       operation: Operation,
       model: Map[SchemaRef, Defn.Class],
       basicRequestWithMethod: Term,
@@ -357,4 +316,15 @@ object Generator {
       Some(declType),
       None
     )
+}
+
+sealed trait Method
+object Method {
+  case object Put extends Method
+  case object Get extends Method
+  case object Post extends Method
+  case object Delete extends Method
+  case object Head extends Method
+  case object Patch extends Method
+  //TODO trace, connect, option?
 }
