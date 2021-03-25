@@ -4,13 +4,8 @@ import io.swagger.parser.OpenAPIParser
 import io.swagger.v3.parser.core.models.ParseOptions
 import scala.collection.JavaConverters._
 import io.swagger.v3.parser.core.models.AuthorizationValue
-import io.swagger.v3.oas.models.media.ObjectSchema
-import io.swagger.v3.oas.models.media.StringSchema
-import io.swagger.v3.oas.models.media.Schema
-import io.swagger.v3.oas.models.media.IntegerSchema
 import scala.meta._
 import scala.collection.immutable
-import _root_.io.swagger.v3.oas.models.media.ArraySchema
 
 case class SchemaRef(key: String)
 object SchemaRef {
@@ -81,7 +76,7 @@ object Generator {
       case schema =>
         schema.enum match {
           case list if list.nonEmpty =>
-            List(Enum(path, list.map(_.asInstanceOf[String])))
+            List(Enum(path, list))
           case Nil => Nil
         }
     }
@@ -292,11 +287,11 @@ object Generator {
 
   private def enumToSealedTraitDef(enum: Enum) = {
     val name = enum.path.takeRight(2).map(_.capitalize).mkString
-    val objs = //List.empty[Defn.Object]
+    val objs =
       enum.values.map(n =>
         Defn.Object(
           List(Mod.Case()),
-          Term.Name(n.capitalize),
+          Term.Name(n.toString.capitalize),
           Template(
             early = Nil,
             inits = List(Init(Type.Name(name), Name.Anonymous(), List.empty)),
@@ -363,14 +358,22 @@ object Generator {
       schemaRefToClassName: Map[SchemaRef, String]
   ): Type =
     schema match {
-      case ss: SafeStringSchema if ss.enum.nonEmpty =>
-        Type.Name(
-          s"${className.capitalize}${propertyName.capitalize}"
-        )
-      case _: SafeStringSchema =>
-        Type.Name("String")
-      case _: SafeIntegerSchema =>
-        Type.Name("Int")
+      case ss: SafeStringSchema =>
+        if (ss.isEnum) {
+          Type.Name(
+            s"${className.capitalize}${propertyName.capitalize}"
+          )
+        } else {
+          Type.Name("String")
+        }
+      case si: SafeIntegerSchema =>
+        if (si.isEnum) {
+          Type.Name(
+            s"${className.capitalize}${propertyName.capitalize}"
+          )
+        } else {
+          Type.Name("Int")
+        }
       case s: SafeArraySchema =>
         t"List[${schemaToType(className, propertyName, s.items, schemaRefToClassName)}]"
       case ref: SafeRefSchema => Type.Name(schemaRefToClassName(ref.ref))
@@ -392,5 +395,5 @@ object Generator {
     )
 }
 
-case class Enum(path: List[String], values: List[String])
+case class Enum(path: List[String], values: List[Any])
 case class EnumDef(st: Defn.Trait, companion: Defn.Object)

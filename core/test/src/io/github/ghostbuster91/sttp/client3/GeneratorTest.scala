@@ -23,6 +23,7 @@ object GeneratorTest extends TestSuite {
     //Internal error: unable to find the outer accessor symbol of class Api
     //    scala.tools.reflect.ToolBoxFactory$ToolBoxImpl$ToolBoxGlobal.throwIfErrors(ToolBoxFactory.scala:332)
     "string_enum" - testNoCompile()
+    "int_enum" - testNoCompile()
   }
 
   def testNoCompile()(implicit testPath: utest.framework.TestPath) = {
