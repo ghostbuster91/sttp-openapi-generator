@@ -6,15 +6,15 @@ object EnumGenerator {
     collectEnums(schemas, Nil).map(enumToSealedTraitDef)
 
   private def enumToSealedTraitDef(enum: Enum) = {
-    val name = enum.path.takeRight(2).map(_.capitalize).mkString
     val objs =
-      enum.values.map(n =>
+      enum.values.map(value =>
         Defn.Object(
           List(Mod.Case()),
-          Term.Name(n.toString.capitalize),
+          Term.Name(value.name),
           Template(
             early = Nil,
-            inits = List(Init(Type.Name(name), Name.Anonymous(), List.empty)),
+            inits =
+              List(Init(Type.Name(enum.name), Name.Anonymous(), List.empty)),
             self = Self(
               name = Name.Anonymous(),
               decltpe = None
@@ -25,8 +25,8 @@ object EnumGenerator {
       )
 
     EnumDef(
-      q"sealed trait ${Type.Name(name)}",
-      q"""object ${Term.Name(name)} {
+      q"sealed trait ${Type.Name(enum.name)}",
+      q"""object ${Term.Name(enum.name)} {
           ..$objs
       }
       """
@@ -50,12 +50,18 @@ object EnumGenerator {
         os.properties.toList.flatMap { case (k, v) =>
           collectEnums2(path :+ k, v)
         }
-      case schema =>
+      case _: SafeStringSchema =>
         schema.enum match {
           case list if list.nonEmpty =>
-            List(Enum(path, list))
+            List(Enum(path, list.map(v => EnumValue(v)), EnumType.EString))
           case Nil => Nil
         }
+      case _: SafeIntegerSchema =>
+        schema.enum match {
+          case list if list.nonEmpty =>
+            List(Enum(path, list.map(v => EnumValue(v)), EnumType.EInt))
+          case Nil => Nil
+        }
+      case other => List.empty
     }
-
 }

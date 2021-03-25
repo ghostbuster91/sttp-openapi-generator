@@ -43,7 +43,7 @@ object GeneratorTest extends TestSuite {
 
   private def load(fileName: String): String =
     scala.io.Source
-      .fromInputStream(getClass.getResourceAsStream(s"/$fileName"))
+      .fromInputStream(getClass.getResourceAsStream(s"/api/$fileName"))
       .getLines()
       .mkString("\n")
 

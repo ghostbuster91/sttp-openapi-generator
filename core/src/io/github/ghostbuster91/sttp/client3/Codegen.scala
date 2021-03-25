@@ -233,5 +233,21 @@ object Codegen {
 
 }
 
-case class Enum(path: List[String], values: List[Any])
+case class Enum(
+    path: List[String],
+    values: List[EnumValue],
+    enumType: EnumType
+) {
+  def name: String = path.takeRight(2).map(_.capitalize).mkString
+  def uncapitalizedName: String =
+    name.take(1).toLowerCase() + name.drop(1)
+}
+case class EnumValue(rawValue: Any) {
+  def name: String = rawValue.toString.capitalize
+}
+sealed trait EnumType
+object EnumType {
+  case object EString extends EnumType
+  case object EInt extends EnumType
+}
 case class EnumDef(st: Defn.Trait, companion: Defn.Object)
