@@ -7,34 +7,18 @@ import io.swagger.v3.parser.core.models.AuthorizationValue
 import scala.meta._
 import scala.collection.immutable
 
-case class SchemaRef(key: String)
-object SchemaRef {
-  def fromKey(key: String): SchemaRef =
-    SchemaRef(s"#/components/schemas/$key")
-}
-
 object Codegen {
   def generateUnsafe(openApiYaml: String): String = {
     val openApi = loadOpenApi(openApiYaml)
-    val safeSchemaComponents =
-      openApi.components.map(_.schemas).getOrElse(Map.empty)
-    val enums =
-      collectEnums(safeSchemaComponents, Nil).map(enumToSealedTraitDef)
+    val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
+    val enums = EnumGenerator.generate(schemas)
 
-    val modelClassNames =
-      safeSchemaComponents.map { case (key, _) =>
-        SchemaRef.fromKey(key) -> key
-      }
-    val model = safeSchemaComponents.map {
-      case (key, schema: SafeObjectSchema) =>
-        val schemaRef = SchemaRef.fromKey(key)
-        schemaRef -> schemaToClassDef(
-          modelClassNames(schemaRef),
-          schema,
-          modelClassNames
-        )
+    val modelClassNames = schemas.map { case (key, _) =>
+      SchemaRef.fromKey(key) -> key
     }
-    val operations = collectOperations(openApi, model, modelClassNames)
+    val modelGenerator = new ModelGenerator(schemas, modelClassNames)
+    val model = modelGenerator.generate
+    val operations = collectOperations(openApi, modelGenerator)
     val tree =
       q"""package io.github.ghostbuster91.sttp.client3.example {
 
@@ -56,35 +40,9 @@ object Codegen {
     tree.toString
   }
 
-  private def collectEnums(
-      schemas: Map[String, SafeSchema],
-      path: List[String]
-  ): List[Enum] =
-    schemas.flatMap { case (k, v) =>
-      collectEnums2(path :+ k, v)
-    }.toList
-
-  private def collectEnums2(
-      path: List[String],
-      schema: SafeSchema
-  ): List[Enum] =
-    schema match {
-      case os: SafeObjectSchema =>
-        os.properties.toList.flatMap { case (k, v) =>
-          collectEnums2(path :+ k, v)
-        }
-      case schema =>
-        schema.enum match {
-          case list if list.nonEmpty =>
-            List(Enum(path, list))
-          case Nil => Nil
-        }
-    }
-
   private def collectOperations(
       openApi: SafeOpenApi,
-      model: Map[SchemaRef, Defn.Class],
-      modelClassNames: Map[SchemaRef, String]
+      modelGenerator: ModelGenerator
   ) =
     openApi.paths.toList.flatMap { case (path, item) =>
       item.operations.map { case (method, operation) =>
@@ -96,7 +54,7 @@ object Codegen {
         processOperation(
           operation,
           request,
-          modelClassNames
+          modelGenerator
         )
       }
     }
@@ -159,7 +117,7 @@ object Codegen {
   private def processOperation(
       operation: SafeOperation,
       basicRequestWithMethod: Term,
-      modelClassNames: Map[SchemaRef, String]
+      modelGenerator: ModelGenerator
   ): Defn.Def = {
     val operationId = operation.operationId
 
@@ -169,16 +127,16 @@ object Codegen {
           .collectFirst { case ("application/json", jsonResponse) =>
             jsonResponse.schema match {
               case rs: SafeRefSchema =>
-                Type.Name(modelClassNames(rs.ref))
+                Type.Name(modelGenerator.classNameFor(rs.ref))
             }
           }
           .getOrElse(Type.Name("Unit"))
     }.head
 
     val functionName = Term.Name(operationId)
-    val queryParameters = queryParameter(operation, modelClassNames)
-    val pathParameters = pathParameter(operation, modelClassNames)
-    val bodyParameter = requestBodyParameter(operation, modelClassNames)
+    val queryParameters = queryParameter(operation, modelGenerator)
+    val pathParameters = pathParameter(operation, modelGenerator)
+    val bodyParameter = requestBodyParameter(operation, modelGenerator)
     val parameters = pathParameters ++ queryParameters ++ bodyParameter
     val body: Term = Term.Apply(
       Term.Select(
@@ -199,18 +157,15 @@ object Codegen {
 
   private def pathParameter(
       operation: SafeOperation,
-      modelClassNames: Map[SchemaRef, String]
+      modelGenerator: ModelGenerator
   ) =
     operation.parameters
       .collect { case pathParam: SafePathParameter =>
         val paramName = Term.Name(pathParam.name)
-        val paramType = optionApplication(
-          schemaToType(
-            "outerPathName",
-            pathParam.name,
-            pathParam.schema,
-            modelClassNames
-          ),
+        val paramType = modelGenerator.schemaToType(
+          "outerPathName",
+          pathParam.name,
+          pathParam.schema,
           pathParam.required
         )
         param"$paramName : $paramType"
@@ -218,18 +173,15 @@ object Codegen {
 
   private def queryParameter(
       operation: SafeOperation,
-      schemaRefToClassName: Map[SchemaRef, String]
+      modelGenerator: ModelGenerator
   ) =
     operation.parameters
       .collect { case queryParam: SafeQueryParameter =>
         val paramName = Term.Name(queryParam.name)
-        val paramType = optionApplication(
-          schemaToType(
-            "outerName",
-            queryParam.name,
-            queryParam.schema,
-            schemaRefToClassName
-          ),
+        val paramType = modelGenerator.schemaToType(
+          "outerName",
+          queryParam.name,
+          queryParam.schema,
           queryParam.required
         )
         param"$paramName : $paramType"
@@ -237,7 +189,7 @@ object Codegen {
 
   private def requestBodyParameter(
       operation: SafeOperation,
-      modelClassNames: Map[SchemaRef, String]
+      modelGenerator: ModelGenerator
   ) =
     operation.requestBody
       .flatMap { requestBody =>
@@ -245,14 +197,14 @@ object Codegen {
           .collectFirst {
             case ("application/json", jsonRequest) =>
               jsonRequest.schema match {
-                case rs: SafeRefSchema => modelClassNames(rs.ref)
+                case rs: SafeRefSchema => modelGenerator.classNameFor(rs.ref)
               }
             case ("application/octet-stream", _) =>
               "File"
           }
           .map { requestClassName =>
             val paramName = Term.Name(s"a$requestClassName")
-            val paramType = optionApplication(
+            val paramType = ModelGenerator.optionApplication(
               Type.Name(requestClassName),
               requestBody.required
             )
@@ -279,114 +231,6 @@ object Codegen {
     }
   }
 
-  private def enumToSealedTraitDef(enum: Enum) = {
-    val name = enum.path.takeRight(2).map(_.capitalize).mkString
-    val objs =
-      enum.values.map(n =>
-        Defn.Object(
-          List(Mod.Case()),
-          Term.Name(n.toString.capitalize),
-          Template(
-            early = Nil,
-            inits = List(Init(Type.Name(name), Name.Anonymous(), List.empty)),
-            self = Self(
-              name = Name.Anonymous(),
-              decltpe = None
-            ),
-            stats = Nil
-          )
-        )
-      )
-
-    EnumDef(
-      q"sealed trait ${Type.Name(name)}",
-      q"""object ${Term.Name(name)} {
-          ..$objs
-      }
-      """
-    )
-  }
-
-  private def schemaToClassDef(
-      name: String,
-      schema: SafeObjectSchema,
-      modelClassNames: Map[SchemaRef, String]
-  ) =
-    Defn.Class(
-      List(Mod.Case()),
-      Type.Name(name),
-      Nil,
-      Ctor.Primary(
-        Nil,
-        Name(""),
-        List(
-          schema.properties.map { case (k, v) =>
-            processParams(
-              name,
-              k,
-              v,
-              modelClassNames,
-              schema.requiredFields.contains(k)
-            )
-          }.toList
-        )
-      ),
-      Template(Nil, Nil, Self(Name(""), None), Nil)
-    )
-
-  private def processParams(
-      className: String,
-      name: String,
-      schema: SafeSchema,
-      modelClassNames: Map[SchemaRef, String],
-      isRequired: Boolean
-  ): Term.Param = {
-    val declType = schemaToType(className, name, schema, modelClassNames)
-    paramDeclFromType(name, optionApplication(declType, isRequired))
-  }
-
-  private def schemaToType(
-      className: String,
-      propertyName: String,
-      schema: SafeSchema,
-      modelClassNames: Map[SchemaRef, String]
-  ): Type =
-    schema match {
-      case ss: SafeStringSchema =>
-        if (ss.isEnum) {
-          Type.Name(
-            s"${className.capitalize}${propertyName.capitalize}"
-          )
-        } else {
-          Type.Name("String")
-        }
-      case si: SafeIntegerSchema =>
-        if (si.isEnum) {
-          Type.Name(
-            s"${className.capitalize}${propertyName.capitalize}"
-          )
-        } else {
-          Type.Name("Int")
-        }
-      case s: SafeArraySchema =>
-        t"List[${schemaToType(className, propertyName, s.items, modelClassNames)}]"
-      case ref: SafeRefSchema => Type.Name(modelClassNames(ref.ref))
-    }
-
-  private def optionApplication(declType: Type, isRequired: Boolean): Type =
-    if (isRequired) {
-      declType
-    } else {
-      t"Option[$declType]"
-    }
-
-  private def paramDeclFromType(paramName: String, declType: Type) =
-    Term.Param(
-      Nil,
-      Term.Name(paramName),
-      Some(declType),
-      None
-    )
 }
 
 case class Enum(path: List[String], values: List[Any])

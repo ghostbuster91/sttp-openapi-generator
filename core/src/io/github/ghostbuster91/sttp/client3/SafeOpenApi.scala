@@ -166,3 +166,9 @@ object SafeSchema {
       case other if other.get$ref != null => new SafeRefSchema(other)
     }
 }
+
+case class SchemaRef(key: String)
+object SchemaRef {
+  def fromKey(key: String): SchemaRef =
+    SchemaRef(s"#/components/schemas/$key")
+}
