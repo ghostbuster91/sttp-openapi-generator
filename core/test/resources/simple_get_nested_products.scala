@@ -7,17 +7,9 @@ import _root_.io.circe.generic.auto._
 
 import _root_.java.io.File
 
-case class Category(
-    id: Int,
-    name: String
-)
+case class Category(id: Int, name: String)
 
-case class Pet(
-    id: Int,
-    name: String,
-    category: Category,
-    status: String
-)
+case class Pet(id: Int, name: String, category: Category, status: String)
 
 class Api(baseUrl: String) {
   def getRoot(): Request[Pet, Any] = basicRequest

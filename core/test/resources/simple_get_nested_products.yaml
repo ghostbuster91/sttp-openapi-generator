@@ -45,8 +45,3 @@ components:
           $ref: "#/components/schemas/Category"
         status:
           type: string
-          description: pet status in the store
-          enum:
-            - available
-            - pending
-            - sold

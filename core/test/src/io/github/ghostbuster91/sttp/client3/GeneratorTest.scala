@@ -17,14 +17,26 @@ object GeneratorTest extends TestSuite {
     "get_with_path_param" - test()
     "get_with_multiple_path_param" - test()
     "mixed_path_and_query" - test()
+
+    //TODO:
+    //reflective compilation has failed:
+    //Internal error: unable to find the outer accessor symbol of class Api
+    //    scala.tools.reflect.ToolBoxFactory$ToolBoxImpl$ToolBoxGlobal.throwIfErrors(ToolBoxFactory.scala:332)
+    "string_enum" - testNoCompile()
   }
 
-  def test()(implicit testPath: utest.framework.TestPath) = {
+  def testNoCompile()(implicit testPath: utest.framework.TestPath) = {
     val testName = testPath.value.last
     val yaml = load(s"$testName.yaml")
     val result = Generator.generateUnsafe(yaml).parse[Source].get
     val expected = load(s"$testName.scala")
     assert(result.structure == expected.parse[Source].get.structure)
+  }
+
+  def test()(implicit testPath: utest.framework.TestPath) = {
+    testNoCompile()
+    val testName = testPath.value.last
+    val expected = load(s"$testName.scala")
     expected.shouldCompile()
   }
 
