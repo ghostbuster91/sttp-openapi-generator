@@ -13,7 +13,7 @@ object SchemaRef {
     SchemaRef(s"#/components/schemas/$key")
 }
 
-object Generator {
+object Codegen {
   def generateUnsafe(openApiYaml: String): String = {
     val openApi = loadOpenApi(openApiYaml)
     val safeSchemaComponents =
@@ -21,7 +21,7 @@ object Generator {
     val enums =
       collectEnums(safeSchemaComponents, Nil).map(enumToSealedTraitDef)
 
-    val modelClassNames = //TODO should be created based on model and enums?
+    val modelClassNames =
       safeSchemaComponents.map { case (key, _) =>
         SchemaRef.fromKey(key) -> key
       }
@@ -95,7 +95,6 @@ object Generator {
         val request = createRequestCall(method, uri)
         processOperation(
           operation,
-          model,
           request,
           modelClassNames
         )
@@ -159,9 +158,8 @@ object Generator {
 
   private def processOperation(
       operation: SafeOperation,
-      model: Map[SchemaRef, Defn.Class],
       basicRequestWithMethod: Term,
-      schemaRefToClassName: Map[SchemaRef, String]
+      modelClassNames: Map[SchemaRef, String]
   ): Defn.Def = {
     val operationId = operation.operationId
 
@@ -171,20 +169,16 @@ object Generator {
           .collectFirst { case ("application/json", jsonResponse) =>
             jsonResponse.schema match {
               case rs: SafeRefSchema =>
-                Type.Name(
-                  model(
-                    rs.ref
-                  ).name.value //TODO use schemaToClassName?
-                )
+                Type.Name(modelClassNames(rs.ref))
             }
           }
           .getOrElse(Type.Name("Unit"))
     }.head
 
     val functionName = Term.Name(operationId)
-    val queryParameters = queryParameter(operation, schemaRefToClassName)
-    val pathParameters = pathParameter(operation, schemaRefToClassName)
-    val bodyParameter = requestBodyParameter(operation, model)
+    val queryParameters = queryParameter(operation, modelClassNames)
+    val pathParameters = pathParameter(operation, modelClassNames)
+    val bodyParameter = requestBodyParameter(operation, modelClassNames)
     val parameters = pathParameters ++ queryParameters ++ bodyParameter
     val body: Term = Term.Apply(
       Term.Select(
@@ -205,7 +199,7 @@ object Generator {
 
   private def pathParameter(
       operation: SafeOperation,
-      schemaRefToClassName: Map[SchemaRef, String]
+      modelClassNames: Map[SchemaRef, String]
   ) =
     operation.parameters
       .collect { case pathParam: SafePathParameter =>
@@ -215,7 +209,7 @@ object Generator {
             "outerPathName",
             pathParam.name,
             pathParam.schema,
-            schemaRefToClassName
+            modelClassNames
           ),
           pathParam.required
         )
@@ -243,7 +237,7 @@ object Generator {
 
   private def requestBodyParameter(
       operation: SafeOperation,
-      model: Map[SchemaRef, Defn.Class]
+      modelClassNames: Map[SchemaRef, String]
   ) =
     operation.requestBody
       .flatMap { requestBody =>
@@ -251,7 +245,7 @@ object Generator {
           .collectFirst {
             case ("application/json", jsonRequest) =>
               jsonRequest.schema match {
-                case rs: SafeRefSchema => model(rs.ref).name.value
+                case rs: SafeRefSchema => modelClassNames(rs.ref)
               }
             case ("application/octet-stream", _) =>
               "File"
@@ -316,7 +310,7 @@ object Generator {
   private def schemaToClassDef(
       name: String,
       schema: SafeObjectSchema,
-      schemaRefToClassName: Map[SchemaRef, String]
+      modelClassNames: Map[SchemaRef, String]
   ) =
     Defn.Class(
       List(Mod.Case()),
@@ -331,7 +325,7 @@ object Generator {
               name,
               k,
               v,
-              schemaRefToClassName,
+              modelClassNames,
               schema.requiredFields.contains(k)
             )
           }.toList
@@ -344,10 +338,10 @@ object Generator {
       className: String,
       name: String,
       schema: SafeSchema,
-      schemaRefToClassName: Map[SchemaRef, String],
+      modelClassNames: Map[SchemaRef, String],
       isRequired: Boolean
   ): Term.Param = {
-    val declType = schemaToType(className, name, schema, schemaRefToClassName)
+    val declType = schemaToType(className, name, schema, modelClassNames)
     paramDeclFromType(name, optionApplication(declType, isRequired))
   }
 
@@ -355,7 +349,7 @@ object Generator {
       className: String,
       propertyName: String,
       schema: SafeSchema,
-      schemaRefToClassName: Map[SchemaRef, String]
+      modelClassNames: Map[SchemaRef, String]
   ): Type =
     schema match {
       case ss: SafeStringSchema =>
@@ -375,8 +369,8 @@ object Generator {
           Type.Name("Int")
         }
       case s: SafeArraySchema =>
-        t"List[${schemaToType(className, propertyName, s.items, schemaRefToClassName)}]"
-      case ref: SafeRefSchema => Type.Name(schemaRefToClassName(ref.ref))
+        t"List[${schemaToType(className, propertyName, s.items, modelClassNames)}]"
+      case ref: SafeRefSchema => Type.Name(modelClassNames(ref.ref))
     }
 
   private def optionApplication(declType: Type, isRequired: Boolean): Type =
