@@ -19,9 +19,7 @@ object CirceDecoderTest extends TestSuite {
         )
         .parse[Source]
         .get
-      assert(
-        actual.structure == expected.structure
-      )
+      assert(actual.structure == expected.structure)
     }
   }
 
