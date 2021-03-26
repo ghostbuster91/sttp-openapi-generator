@@ -14,7 +14,7 @@ object Codegen {
     val enums = EnumGenerator.generate(schemas)
 
     val modelClassNames = schemas.map { case (key, _) =>
-      SchemaRef.fromKey(key) -> key
+      SchemaRef.fromKey(key) -> snakeToCamelCase(key)
     }
     val modelGenerator = new ModelGenerator(schemas, modelClassNames)
     val model = modelGenerator.generate
@@ -214,6 +214,7 @@ object Codegen {
     val parser = new OpenAPIParser
     val opts = new ParseOptions()
     opts.setResolve(true)
+    opts.setFlatten(true)
     val parserResult = parser.readContents(
       yaml,
       List.empty[AuthorizationValue].asJava,
@@ -228,6 +229,9 @@ object Codegen {
         throw new RuntimeException(s"Failed to parse k8s swagger specs")
     }
   }
+
+  private def snakeToCamelCase(snake: String) =
+    snake.split('_').toList.map(_.capitalize).mkString
 
 }
 

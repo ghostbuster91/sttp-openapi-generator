@@ -24,6 +24,9 @@ object GeneratorTest extends TestSuite {
     //    scala.tools.reflect.ToolBoxFactory$ToolBoxImpl$ToolBoxGlobal.throwIfErrors(ToolBoxFactory.scala:332)
     "string_enum" - testNoCompile()
     "int_enum" - testNoCompile()
+
+    "get_inline_response_200" - test()
+
   }
 
   def testNoCompile()(implicit testPath: utest.framework.TestPath) = {
