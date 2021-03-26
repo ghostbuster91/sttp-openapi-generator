@@ -8,7 +8,7 @@ import scala.meta._
 import scala.collection.immutable
 
 object Codegen {
-  def generateUnsafe(openApiYaml: String): String = {
+  def generateUnsafe(openApiYaml: String): Source = {
     val openApi = loadOpenApi(openApiYaml)
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
     val enums = EnumGenerator.generate(schemas)
@@ -19,8 +19,7 @@ object Codegen {
     val modelGenerator = new ModelGenerator(schemas, modelClassNames)
     val model = modelGenerator.generate
     val operations = collectOperations(openApi, modelGenerator)
-    val tree =
-      q"""package io.github.ghostbuster91.sttp.client3.example {
+    source"""package io.github.ghostbuster91.sttp.client3.example {
 
           import _root_.sttp.client3._
           import _root_.sttp.model._
@@ -37,7 +36,6 @@ object Codegen {
           }
         }
       """
-    tree.toString
   }
 
   private def collectOperations(
