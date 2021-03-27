@@ -4,21 +4,33 @@ import scala.meta._
 
 class ModelGenerator(
     schemas: Map[SchemaRef, SafeSchema],
-    classNames: Map[SchemaRef, String]
+    classNames: Map[SchemaRef, String],
 ) {
-  def generate: Map[SchemaRef, Defn.Class] =
-    schemas.collect { case (key, schema: SafeObjectSchema) =>
-      key -> schemaToClassDef(
-        classNames(key),
-        schema
-      )
-    }
+  def generate: Map[SchemaRef, Defn] = {
+    val childToParentRef = schemas
+      .collect { case (key, composed: SafeComposedSchema) =>
+        composed.oneOf.map(c => c.ref -> key)
+      }
+      .flatten
+      .toMap
 
+    schemas.collect {
+      case (key, schema: SafeObjectSchema) =>
+        key -> schemaToClassDef(
+          classNames(key),
+          schema,
+          childToParentRef.get(key).map(classNames.apply),
+        )
+      case (key, schema: SafeComposedSchema) =>
+        key -> schemaToSealedTrait(classNames(key), schema)
+    }
+  }
   def classNameFor(schemaRef: SchemaRef): String = classNames(schemaRef)
 
   private def schemaToClassDef(
       name: String,
-      schema: SafeObjectSchema
+      schema: SafeObjectSchema,
+      parentClassName: Option[String],
   ) =
     Defn.Class(
       List(Mod.Case()),
@@ -26,26 +38,39 @@ class ModelGenerator(
       Nil,
       Ctor.Primary(
         Nil,
-        Name(""),
+        Name.Anonymous(),
         List(
           schema.properties.map { case (k, v) =>
             processParams(
               name,
               k,
               v,
-              schema.requiredFields.contains(k)
+              schema.requiredFields.contains(k),
             )
-          }.toList
-        )
+          }.toList,
+        ),
       ),
-      Template(Nil, Nil, Self(Name(""), None), Nil)
+      Template(
+        Nil,
+        parentClassName.map(Type.Name(_)).map(p => init"$p()").toList,
+        Self(Name.Anonymous(), None),
+        Nil,
+      ),
     )
+
+  private def schemaToSealedTrait(
+      name: String,
+      schema: SafeComposedSchema,
+  ): Defn.Trait = {
+    val traitName = Type.Name(name)
+    q"sealed trait $traitName"
+  }
 
   private def processParams(
       className: String,
       name: String,
       schema: SafeSchema,
-      isRequired: Boolean
+      isRequired: Boolean,
   ): Term.Param = {
     val declType = schemaToType(className, name, schema, isRequired)
     paramDeclFromType(name, declType)
@@ -55,7 +80,7 @@ class ModelGenerator(
       className: String,
       propertyName: String,
       schema: SafeSchema,
-      isRequired: Boolean
+      isRequired: Boolean,
   ): Type = {
     val declType = schemaToType(className, propertyName, schema)
     ModelGenerator.optionApplication(declType, isRequired)
@@ -64,13 +89,13 @@ class ModelGenerator(
   private def schemaToType(
       className: String,
       propertyName: String,
-      schema: SafeSchema
+      schema: SafeSchema,
   ): Type =
     schema match {
       case ss: SafeStringSchema =>
         if (ss.isEnum) {
           Type.Name(
-            s"${className.capitalize}${propertyName.capitalize}"
+            s"${className.capitalize}${propertyName.capitalize}",
           )
         } else {
           Type.Name("String")
@@ -78,7 +103,7 @@ class ModelGenerator(
       case si: SafeIntegerSchema =>
         if (si.isEnum) {
           Type.Name(
-            s"${className.capitalize}${propertyName.capitalize}"
+            s"${className.capitalize}${propertyName.capitalize}",
           )
         } else {
           Type.Name("Int")
@@ -93,14 +118,14 @@ class ModelGenerator(
       Nil,
       Term.Name(paramName),
       Some(declType),
-      None
+      None,
     )
 }
 
 object ModelGenerator {
   def apply(
       schemas: Map[String, SafeSchema],
-      requestBodies: Map[String, SafeSchema]
+      requestBodies: Map[String, SafeSchema],
   ): ModelGenerator = {
     val modelClassNames = schemas.map { case (key, _) =>
       SchemaRef.schema(key) -> snakeToCamelCase(key)
@@ -110,7 +135,7 @@ object ModelGenerator {
     new ModelGenerator(
       schemas.map { case (k, v) => SchemaRef.schema(k) -> v } ++ requestBodies
         .map { case (k, v) => SchemaRef.requestBody(k) -> v },
-      modelClassNames
+      modelClassNames,
     )
   }
 

@@ -6,35 +6,39 @@ import scala.tools.reflect.ToolBox
 
 object GeneratorTest extends TestSuite {
   val tests = Tests {
-    // "simple_get_person" - test()
-    // "simple_put_person" - test()
-    // "simple_post_person" - test()
-    // "simple_get_nested_products" - test()
-    // "simple_get_person_optional" - test()
-    // "simple_get_product_array" - test()
-    // "get_with_query_param" - test()
-    // "get_with_multiple_query_param" - test()
-    // "get_with_path_param" - test()
-    // "get_with_multiple_path_param" - test()
-    // "mixed_path_and_query" - test()
+    "simple_get_person" - test()
+    "simple_put_person" - test()
+    "simple_post_person" - test()
+    "simple_get_nested_products" - test()
+    "simple_get_person_optional" - test()
+    "simple_get_product_array" - test()
+    "get_with_query_param" - test()
+    "get_with_multiple_query_param" - test()
+    "get_with_path_param" - test()
+    "get_with_multiple_path_param" - test()
+    "mixed_path_and_query" - test()
 
-    // //TODO:
-    // //reflective compilation has failed:
-    // //Internal error: unable to find the outer accessor symbol of class Api
-    // //    scala.tools.reflect.ToolBoxFactory$ToolBoxImpl$ToolBoxGlobal.throwIfErrors(ToolBoxFactory.scala:332)
-    // "string_enum" - testNoCompile()
-    // "int_enum" - testNoCompile()
+    //TODO:
+    //reflective compilation has failed:
+    //Internal error: unable to find the outer accessor symbol of class Api
+    //    scala.tools.reflect.ToolBoxFactory$ToolBoxImpl$ToolBoxGlobal.throwIfErrors(ToolBoxFactory.scala:332)
+    "string_enum" - testNoCompile()
+    "int_enum" - testNoCompile()
 
-    // "get_inline_response_200" - test()
-    // "request_body_direct" - test()
-    // "request_body_indirect" - test()
+    "get_inline_response_200" - test()
+    "request_body_direct" - test()
+    "request_body_indirect" - test()
     "operation_with_tag" - test()
     "multiple_operations_with_same_tag" - test()
     "multiple_operations_with_different_tag" - test()
+
+    "coproduct" - {
+      "simple" - test()
+    }
   }
 
   def testNoCompile()(implicit testPath: utest.framework.TestPath) = {
-    val testName = testPath.value.last
+    val testName = testPath.value.mkString("/")
     val yaml = load(s"$testName.yaml")
     val result = Codegen.generateUnsafe(yaml)
     val expected = load(s"$testName.scala")
@@ -43,7 +47,7 @@ object GeneratorTest extends TestSuite {
 
   def test()(implicit testPath: utest.framework.TestPath) = {
     testNoCompile()
-    val testName = testPath.value.last
+    val testName = testPath.value.mkString("/")
     val expected = load(s"$testName.scala")
     expected.shouldCompile()
   }

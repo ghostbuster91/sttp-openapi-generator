@@ -139,7 +139,7 @@ class SafeMapSchema(s: MapSchema) extends SafeSchema(s)
 class SafeNumberSchema(s: NumberSchema) extends SafeSchema(s)
 class SafeObjectSchema(s: ObjectSchema) extends SafeSchema(s) {
   def properties: Map[String, SafeSchema] = Option(
-    s.getProperties().asScala.mapValues(SafeSchema.apply).toMap,
+    s.getProperties.asScala.mapValues(SafeSchema.apply).toMap,
   ).getOrElse(Map.empty)
   def requiredFields: List[String] =
     Option(s.getRequired()).map(_.asScala.toList).getOrElse(List.empty)
@@ -149,6 +149,10 @@ class SafeStringSchema(s: StringSchema) extends SafeSchema(s)
 class SafeUUIDSchema(s: UUIDSchema) extends SafeSchema(s)
 class SafeRefSchema(s: Schema[_]) extends SafeSchema(s) {
   def ref: SchemaRef = SchemaRef.apply(s.get$ref)
+}
+class SafeComposedSchema(s: ComposedSchema) extends SafeSchema(s) {
+  def oneOf: List[SafeRefSchema] =
+    s.getOneOf.asScala.map(new SafeRefSchema(_)).toList
 }
 
 object SafeSchema {
@@ -169,6 +173,8 @@ object SafeSchema {
       case ss: StringSchema               => new SafeStringSchema(ss)
       case us: UUIDSchema                 => new SafeUUIDSchema(us)
       case other if other.get$ref != null => new SafeRefSchema(other)
+      case composed: ComposedSchema if composed.getOneOf != null =>
+        new SafeComposedSchema(composed)
     }
 }
 
