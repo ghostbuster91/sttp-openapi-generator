@@ -59,17 +59,19 @@ class SafePathItem(p: PathItem) {
     List(
       Option(p.getGet).map(op => (Method.Get: Method) -> new SafeOperation(op)),
       Option(p.getPut()).map(op =>
-        (Method.Put: Method) -> new SafeOperation(op)
+        (Method.Put: Method) -> new SafeOperation(op),
       ),
       Option(p.getPost()).map(op =>
-        (Method.Post: Method) -> new SafeOperation(op)
-      )
+        (Method.Post: Method) -> new SafeOperation(op),
+      ),
     ).flatten.toMap
   override def toString(): String = p.toString()
 }
 
 class SafeOperation(op: Operation) {
   def operationId: String = op.getOperationId()
+  def tags: Option[List[String]] =
+    Option(op.getTags()).map(_.asScala.toList)
 
   def parameters: List[SafeParameter] =
     Option(op.getParameters())
@@ -137,7 +139,7 @@ class SafeMapSchema(s: MapSchema) extends SafeSchema(s)
 class SafeNumberSchema(s: NumberSchema) extends SafeSchema(s)
 class SafeObjectSchema(s: ObjectSchema) extends SafeSchema(s) {
   def properties: Map[String, SafeSchema] = Option(
-    s.getProperties().asScala.mapValues(SafeSchema.apply).toMap
+    s.getProperties().asScala.mapValues(SafeSchema.apply).toMap,
   ).getOrElse(Map.empty)
   def requiredFields: List[String] =
     Option(s.getRequired()).map(_.asScala.toList).getOrElse(List.empty)

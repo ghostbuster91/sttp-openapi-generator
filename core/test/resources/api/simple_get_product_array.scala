@@ -9,17 +9,17 @@ import _root_.java.io.File
 
 case class Category(
     id: Int,
-    name: String
+    name: String,
 )
 
 case class Pet(
     id: Int,
     name: String,
     categories: List[Category],
-    status: String
+    status: String,
 )
 
-class Api(baseUrl: String) {
+class DefaultApi(baseUrl: String) {
   def getRoot(): Request[Pet, Any] = basicRequest
     .get(uri"$baseUrl")
     .response(asJson[Pet].getRight)

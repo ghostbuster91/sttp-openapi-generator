@@ -11,7 +11,7 @@ case class Category(id: Int, name: String)
 
 case class Pet(id: Int, name: String, category: Category, status: String)
 
-class Api(baseUrl: String) {
+class DefaultApi(baseUrl: String) {
   def getRoot(): Request[Pet, Any] = basicRequest
     .get(uri"$baseUrl")
     .response(asJson[Pet].getRight)

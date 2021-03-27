@@ -9,7 +9,7 @@ import _root_.java.io.File
 case class PetResponse(name: String)
 case class PetRequest(id: String)
 
-class Api(baseUrl: String) {
+class DefaultApi(baseUrl: String) {
   def addPet(aPetRequest: PetRequest): Request[PetResponse, Any] = basicRequest
     .post(uri"$baseUrl/pet")
     .body(aPetRequest)

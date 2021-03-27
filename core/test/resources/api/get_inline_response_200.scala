@@ -9,7 +9,7 @@ import _root_.java.io.File
 
 case class InlineResponse200(status: Int)
 
-class Api(baseUrl: String) {
+class DefaultApi(baseUrl: String) {
   def getPersonById(): Request[InlineResponse200, Any] = basicRequest
     .get(uri"$baseUrl/person")
     .response(asJson[InlineResponse200].getRight)

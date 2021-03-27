@@ -5,8 +5,6 @@ info:
 paths:
   /person:
     put:
-      tags:
-        - person
       summary: Update an existing person
       description: Update an existing person by Id
       operationId: updatePerson

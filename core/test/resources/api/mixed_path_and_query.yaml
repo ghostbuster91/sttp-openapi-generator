@@ -5,8 +5,6 @@ info:
 paths:
   /pet/{petId}/uploadImage:
     get:
-      tags:
-        - pet
       summary: uploads an image
       description: ""
       operationId: getSomething

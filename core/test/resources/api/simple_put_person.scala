@@ -9,7 +9,7 @@ import _root_.java.io.File
 
 case class Person(name: String, age: Int)
 
-class Api(baseUrl: String) {
+class DefaultApi(baseUrl: String) {
   def updatePerson(aPerson: Person): Request[Person, Any] = basicRequest
     .put(uri"$baseUrl/person")
     .body(aPerson)

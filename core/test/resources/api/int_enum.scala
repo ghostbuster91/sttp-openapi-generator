@@ -15,7 +15,7 @@ object PersonStatus {
 
 case class Person(status: PersonStatus)
 
-class Api(baseUrl: String) {
+class DefaultApi(baseUrl: String) {
   def getPerson(): Request[Person, Any] =
     basicRequest.get(uri"$baseUrl/person").response(asJson[Person].getRight)
 }

@@ -9,7 +9,7 @@ import _root_.java.io.File
 
 case class Person(name: String, age: Int)
 
-class Api(baseUrl: String) {
+class DefaultApi(baseUrl: String) {
   def getRoot(id: Option[String], name: Int): Request[Person, Any] =
     basicRequest
       .get(uri"$baseUrl?id=$id&name=$name")

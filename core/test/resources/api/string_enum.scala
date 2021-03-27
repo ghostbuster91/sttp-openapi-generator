@@ -6,7 +6,6 @@ import _root_.sttp.client3.circe._
 import _root_.io.circe.generic.auto._
 import _root_.java.io.File
 
-
 sealed trait PersonStatus
 object PersonStatus {
   case object Happy extends PersonStatus
@@ -16,7 +15,7 @@ object PersonStatus {
 
 case class Person(status: PersonStatus)
 
-class Api(baseUrl: String) {
+class DefaultApi(baseUrl: String) {
   def getPerson(): Request[Person, Any] =
     basicRequest.get(uri"$baseUrl/person").response(asJson[Person].getRight)
 }
