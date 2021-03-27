@@ -3,7 +3,7 @@ package io.github.ghostbuster91.sttp.client3
 import scala.meta._
 
 object CirceCodecGeneration {
-  def generate(enums: List[Enum]): String = {
+  def generate(enums: List[Enum]): Source = {
 
     /**  implicit val personStatusEncoder: Encoder[PersonStatus] = Encoder.encodeString.contramap {
       *    case PersonStatus.Happy => "happy"
@@ -12,7 +12,7 @@ object CirceCodecGeneration {
       */
     val decoders = enums.map(decoder)
     val encoders = enums.map(encoder)
-    q"""package io.github.ghostbuster91.sttp.client3 {
+    source"""package io.github.ghostbuster91.sttp.client3 {
 
     import io.circe.Decoder
     import io.circe.Encoder
@@ -21,7 +21,7 @@ object CirceCodecGeneration {
         ..$decoders
         ..$encoders
     }
-    }""".toString()
+    }"""
   }
 
   private def encoder(enum: Enum) = {

@@ -11,12 +11,19 @@ object Codegen {
   def generateUnsafe(openApiYaml: String): Source = {
     val openApi = loadOpenApi(openApiYaml)
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
+    val requestBodies =
+      openApi.components
+        .map(_.requestBodies)
+        .getOrElse(Map.empty)
+        .flatMap { case (k, rb) =>
+          rb.content
+            .get(MediaType.ApplicationJson.v)
+            .map(mt => k -> mt.schema)
+        }
+        .toMap
     val enums = EnumGenerator.generate(schemas)
 
-    val modelClassNames = schemas.map { case (key, _) =>
-      SchemaRef.fromKey(key) -> snakeToCamelCase(key)
-    }
-    val modelGenerator = new ModelGenerator(schemas, modelClassNames)
+    val modelGenerator = ModelGenerator(schemas, requestBodies)
     val model = modelGenerator.generate
     val operations = collectOperations(openApi, modelGenerator)
     source"""package io.github.ghostbuster91.sttp.client3.example {
@@ -229,10 +236,6 @@ object Codegen {
         throw new RuntimeException(s"Failed to parse k8s swagger specs")
     }
   }
-
-  private def snakeToCamelCase(snake: String) =
-    snake.split('_').toList.map(_.capitalize).mkString
-
 }
 
 case class Enum(

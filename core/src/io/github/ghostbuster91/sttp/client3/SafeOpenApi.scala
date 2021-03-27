@@ -28,6 +28,8 @@ class SafeOpenApi(openApi: OpenAPI) {
       .toMap
       .mapValues(item => new SafePathItem(item))
       .toMap
+
+  override def toString(): String = openApi.toString()
 }
 
 class SafeComponents(c: Components) {
@@ -35,6 +37,21 @@ class SafeComponents(c: Components) {
     Option(c.getSchemas())
       .map(_.asScala.mapValues(SafeSchema.apply).toMap)
       .getOrElse(Map.empty)
+  def requestBodies: Map[String, SafeRequestBody] =
+    Option(c.getRequestBodies())
+      .map(_.asScala.mapValues(new SafeRequestBody(_)).toMap)
+      .getOrElse(Map.empty)
+  override def toString(): String = c.toString()
+}
+
+class SafeRequestBody(rb: RequestBody) {
+  def content: Map[String, SafeMediaType] =
+    Option(rb.getContent())
+      .map(_.asScala.mapValues(new SafeMediaType(_)).toMap)
+      .getOrElse(Map.empty)
+
+  def required: Boolean = rb.getRequired()
+  override def toString(): String = rb.toString()
 }
 
 class SafePathItem(p: PathItem) {
@@ -48,6 +65,7 @@ class SafePathItem(p: PathItem) {
         (Method.Post: Method) -> new SafeOperation(op)
       )
     ).flatten.toMap
+  override def toString(): String = p.toString()
 }
 
 class SafeOperation(op: Operation) {
@@ -72,21 +90,16 @@ class SafeOperation(op: Operation) {
 
   def requestBody: Option[SafeRequestBody] =
     Option(op.getRequestBody()).map(new SafeRequestBody(_))
-}
 
-class SafeRequestBody(r: RequestBody) {
-  def content: Map[String, SafeMediaType] =
-    Option(r.getContent())
-      .map(_.asScala.mapValues(v => new SafeMediaType(v)).toMap)
-      .getOrElse(Map.empty)
-
-  def required: Boolean = r.getRequired()
+  override def toString(): String = op.toString()
 }
 
 sealed abstract class SafeParameter(p: Parameter) {
   def name: String = p.getName()
   def schema: SafeSchema = SafeSchema(p.getSchema())
   def required: Boolean = p.getRequired()
+  override def toString(): String = p.toString()
+
 }
 class SafePathParameter(p: PathParameter) extends SafeParameter(p)
 class SafeHeaderParameter(p: HeaderParameter) extends SafeParameter(p)
@@ -103,21 +116,11 @@ class SafeMediaType(m: MediaType) {
   def schema: SafeSchema = SafeSchema(m.getSchema())
 }
 
-sealed trait Method
-object Method {
-  case object Put extends Method
-  case object Get extends Method
-  case object Post extends Method
-  case object Delete extends Method
-  case object Head extends Method
-  case object Patch extends Method
-  //TODO trace, connect, option?
-}
-
 sealed abstract class SafeSchema(s: Schema[_]) {
   def enum: List[Any] =
     Option(s.getEnum()).map(_.asScala.toList).getOrElse(List.empty)
   def isEnum = enum.nonEmpty
+  override def toString(): String = s.toString()
 }
 class SafeArraySchema(s: ArraySchema) extends SafeSchema(s) {
   def items: SafeSchema = SafeSchema(s.getItems())
@@ -169,6 +172,8 @@ object SafeSchema {
 
 case class SchemaRef(key: String)
 object SchemaRef {
-  def fromKey(key: String): SchemaRef =
+  def schema(key: String): SchemaRef =
     SchemaRef(s"#/components/schemas/$key")
+  def requestBody(key: String): SchemaRef =
+    SchemaRef(s"#/components/requestBodies/$key")
 }

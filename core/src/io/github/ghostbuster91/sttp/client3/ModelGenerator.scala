@@ -3,14 +3,13 @@ package io.github.ghostbuster91.sttp.client3
 import scala.meta._
 
 class ModelGenerator(
-    schemas: Map[String, SafeSchema],
+    schemas: Map[SchemaRef, SafeSchema],
     classNames: Map[SchemaRef, String]
 ) {
   def generate: Map[SchemaRef, Defn.Class] = {
     val model = schemas.map { case (key, schema: SafeObjectSchema) =>
-      val schemaRef = SchemaRef.fromKey(key)
-      schemaRef -> schemaToClassDef(
-        classNames(schemaRef),
+      key -> schemaToClassDef(
+        classNames(key),
         schema
       )
     }
@@ -101,6 +100,25 @@ class ModelGenerator(
 }
 
 object ModelGenerator {
+  def apply(
+      schemas: Map[String, SafeSchema],
+      requestBodies: Map[String, SafeSchema]
+  ): ModelGenerator = {
+    val modelClassNames = schemas.map { case (key, _) =>
+      SchemaRef.schema(key) -> snakeToCamelCase(key)
+    } ++ requestBodies.map { case (key, _) =>
+      SchemaRef.requestBody(key) -> snakeToCamelCase(key)
+    }
+    new ModelGenerator(
+      schemas.map { case (k, v) => SchemaRef.schema(k) -> v } ++ requestBodies
+        .map { case (k, v) => SchemaRef.requestBody(k) -> v },
+      modelClassNames
+    )
+  }
+
+  private def snakeToCamelCase(snake: String) =
+    snake.split('_').toList.map(_.capitalize).mkString
+
   def optionApplication(declType: Type, isRequired: Boolean): Type =
     if (isRequired) {
       declType
