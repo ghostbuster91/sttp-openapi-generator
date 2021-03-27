@@ -34,8 +34,7 @@ object Codegen {
           import _root_.io.circe.generic.auto._
           import _root_.java.io.File
 
-          ..${enums.map(_.st)}
-          ..${enums.map(_.companion)}
+          ..$enums
           ..${model.values.toList}
 
           class Api(baseUrl: String) {
@@ -255,4 +254,3 @@ object EnumType {
   case object EString extends EnumType
   case object EInt extends EnumType
 }
-case class EnumDef(st: Defn.Trait, companion: Defn.Object)

@@ -2,8 +2,8 @@ package io.github.ghostbuster91.sttp.client3
 import scala.meta._
 
 object EnumGenerator {
-  def generate(schemas: Map[String, SafeSchema]): List[EnumDef] =
-    collectEnums(schemas, Nil).map(enumToSealedTraitDef)
+  def generate(schemas: Map[String, SafeSchema]): List[Stat] =
+    collectEnums(schemas, Nil).flatMap(enumToSealedTraitDef)
 
   private def enumToSealedTraitDef(enum: Enum) = {
     val objs =
@@ -23,14 +23,11 @@ object EnumGenerator {
           )
         )
       )
-
-    EnumDef(
-      q"sealed trait ${Type.Name(enum.name)}",
-      q"""object ${Term.Name(enum.name)} {
+    source"""sealed trait ${Type.Name(enum.name)}
+    object ${Term.Name(enum.name)} {
           ..$objs
       }
-      """
-    )
+    """.stats
   }
 
   private def collectEnums(
