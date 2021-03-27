@@ -8,9 +8,9 @@ import _root_.java.io.File
 
 sealed trait PersonStatus
 object PersonStatus {
-  case object Happy extends PersonStatus
-  case object Neutral extends PersonStatus
-  case object Sad extends PersonStatus
+  case object Happy extends PersonStatus()
+  case object Neutral extends PersonStatus()
+  case object Sad extends PersonStatus()
 }
 
 case class Person(status: PersonStatus)

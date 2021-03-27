@@ -21,8 +21,8 @@ class ModelGenerator(
           schema,
           childToParentRef.get(key).map(classNames.apply),
         )
-      case (key, schema: SafeComposedSchema) =>
-        key -> schemaToSealedTrait(classNames(key), schema)
+      case (key, _: SafeComposedSchema) =>
+        key -> schemaToSealedTrait(classNames(key))
     }
   }
   def classNameFor(schemaRef: SchemaRef): String = classNames(schemaRef)
@@ -31,36 +31,28 @@ class ModelGenerator(
       name: String,
       schema: SafeObjectSchema,
       parentClassName: Option[String],
-  ) =
-    Defn.Class(
-      List(Mod.Case()),
-      Type.Name(name),
-      Nil,
-      Ctor.Primary(
-        Nil,
-        Name.Anonymous(),
-        List(
-          schema.properties.map { case (k, v) =>
-            processParams(
-              name,
-              k,
-              v,
-              schema.requiredFields.contains(k),
-            )
-          }.toList,
-        ),
-      ),
-      Template(
-        Nil,
-        parentClassName.map(Type.Name(_)).map(p => init"$p()").toList,
-        Self(Name.Anonymous(), None),
-        Nil,
-      ),
-    )
+  ) = {
+    val props = schema.properties.map { case (k, v) =>
+      processParams(
+        name,
+        k,
+        v,
+        schema.requiredFields.contains(k),
+      )
+    }.toList
+    val className = Type.Name(name)
+    parentClassName match {
+      case Some(value) =>
+        val parentTypeName = Type.Name(value)
+        val parentInit = init"$parentTypeName()"
+        q"case class $className(..$props) extends $parentInit{}"
+      case None =>
+        q"case class $className(..$props)"
+    }
+  }
 
   private def schemaToSealedTrait(
       name: String,
-      schema: SafeComposedSchema,
   ): Defn.Trait = {
     val traitName = Type.Name(name)
     q"sealed trait $traitName"
@@ -94,32 +86,26 @@ class ModelGenerator(
     schema match {
       case ss: SafeStringSchema =>
         if (ss.isEnum) {
-          Type.Name(
-            s"${className.capitalize}${propertyName.capitalize}",
-          )
+          Type.Name(s"${className.capitalize}${propertyName.capitalize}")
         } else {
-          Type.Name("String")
+          t"String"
         }
       case si: SafeIntegerSchema =>
         if (si.isEnum) {
-          Type.Name(
-            s"${className.capitalize}${propertyName.capitalize}",
-          )
+          Type.Name(s"${className.capitalize}${propertyName.capitalize}")
         } else {
-          Type.Name("Int")
+          t"Int"
         }
       case s: SafeArraySchema =>
         t"List[${schemaToType(className, propertyName, s.items)}]"
-      case ref: SafeRefSchema => Type.Name(classNames(ref.ref))
+      case ref: SafeRefSchema =>
+        Type.Name(classNames(ref.ref))
     }
 
-  private def paramDeclFromType(paramName: String, declType: Type) =
-    Term.Param(
-      Nil,
-      Term.Name(paramName),
-      Some(declType),
-      None,
-    )
+  private def paramDeclFromType(paramName: String, declType: Type) = {
+    val tpeName = Term.Name(paramName)
+    param"$tpeName: $declType"
+  }
 }
 
 object ModelGenerator {

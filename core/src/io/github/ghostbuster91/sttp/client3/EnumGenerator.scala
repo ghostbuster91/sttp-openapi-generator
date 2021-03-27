@@ -6,23 +6,10 @@ object EnumGenerator {
     collectEnums(schemas, Nil).flatMap(enumToSealedTraitDef)
 
   private def enumToSealedTraitDef(enum: Enum) = {
-    val objs =
-      enum.values.map(value =>
-        Defn.Object(
-          List(Mod.Case()),
-          Term.Name(value.name),
-          Template(
-            early = Nil,
-            inits =
-              List(Init(Type.Name(enum.name), Name.Anonymous(), List.empty)),
-            self = Self(
-              name = Name.Anonymous(),
-              decltpe = None
-            ),
-            stats = Nil
-          )
-        )
-      )
+    val objs = enum.values.map { value =>
+      val paranetInit = init"${Type.Name(enum.name)}()"
+      q"case object ${Term.Name(value.name)} extends $paranetInit{}"
+    }
     source"""sealed trait ${Type.Name(enum.name)}
     object ${Term.Name(enum.name)} {
           ..$objs
@@ -32,20 +19,20 @@ object EnumGenerator {
 
   private def collectEnums(
       schemas: Map[String, SafeSchema],
-      path: List[String]
+      path: List[String],
   ): List[Enum] =
     schemas.flatMap { case (k, v) =>
-      collectEnums2(path :+ k, v)
+      collectEnumsFromSingleSchema(path :+ k, v)
     }.toList
 
-  private def collectEnums2(
+  private def collectEnumsFromSingleSchema(
       path: List[String],
-      schema: SafeSchema
+      schema: SafeSchema,
   ): List[Enum] =
     schema match {
       case os: SafeObjectSchema =>
         os.properties.toList.flatMap { case (k, v) =>
-          collectEnums2(path :+ k, v)
+          collectEnumsFromSingleSchema(path :+ k, v)
         }
       case _: SafeStringSchema =>
         schema.enum match {

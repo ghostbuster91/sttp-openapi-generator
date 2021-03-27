@@ -8,9 +8,9 @@ import _root_.java.io.File
 
 sealed trait PersonStatus
 object PersonStatus {
-  case object `1` extends PersonStatus
-  case object `2` extends PersonStatus
-  case object `3` extends PersonStatus
+  case object `1` extends PersonStatus()
+  case object `2` extends PersonStatus()
+  case object `3` extends PersonStatus()
 }
 
 case class Person(status: PersonStatus)
