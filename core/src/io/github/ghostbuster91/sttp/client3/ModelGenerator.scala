@@ -6,15 +6,13 @@ class ModelGenerator(
     schemas: Map[SchemaRef, SafeSchema],
     classNames: Map[SchemaRef, String]
 ) {
-  def generate: Map[SchemaRef, Defn.Class] = {
-    val model = schemas.map { case (key, schema: SafeObjectSchema) =>
+  def generate: Map[SchemaRef, Defn.Class] =
+    schemas.collect { case (key, schema: SafeObjectSchema) =>
       key -> schemaToClassDef(
         classNames(key),
         schema
       )
     }
-    model
-  }
 
   def classNameFor(schemaRef: SchemaRef): String = classNames(schemaRef)
 
