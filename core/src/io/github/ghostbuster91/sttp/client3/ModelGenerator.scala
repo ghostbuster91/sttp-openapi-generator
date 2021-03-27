@@ -13,17 +13,27 @@ class ModelGenerator(
       }
       .flatten
       .toMap
+    val parentToChilds = schemas.collect {
+      case (key, composed: SafeComposedSchema) =>
+        key -> composed.oneOf.map(_.ref)
+    }.toMap
 
-    schemas.collect {
-      case (key, schema: SafeObjectSchema) =>
-        key -> schemaToClassDef(
-          classNames(key),
-          schema,
-          childToParentRef.get(key).map(classNames.apply),
-        )
-      case (key, _: SafeComposedSchema) =>
-        key -> schemaToSealedTrait(classNames(key))
+    val classes = schemas.collect { case (key, schema: SafeObjectSchema) =>
+      key -> schemaToClassDef(
+        classNames(key),
+        schema,
+        childToParentRef.get(key).map(classNames.apply),
+      )
     }
+    val traits = schemas.collect { case (key, composed: SafeComposedSchema) =>
+      key -> schemaToSealedTrait(
+        classNames(key),
+        composed.discriminator,
+        parentToChilds(key)
+          .map(c => c -> schemas(c).asInstanceOf[SafeObjectSchema]),
+      )
+    }
+    traits ++ classes
   }
   def classNameFor(schemaRef: SchemaRef): String = classNames(schemaRef)
 
@@ -53,9 +63,29 @@ class ModelGenerator(
 
   private def schemaToSealedTrait(
       name: String,
+      discriminator: Option[SafeDiscriminator],
+      childs: List[(SchemaRef, SafeObjectSchema)],
   ): Defn.Trait = {
     val traitName = Type.Name(name)
-    q"sealed trait $traitName"
+    discriminator match {
+      case Some(d) =>
+        val (childRef, child) = childs.head
+        val discriminatorProperty = child.properties(d.propertyName)
+        val discriminatorType = schemaToType(
+          childRef.key,
+          d.propertyName,
+          discriminatorProperty,
+          child.requiredFields.contains(d.propertyName),
+        )
+        val propName = Term.Name(d.propertyName)
+        q"""sealed trait $traitName {
+          def $propName: $discriminatorType
+        }
+        """
+      case None =>
+        q"sealed trait $traitName"
+
+    }
   }
 
   private def processParams(
@@ -119,7 +149,9 @@ object ModelGenerator {
       SchemaRef.requestBody(key) -> snakeToCamelCase(key)
     }
     new ModelGenerator(
-      schemas.map { case (k, v) => SchemaRef.schema(k) -> v } ++ requestBodies
+      schemas.map { case (k, v) =>
+        SchemaRef.schema(k) -> v
+      } ++ requestBodies
         .map { case (k, v) => SchemaRef.requestBody(k) -> v },
       modelClassNames,
     )

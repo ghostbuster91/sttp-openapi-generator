@@ -124,6 +124,8 @@ sealed abstract class SafeSchema(s: Schema[_]) {
   def isEnum = enum.nonEmpty
   override def toString(): String = s.toString()
 }
+
+sealed abstract class SafePrimitiveSchema(s: Schema[_]) extends SafeSchema(s)
 class SafeArraySchema(s: ArraySchema) extends SafeSchema(s) {
   def items: SafeSchema = SafeSchema(s.getItems())
 }
@@ -148,11 +150,19 @@ class SafePasswordSchema(s: PasswordSchema) extends SafeSchema(s)
 class SafeStringSchema(s: StringSchema) extends SafeSchema(s)
 class SafeUUIDSchema(s: UUIDSchema) extends SafeSchema(s)
 class SafeRefSchema(s: Schema[_]) extends SafeSchema(s) {
-  def ref: SchemaRef = SchemaRef.apply(s.get$ref)
+  def ref: SchemaRef = SchemaRef.parse(s.get$ref)
 }
 class SafeComposedSchema(s: ComposedSchema) extends SafeSchema(s) {
   def oneOf: List[SafeRefSchema] =
     s.getOneOf.asScala.map(new SafeRefSchema(_)).toList
+
+  def discriminator: Option[SafeDiscriminator] =
+    Option(s.getDiscriminator()).map(new SafeDiscriminator(_))
+  override def toString(): String = s.toString()
+}
+
+class SafeDiscriminator(d: Discriminator) {
+  def propertyName: String = d.getPropertyName()
 }
 
 object SafeSchema {
@@ -178,10 +188,26 @@ object SafeSchema {
     }
 }
 
-case class SchemaRef(key: String)
+sealed trait SchemaRef {
+  def key: String
+}
 object SchemaRef {
-  def schema(key: String): SchemaRef =
-    SchemaRef(s"#/components/schemas/$key")
-  def requestBody(key: String): SchemaRef =
-    SchemaRef(s"#/components/requestBodies/$key")
+  def schema(key: String): SchemaRef = SchemaRef.Schema(key)
+  def requestBody(key: String): SchemaRef = SchemaRef.RequestBody(key)
+
+  case class Schema(key: String) extends SchemaRef {
+    def ref: String = s"#/components/schemas/$key"
+  }
+  case class RequestBody(key: String) extends SchemaRef {
+    def ref: String = s"#/components/requestBodies/$key"
+  }
+
+  def parse(ref: String) =
+    if (ref.contains("#/components/schemas/")) {
+      SchemaRef.Schema(ref.replaceAll("#/components/schemas/", ""))
+    } else if (ref.contains("#/components/requestBodies/")) {
+      SchemaRef.RequestBody(ref.replaceAll("#/components/requestBodies/", ""))
+    } else {
+      throw new IllegalArgumentException(ref)
+    }
 }
