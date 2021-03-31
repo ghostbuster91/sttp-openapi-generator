@@ -1,0 +1,30 @@
+openapi: 3.0.3
+info:
+  title: Entities
+  version: "1.0"
+paths:
+  /person:
+    get:
+      operationId: getPerson
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+components:
+  schemas:
+    Status:
+      type: string
+      enum:
+        - happy
+        - neutral
+        - sad
+    Person:
+      required:
+        - status
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/Status"
