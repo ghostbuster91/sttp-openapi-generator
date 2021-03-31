@@ -1,0 +1,40 @@
+openapi: 3.0.3
+info:
+  title: Fruits
+  version: "1.0"
+paths:
+  /:
+    get:
+      operationId: getRoot
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entity"
+components:
+  schemas:
+    Entity:
+      oneOf:
+        - $ref: "#/components/schemas/Person"
+        - $ref: "#/components/schemas/Organization"
+      discriminator:
+        propertyName: name
+        mapping:
+          john: "#/components/schemas/Person"
+          sml: "#/components/schemas/Organization"
+    Person:
+      required:
+        - age
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          type: integer
+    Organization:
+      type: object
+      properties:
+        name:
+          type: string

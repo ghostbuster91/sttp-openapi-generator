@@ -35,6 +35,7 @@ object GeneratorTest extends TestSuite {
     "coproduct" - {
       "simple" - test()
       "discriminator" - test()
+      "optional_discriminator" - test()
     }
   }
 
