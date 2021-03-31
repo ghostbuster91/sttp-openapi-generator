@@ -16,38 +16,40 @@ object GeneratorTest extends TestSuite {
       "simple_get_product_array" - test()
       "simple_put_no_response" - test()
     }
-    // "uri" - {
-    //   "get_with_query_param" - test()
-    //   "get_with_multiple_query_param" - test()
-    //   "get_with_path_param" - test()
-    //   "get_with_multiple_path_param" - test()
-    //   "mixed_path_and_query" - test()
-    // }
-    // "enum" - {
-    //   //TODO:
-    //   //reflective compilation has failed:
-    //   //Internal error: unable to find the outer accessor symbol of class Api
-    //   //    scala.tools.reflect.ToolBoxFactory$ToolBoxImpl$ToolBoxGlobal.throwIfErrors(ToolBoxFactory.scala:332)
-    //   "string_enum" - testNoCompile()
-    //   "int_enum" - testNoCompile()
-    //   "component_enum" - testNoCompile()
-    // }
-    // "get_inline_response_200" - test()
-    // "request_body_direct" - test()
-    // "request_body_indirect" - test()
+    "uri" - {
+      "get_with_query_param" - test()
+      "get_with_multiple_query_param" - test()
+      "get_with_path_param" - test()
+      "get_with_multiple_path_param" - test()
+      "mixed_path_and_query" - test()
+    }
+    "enum" - {
+      //TODO:
+      //reflective compilation has failed:
+      //Internal error: unable to find the outer accessor symbol of class Api
+      //    scala.tools.reflect.ToolBoxFactory$ToolBoxImpl$ToolBoxGlobal.throwIfErrors(ToolBoxFactory.scala:332)
+      "string_enum" - testNoCompile()
+      "int_enum" - testNoCompile()
+      "component_enum" - testNoCompile()
+    }
+    "get_inline_response_200" - test()
+    "request_body" - {
+      "request_body_direct" - test()
+      "request_body_indirect" - test()
+    }
 
-    // "tag" - {
-    //   "operation_with_tag" - test()
-    //   "multiple_operations_with_same_tag" - test()
-    //   "multiple_operations_with_different_tag" - test()
-    // }
+    "tag" - {
+      "operation_with_tag" - test()
+      "multiple_operations_with_same_tag" - test()
+      "multiple_operations_with_different_tag" - test()
+    }
 
-    // "coproduct" - {
-    //   "simple" - test()
-    //   "discriminator" - test()
-    //   "optional_discriminator" - test()
-    //   "discriminator_enum" - testNoCompile()
-    // }
+    "coproduct" - {
+      "simple" - test()
+      "discriminator" - test()
+      "optional_discriminator" - test()
+      "discriminator_enum" - testNoCompile()
+    }
   }
 
   def testNoCompile()(implicit testPath: utest.framework.TestPath) = {
