@@ -96,8 +96,7 @@ class ModelGenerator(
         val (childRef, child) = childs.head
         val discriminatorProperty = child.properties(d.propertyName)
         val discriminatorType = schemaToType(
-          childRef.key,
-          d.propertyName,
+          s"${childRef.key}${d.propertyName}",
           discriminatorProperty,
           child.requiredFields.contains(d.propertyName),
         )
@@ -118,28 +117,24 @@ class ModelGenerator(
       schema: SafeSchema,
       isRequired: Boolean,
   ): Term.Param = {
-    val declType = schemaToType(className, name, schema, isRequired)
+    val declType = schemaToType(
+      s"${className.capitalize}${name.capitalize}", //TODO className shouldn't be needed here as enums have to be unique globally
+      schema,
+      isRequired,
+    )
     paramDeclFromType(name, declType)
   }
 
   def schemaToType(
-      className: String,
-      propertyName: String,
+      enumName: String,
       schema: SafeSchema,
       isRequired: Boolean,
   ): Type = {
-    val declType = schemaToType(className, propertyName, schema)
+    val declType = schemaToType(enumName, schema)
     ModelGenerator.optionApplication(declType, isRequired)
   }
 
-  private def schemaToType(
-      className: String,
-      propertyName: String,
-      schema: SafeSchema,
-  ): Type =
-    schemaToType(s"${className.capitalize}${propertyName.capitalize}", schema)
-
-  def schemaToType(enumName: String, schema: SafeSchema): Type =
+  private def schemaToType(enumName: String, schema: SafeSchema): Type =
     schema match {
       case ss: SafeStringSchema =>
         if (ss.isEnum) {

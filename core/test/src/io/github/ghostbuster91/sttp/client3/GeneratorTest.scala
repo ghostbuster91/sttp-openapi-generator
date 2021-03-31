@@ -19,6 +19,7 @@ object GeneratorTest extends TestSuite {
     }
     "uri" - {
       "get_with_query_param" - test()
+      "get_with_optional_query_param" - test()
       "get_with_multiple_query_param" - test()
       "get_with_path_param" - test()
       "get_with_multiple_path_param" - test()

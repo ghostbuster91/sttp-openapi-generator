@@ -48,7 +48,11 @@ class ApiCallGenerator(modelGenerator: ModelGenerator) {
       .collectFirst { case ("200", response) =>
         response.content
           .collectFirst { case ("application/json", jsonResponse) =>
-            modelGenerator.schemaToType("SomeRandomEnum", jsonResponse.schema)
+            modelGenerator.schemaToType(
+              "SomeRandomEnum",
+              jsonResponse.schema,
+              isRequired = true,
+            )
           }
 
       }
@@ -139,7 +143,6 @@ class ApiCallGenerator(modelGenerator: ModelGenerator) {
       .collect { case pathParam: SafePathParameter =>
         val paramName = Term.Name(pathParam.name)
         val paramType = modelGenerator.schemaToType(
-          "outerPathName",
           pathParam.name,
           pathParam.schema,
           pathParam.required,
@@ -154,7 +157,6 @@ class ApiCallGenerator(modelGenerator: ModelGenerator) {
       .collect { case queryParam: SafeQueryParameter =>
         val paramName = Term.Name(queryParam.name)
         val paramType = modelGenerator.schemaToType(
-          "outerName",
           queryParam.name,
           queryParam.schema,
           queryParam.required,

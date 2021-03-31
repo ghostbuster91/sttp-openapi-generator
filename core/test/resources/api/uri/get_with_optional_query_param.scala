@@ -10,7 +10,7 @@ import _root_.java.io.File
 case class Person(name: String, age: Int)
 
 class DefaultApi(baseUrl: String) {
-  def getRoot(id: String): Request[Person, Any] = basicRequest
+  def getRoot(id: Option[String]): Request[Person, Any] = basicRequest
     .get(uri"$baseUrl?id=$id")
     .response(asJson[Person].getRight)
 }
