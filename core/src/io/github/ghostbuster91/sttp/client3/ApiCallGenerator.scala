@@ -44,8 +44,8 @@ class ApiCallGenerator(modelGenerator: ModelGenerator) {
   ): Defn.Def = {
     val operationId = operation.operationId
 
-    val responseClassType = operation.responses.collectFirst {
-      case ("200", response) =>
+    val responseClassType = operation.responses
+      .collectFirst { case ("200", response) =>
         response.content
           .collectFirst { case ("application/json", jsonResponse) =>
             jsonResponse.schema match {
@@ -53,8 +53,10 @@ class ApiCallGenerator(modelGenerator: ModelGenerator) {
                 Type.Name(modelGenerator.classNameFor(rs.ref))
             }
           }
-          .getOrElse(Type.Name("Unit"))
-    }.head
+
+      }
+      .flatten
+      .getOrElse(Type.Name("Unit"))
 
     val functionName = Term.Name(operationId)
     val queryParameters = queryParameter(operation)
