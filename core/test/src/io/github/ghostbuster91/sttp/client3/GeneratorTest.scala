@@ -15,6 +15,7 @@ object GeneratorTest extends TestSuite {
       "simple_get_person_optional" - test()
       "simple_get_product_array" - test()
       "simple_put_no_response" - test()
+      "simple_get_reserved" - test()
     }
     "uri" - {
       "get_with_query_param" - test()
