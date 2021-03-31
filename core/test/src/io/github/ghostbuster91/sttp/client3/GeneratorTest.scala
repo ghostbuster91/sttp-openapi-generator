@@ -33,7 +33,7 @@ object GeneratorTest extends TestSuite {
       "int_enum" - testNoCompile()
       "component_enum" - testNoCompile()
     }
-    "get_inline_response_200" - test()
+
     "request_body" - {
       "request_body_direct" - test()
       "request_body_indirect" - test()
@@ -51,6 +51,9 @@ object GeneratorTest extends TestSuite {
       "optional_discriminator" - test()
       "discriminator_enum" - testNoCompile()
     }
+
+    "get_inline_response_200" - test()
+    "get_additional_props" - test()
   }
 
   def testNoCompile()(implicit testPath: utest.framework.TestPath) = {

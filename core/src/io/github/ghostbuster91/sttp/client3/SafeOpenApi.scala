@@ -124,7 +124,13 @@ sealed abstract class SafeSchema(s: Schema[_]) {
   def isEnum = enum.nonEmpty
   override def toString(): String = s.toString()
 }
-
+sealed abstract class SchemaWithProperties(s: Schema[_]) extends SafeSchema(s) {
+  def properties: Map[String, SafeSchema] = Option(s.getProperties)
+    .map(_.asScala.mapValues(SafeSchema.apply).toMap)
+    .getOrElse(Map.empty)
+  def requiredFields: List[String] =
+    Option(s.getRequired()).map(_.asScala.toList).getOrElse(List.empty)
+}
 sealed abstract class SafePrimitiveSchema(s: Schema[_]) extends SafeSchema(s)
 class SafeArraySchema(s: ArraySchema) extends SafeSchema(s) {
   def items: SafeSchema = SafeSchema(s.getItems())
@@ -137,14 +143,23 @@ class SafeDateTimeSchema(s: DateTimeSchema) extends SafeSchema(s)
 class SafeEmailSchema(s: EmailSchema) extends SafeSchema(s)
 class SafeFileSchema(s: FileSchema) extends SafeSchema(s)
 class SafeIntegerSchema(s: IntegerSchema) extends SafeSchema(s)
-class SafeMapSchema(s: MapSchema) extends SafeSchema(s)
+class SafeMapSchema(s: MapSchema) extends SchemaWithProperties(s) {}
 class SafeNumberSchema(s: NumberSchema) extends SafeSchema(s)
-class SafeObjectSchema(s: ObjectSchema) extends SafeSchema(s) {
-  def properties: Map[String, SafeSchema] = Option(
-    s.getProperties.asScala.mapValues(SafeSchema.apply).toMap,
-  ).getOrElse(Map.empty)
-  def requiredFields: List[String] =
-    Option(s.getRequired()).map(_.asScala.toList).getOrElse(List.empty)
+class SafeObjectSchema(s: ObjectSchema) extends SchemaWithProperties(s) {
+
+  // def hasAdditionalProperties: Boolean =
+  //   Option(s.getAdditionalProperties())
+  //     .map {
+  //       case v: Boolean => v
+  //       case _          => false
+  //     }
+  //     .getOrElse(false)
+  // def additionalProperties: Option[SafeSchema] =
+  //   Option(s.getAdditionalProperties())
+  //     .flatMap {
+  //       case s: Schema[_] => Some(SafeSchema(s))
+  //       case _            => None
+  //     }
 }
 class SafePasswordSchema(s: PasswordSchema) extends SafeSchema(s)
 class SafeStringSchema(s: StringSchema) extends SafeSchema(s)

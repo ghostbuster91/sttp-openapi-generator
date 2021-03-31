@@ -18,7 +18,7 @@ class ModelGenerator(
         key -> composed.oneOf.map(_.ref)
     }.toMap
 
-    val classes = schemas.collect { case (key, schema: SafeObjectSchema) =>
+    val classes = schemas.collect { case (key, schema: SchemaWithProperties) =>
       key -> schemaToClassDef(
         classNames(key),
         schema,
@@ -39,7 +39,7 @@ class ModelGenerator(
 
   private def schemaToClassDef(
       name: String,
-      schema: SafeObjectSchema,
+      schema: SchemaWithProperties,
       parentClassName: Option[String],
   ) = {
     val props = schema.properties.map { case (k, v) =>
@@ -51,13 +51,37 @@ class ModelGenerator(
       )
     }.toList
     val className = Type.Name(name)
-    parentClassName match {
-      case Some(value) =>
-        val parentTypeName = Type.Name(value)
-        val parentInit = init"$parentTypeName()"
-        q"case class $className(..$props) extends $parentInit{}"
-      case None =>
-        q"case class $className(..$props)"
+    schema match {
+      case _: SafeMapSchema =>
+        parentClassName match {
+          case Some(value) =>
+            val parentTypeName = Type.Name(value)
+            val parentInit = init"$parentTypeName()"
+            q"""case class $className(..$props) extends Map[String,Any] with $parentInit{
+                private val _internal_map = Map.empty[String,Any]
+                override def removed(key: String): Map[String, Any] = _internal_map.removed(key)
+                override def updated[V1 >: Any](key: String, value: V1): Map[String, V1] = _internal_map.updated(key,value)
+                override def get(key: String): Option[Any] = _internal_map.get(key)
+                override def iterator: Iterator[(String, Any)] = _internal_map.iterator
+            }"""
+          case None =>
+            q"""case class $className(..$props) extends Map[String, Any] {
+                private val _internal_map = Map.empty[String,Any]
+                override def removed(key: String): Map[String, Any] = _internal_map.removed(key)
+                override def updated[V1 >: Any](key: String, value: V1): Map[String, V1] = _internal_map.updated(key,value)
+                override def get(key: String): Option[Any] = _internal_map.get(key)
+                override def iterator: Iterator[(String, Any)] = _internal_map.iterator
+            }"""
+        }
+      case _: SafeObjectSchema =>
+        parentClassName match {
+          case Some(value) =>
+            val parentTypeName = Type.Name(value)
+            val parentInit = init"$parentTypeName()"
+            q"case class $className(..$props) extends $parentInit{}"
+          case None =>
+            q"case class $className(..$props)"
+        }
     }
   }
 
