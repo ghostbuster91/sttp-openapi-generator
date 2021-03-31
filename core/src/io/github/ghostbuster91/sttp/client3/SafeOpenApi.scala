@@ -142,25 +142,14 @@ class SafeDateSchema(s: DateSchema) extends SafeSchema(s)
 class SafeDateTimeSchema(s: DateTimeSchema) extends SafeSchema(s)
 class SafeEmailSchema(s: EmailSchema) extends SafeSchema(s)
 class SafeFileSchema(s: FileSchema) extends SafeSchema(s)
-class SafeIntegerSchema(s: IntegerSchema) extends SafeSchema(s)
-class SafeMapSchema(s: MapSchema) extends SchemaWithProperties(s) {}
-class SafeNumberSchema(s: NumberSchema) extends SafeSchema(s)
-class SafeObjectSchema(s: ObjectSchema) extends SchemaWithProperties(s) {
-
-  // def hasAdditionalProperties: Boolean =
-  //   Option(s.getAdditionalProperties())
-  //     .map {
-  //       case v: Boolean => v
-  //       case _          => false
-  //     }
-  //     .getOrElse(false)
-  // def additionalProperties: Option[SafeSchema] =
-  //   Option(s.getAdditionalProperties())
-  //     .flatMap {
-  //       case s: Schema[_] => Some(SafeSchema(s))
-  //       case _            => None
-  //     }
+class SafeIntegerSchema(s: IntegerSchema) extends SafeSchema(s) {
+  def format: Option[String] = Option(s.getFormat)
 }
+class SafeMapSchema(s: MapSchema) extends SchemaWithProperties(s)
+class SafeNumberSchema(s: NumberSchema) extends SafeSchema(s) {
+  def format: Option[String] = Option(s.getFormat)
+}
+class SafeObjectSchema(s: ObjectSchema) extends SchemaWithProperties(s)
 class SafePasswordSchema(s: PasswordSchema) extends SafeSchema(s)
 class SafeStringSchema(s: StringSchema) extends SafeSchema(s)
 class SafeUUIDSchema(s: UUIDSchema) extends SafeSchema(s)

@@ -137,23 +137,36 @@ class ModelGenerator(
       propertyName: String,
       schema: SafeSchema,
   ): Type =
+    schemaToType(s"${className.capitalize}${propertyName.capitalize}", schema)
+
+  def schemaToType(enumName: String, schema: SafeSchema): Type =
     schema match {
       case ss: SafeStringSchema =>
         if (ss.isEnum) {
-          Type.Name(s"${className.capitalize}${propertyName.capitalize}")
+          Type.Name(enumName)
         } else {
           t"String"
         }
       case si: SafeIntegerSchema =>
         if (si.isEnum) {
-          Type.Name(s"${className.capitalize}${propertyName.capitalize}")
+          Type.Name(enumName)
         } else {
-          t"Int"
+          si.format match {
+            case Some("int64") => t"Long"
+            case _             => t"Int"
+          }
+        }
+      case sn: SafeNumberSchema =>
+        sn.format match {
+          case Some("float") => t"Float"
+          case _             => t"Double"
         }
       case s: SafeArraySchema =>
-        t"List[${schemaToType(className, propertyName, s.items)}]"
+        t"List[${schemaToType(enumName, s.items)}]"
       case ref: SafeRefSchema =>
         Type.Name(classNames(ref.ref))
+      case _: SafeUUIDSchema =>
+        t"UUID"
     }
 
   private def paramDeclFromType(paramName: String, declType: Type) = {

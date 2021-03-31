@@ -48,10 +48,7 @@ class ApiCallGenerator(modelGenerator: ModelGenerator) {
       .collectFirst { case ("200", response) =>
         response.content
           .collectFirst { case ("application/json", jsonResponse) =>
-            jsonResponse.schema match {
-              case rs: SafeRefSchema =>
-                Type.Name(modelGenerator.classNameFor(rs.ref))
-            }
+            modelGenerator.schemaToType("SomeRandomEnum", jsonResponse.schema)
           }
 
       }

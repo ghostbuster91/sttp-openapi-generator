@@ -75,7 +75,8 @@ object Codegen {
       messages.asScala.foreach(println)
     }
     Option(parserResult.getOpenAPI) match {
-      case Some(spec) => new SafeOpenApi(spec)
+      case Some(spec) =>
+        new SafeOpenApi(spec)
       case None =>
         throw new RuntimeException(s"Failed to parse k8s swagger specs")
     }

@@ -54,6 +54,14 @@ object GeneratorTest extends TestSuite {
 
     "get_inline_response_200" - test()
     "get_additional_props" - test()
+
+    "format" - {
+      "int32" - test()
+      "int64" - test()
+      "double" - test()
+      "float" - test()
+      "uuid" - testNoCompile()
+    }
   }
 
   def testNoCompile()(implicit testPath: utest.framework.TestPath) = {
