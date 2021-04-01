@@ -1,9 +1,8 @@
 package io.github.ghostbuster91.sttp.client3
 
 import scala.meta._
-import java.util.regex.Pattern
 
-class ApiCallGenerator(modelGenerator: ModelGenerator) {
+class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
 
   def generate(
       operations: List[CollectedOperation],
@@ -189,6 +188,7 @@ class ApiCallGenerator(modelGenerator: ModelGenerator) {
                 case rs: SafeRefSchema => modelGenerator.classNameFor(rs.ref)
               }
             case ("application/octet-stream", _) =>
+              ir.registerImport(q"import _root_.java.io.File")
               "File"
           }
           .map { requestClassName =>

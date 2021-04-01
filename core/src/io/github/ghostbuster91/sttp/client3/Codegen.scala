@@ -26,12 +26,12 @@ object Codegen {
     ir.registerImport(q"import _root_.sttp.model._")
     ir.registerImport(q"import _root_.sttp.client3.circe._")
     ir.registerImport(q"import _root_.io.circe.generic.auto._")
-    ir.registerImport(q"import _root_.java.io.File")
 
     val modelGenerator = ModelGenerator(schemas, requestBodies, ir)
     val model = modelGenerator.generate
     val operations = collectOperations(openApi)
-    val processedOps = new ApiCallGenerator(modelGenerator).generate(operations)
+    val processedOps =
+      new ApiCallGenerator(modelGenerator, ir).generate(operations)
 
     val apiDefs = processedOps.map { case (key, apiCalls) =>
       val className =
