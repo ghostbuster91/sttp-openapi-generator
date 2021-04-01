@@ -22,7 +22,9 @@ object GeneratorTest extends TestSuite {
       "get_with_optional_query_param" - test()
       "get_with_multiple_query_param" - test()
       "get_with_path_param" - test()
+      "get_with_path_param_fixed_ending" - test()
       "get_with_multiple_path_param" - test()
+      "get_with_multiple_path_param_2" - test()
       "mixed_path_and_query" - test()
     }
     "enum" - {

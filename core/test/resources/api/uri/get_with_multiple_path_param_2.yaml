@@ -1,0 +1,43 @@
+openapi: 3.0.3
+info:
+  title: Entities
+  version: "1.0"
+paths:
+  /person/asd/{personId}/{personName}:
+    get:
+      summary: Find person by ID
+      description: Returns a single person
+      operationId: getPersonByIdAndName
+      parameters:
+        - name: personId
+          in: path
+          description: ID of person to return
+          required: true
+          schema:
+            type: integer
+        - name: personName
+          in: path
+          description: Name of person to return
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+components:
+  schemas:
+    Person:
+      required:
+        - name
+        - age
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          type: integer
+          minimum: 11

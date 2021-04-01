@@ -1,6 +1,7 @@
 package io.github.ghostbuster91.sttp.client3
 
 import scala.meta._
+import java.util.regex.Pattern
 
 class ApiCallGenerator(modelGenerator: ModelGenerator) {
 
@@ -92,46 +93,58 @@ class ApiCallGenerator(modelGenerator: ModelGenerator) {
     }
 
   private def constructUrl(path: String, params: List[SafeParameter]) = {
-    val pathList =
-      path
-        .split("\\{[^/]*\\}")
-        .toList
-        .dropWhile(_ == "/")
+    val pathList = path
+      .split('/')
+      .toList
+      .filter(_.nonEmpty)
+      .map { s =>
+        if (s.matches("\\{[^/]*\\}")) {
+          PathElement.VarPath
+        } else {
+          PathElement.FixedPath(s)
+        }
+      }
     val queryParams = params.collect { case q: SafeQueryParameter =>
       Term.Name(q.name)
     }
-    val querySegments = queryParams
-      .foldLeft(List.empty[String]) { (acc, item) =>
+    val queryList = queryParams
+      .foldLeft(List.empty[PathElement]) { (acc, item) =>
         acc match {
-          case list if list.nonEmpty => list :+ s"&$item="
-          case Nil                   => List(s"?$item=")
+          case list if list.nonEmpty =>
+            list ++ List(
+              PathElement.QuerySegment(s"&$item="),
+              PathElement.QueryParam,
+            )
+          case Nil =>
+            List(
+              PathElement.QuerySegment(s"?$item="),
+              PathElement.QueryParam,
+            )
         }
       }
 
     val pathParams = params.collect { case p: SafePathParameter =>
       Term.Name(p.name)
     }
-    val pathAndQuery = (pathList.dropRight(1) ++ List(
-      pathList.lastOption.getOrElse("") ++ querySegments.headOption.getOrElse(
-        "",
-      ),
-    ) ++ querySegments.drop(1))
-      .map(Lit.String(_))
-    val pathAndQueryAdjusted = if (pathList.isEmpty && querySegments.isEmpty) {
-      List(Lit.String(""))
-    } else if (pathParams.isEmpty && queryParams.nonEmpty) {
-      querySegments.map(Lit.String(_)) :+ Lit.String("")
-    } else if (querySegments.isEmpty && pathParams.nonEmpty) {
-      pathList.map(Lit.String(_)) :+ Lit.String("")
-    } else if (querySegments.isEmpty && pathList.nonEmpty) {
-      pathList.map(Lit.String(_))
-    } else {
-      pathAndQuery :+ Lit.String("")
-    }
+    val pathAndQuery =
+      (pathList ++ queryList).foldLeft(List("")) { (acc, item) =>
+        item match {
+          case PathElement.FixedPath(v) =>
+            val last = acc.last
+            acc.dropRight(1) :+ (last ++ s"/$v")
+          case PathElement.QuerySegment(q) =>
+            val last = acc.last
+            acc.dropRight(1) :+ (last ++ q)
+          case PathElement.VarPath =>
+            val last = acc.last
+            acc.dropRight(1) :+ (last ++ s"/") :+ ""
+          case PathElement.QueryParam => acc :+ ""
+        }
+      }
 
     Term.Interpolate(
       Term.Name("uri"),
-      List(Lit.String("")) ++ pathAndQueryAdjusted,
+      List(Lit.String("")) ++ pathAndQuery.map(Lit.String(_)),
       List(Term.Name("baseUrl")) ++ pathParams ++ queryParams,
     )
   }
@@ -187,4 +200,12 @@ class ApiCallGenerator(modelGenerator: ModelGenerator) {
             param"$paramName : $paramType"
           }
       }
+}
+
+sealed trait PathElement
+object PathElement {
+  case class FixedPath(v: String) extends PathElement
+  case object VarPath extends PathElement
+  case class QuerySegment(v: String) extends PathElement
+  case object QueryParam extends PathElement
 }
