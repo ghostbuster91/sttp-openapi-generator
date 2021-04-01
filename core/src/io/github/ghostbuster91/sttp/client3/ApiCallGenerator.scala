@@ -32,10 +32,7 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
       operation.parameters,
     )
     val request = createRequestCall(method, uri)
-    createApiCall(
-      operation,
-      request,
-    )
+    createApiCall(operation, request)
   }
 
   private def createApiCall(
@@ -63,23 +60,46 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
     val queryParameters = queryParameter(operation)
     val pathParameters = pathParameter(operation)
     val bodyParameter = requestBodyParameter(operation)
-    val parameters = pathParameters ++ queryParameters ++ bodyParameter
+    val headerParameters = headerParameter(operation)
+    val parameters =
+      pathParameters ++ queryParameters ++ headerParameters ++ bodyParameter
     val body: Term = Term.Apply(
       Term.Select(
-        bodyParameter
-          .map(p =>
-            Term.Apply(
-              Term.Select(basicRequestWithMethod, Term.Name("body")),
-              List(Term.Name(p.name.value)),
-            ),
-          )
-          .getOrElse(basicRequestWithMethod),
+        List(
+          applyHeadersToRequest(headerParameters),
+          applyBodyToRequest(bodyParameter),
+        )
+          .reduce(_ andThen _)
+          .apply(basicRequestWithMethod),
         Term.Name("response"),
       ),
       List(q"asJson[$responseClassType].getRight"),
     )
     q"def $functionName(..$parameters): Request[$responseClassType, Any] = $body"
   }
+
+  private def applyHeadersToRequest(headers: List[Term.Param])(request: Term) =
+    headers.foldLeft(request)((ar, h) =>
+      q"$ar.header(${h.name.value}, ${Term.Name(h.name.value)})",
+    )
+
+  private def applyBodyToRequest(bodyParameter: Option[Term.Param])(
+      request: Term,
+  ) =
+    bodyParameter.foldLeft(request)((ar, b) =>
+      q"$ar.body(${Term.Name(b.name.value)})",
+    )
+
+  private def headerParameter(operation: SafeOperation) =
+    operation.parameters.collect { case headerParam: SafeHeaderParameter =>
+      val paramName = Term.Name(headerParam.name)
+      val paramType = modelGenerator.schemaToType(
+        headerParam.name,
+        headerParam.schema,
+        headerParam.required,
+      )
+      param"$paramName : $paramType"
+    }
 
   private def createRequestCall(method: Method, uri: Term) =
     method match {

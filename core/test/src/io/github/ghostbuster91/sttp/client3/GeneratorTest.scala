@@ -65,6 +65,10 @@ object GeneratorTest extends TestSuite {
       "float" - test()
       "uuid" - test()
     }
+
+    "header" - {
+      "simple" - test()
+    }
   }
 
   def testNoCompile()(implicit testPath: utest.framework.TestPath) = {
