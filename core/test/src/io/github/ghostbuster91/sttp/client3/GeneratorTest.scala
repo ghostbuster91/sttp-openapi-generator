@@ -63,7 +63,7 @@ object GeneratorTest extends TestSuite {
       "int64" - test()
       "double" - test()
       "float" - test()
-      "uuid" - testNoCompile()
+      "uuid" - test()
     }
   }
 

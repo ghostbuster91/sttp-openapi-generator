@@ -21,8 +21,14 @@ object Codegen {
         }
         .toMap
     val enums = EnumGenerator.generate(schemas)
+    val ir = new ImportRegistry()
+    ir.registerImport(q"import _root_.sttp.client3._")
+    ir.registerImport(q"import _root_.sttp.model._")
+    ir.registerImport(q"import _root_.sttp.client3.circe._")
+    ir.registerImport(q"import _root_.io.circe.generic.auto._")
+    ir.registerImport(q"import _root_.java.io.File")
 
-    val modelGenerator = ModelGenerator(schemas, requestBodies)
+    val modelGenerator = ModelGenerator(schemas, requestBodies, ir)
     val model = modelGenerator.generate
     val operations = collectOperations(openApi)
     val processedOps = new ApiCallGenerator(modelGenerator).generate(operations)
@@ -38,11 +44,7 @@ object Codegen {
 
     source"""package io.github.ghostbuster91.sttp.client3.example {
 
-          import _root_.sttp.client3._
-          import _root_.sttp.model._
-          import _root_.sttp.client3.circe._
-          import _root_.io.circe.generic.auto._
-          import _root_.java.io.File
+          ..${ir.getImports}
 
           ..$enums
           ..${model.values.toList}

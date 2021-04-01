@@ -5,6 +5,7 @@ import scala.meta._
 class ModelGenerator(
     schemas: Map[SchemaRef, SafeSchema],
     classNames: Map[SchemaRef, String],
+    ir: ImportRegistry,
 ) {
   def generate: Map[SchemaRef, Defn] = {
     val childToParentRef = schemas
@@ -161,6 +162,7 @@ class ModelGenerator(
       case ref: SafeRefSchema =>
         Type.Name(classNames(ref.ref))
       case _: SafeUUIDSchema =>
+        ir.registerImport(q"import _root_.java.util.UUID")
         t"UUID"
     }
 
@@ -174,6 +176,7 @@ object ModelGenerator {
   def apply(
       schemas: Map[String, SafeSchema],
       requestBodies: Map[String, SafeSchema],
+      ir: ImportRegistry,
   ): ModelGenerator = {
     val modelClassNames = schemas.map { case (key, _) =>
       SchemaRef.schema(key) -> snakeToCamelCase(key)
@@ -186,6 +189,7 @@ object ModelGenerator {
       } ++ requestBodies
         .map { case (k, v) => SchemaRef.requestBody(k) -> v },
       modelClassNames,
+      ir,
     )
   }
 
