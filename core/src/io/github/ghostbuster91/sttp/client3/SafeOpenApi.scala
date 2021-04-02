@@ -122,6 +122,7 @@ sealed abstract class SafeSchema(s: Schema[_]) {
   def enum: List[Any] =
     Option(s.getEnum()).map(_.asScala.toList).getOrElse(List.empty)
   def isEnum = enum.nonEmpty
+  def isArray = false
   override def toString(): String = s.toString()
 }
 sealed abstract class SchemaWithProperties(s: Schema[_]) extends SafeSchema(s) {
@@ -134,6 +135,7 @@ sealed abstract class SchemaWithProperties(s: Schema[_]) extends SafeSchema(s) {
 sealed abstract class SafePrimitiveSchema(s: Schema[_]) extends SafeSchema(s)
 class SafeArraySchema(s: ArraySchema) extends SafeSchema(s) {
   def items: SafeSchema = SafeSchema(s.getItems())
+  override def isArray = true
 }
 class SafeBinarySchema(s: BinarySchema) extends SafeSchema(s)
 class SafeBooleanSchema(s: BooleanSchema) extends SafeSchema(s)

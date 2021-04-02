@@ -36,7 +36,9 @@ class ModelGenerator(
     }
     traits ++ classes
   }
+
   def classNameFor(schemaRef: SchemaRef): String = classNames(schemaRef)
+  def schemaFor(schemaRef: SchemaRef): SafeSchema = schemas(schemaRef)
 
   private def schemaToClassDef(
       name: String,
@@ -132,7 +134,7 @@ class ModelGenerator(
       isRequired: Boolean,
   ): Type = {
     val declType = schemaToType(enumName, schema)
-    ModelGenerator.optionApplication(declType, isRequired)
+    ModelGenerator.optionApplication(declType, isRequired, schema.isArray)
   }
 
   private def schemaToType(enumName: String, schema: SafeSchema): Type =
@@ -196,8 +198,12 @@ object ModelGenerator {
   private def snakeToCamelCase(snake: String) =
     snake.split('_').toList.map(_.capitalize).mkString
 
-  def optionApplication(declType: Type, isRequired: Boolean): Type =
-    if (isRequired) {
+  def optionApplication(
+      declType: Type,
+      isRequired: Boolean,
+      isCollection: Boolean,
+  ): Type =
+    if (isRequired || isCollection) {
       declType
     } else {
       t"Option[$declType]"

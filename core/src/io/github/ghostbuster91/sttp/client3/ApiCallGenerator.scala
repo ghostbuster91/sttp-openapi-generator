@@ -57,17 +57,20 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
       .getOrElse(Type.Name("Unit"))
 
     val functionName = Term.Name(operationId)
-    val queryParameters = queryParameter(operation)
-    val pathParameters = pathParameter(operation)
-    val bodyParameter = requestBodyParameter(operation)
-    val headerParameters = headerParameter(operation)
+    val fQueries = queryAsFuncParam(operation)
+    val fPaths = pathAsFuncParam(operation)
+    val fReqBody = reqBodyAsFuncParam(operation)
+    val headerParameters = operation.parameters.collect {
+      case p: SafeHeaderParameter => p
+    }
+    val fHeaders = headerParameters.map(headerAsFuncParam)
     val parameters =
-      pathParameters ++ queryParameters ++ headerParameters ++ bodyParameter
+      fPaths ++ fQueries ++ fHeaders ++ fReqBody
     val body: Term = Term.Apply(
       Term.Select(
         List(
           applyHeadersToRequest(headerParameters),
-          applyBodyToRequest(bodyParameter),
+          applyBodyToRequest(fReqBody),
         )
           .reduce(_ andThen _)
           .apply(basicRequestWithMethod),
@@ -78,10 +81,16 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
     q"def $functionName(..$parameters): Request[$responseClassType, Any] = $body"
   }
 
-  private def applyHeadersToRequest(headers: List[Term.Param])(request: Term) =
-    headers.foldLeft(request)((ar, h) =>
-      q"$ar.header(${h.name.value}, ${Term.Name(h.name.value)})",
-    )
+  private def applyHeadersToRequest(
+      headers: List[SafeHeaderParameter],
+  )(request: Term) =
+    headers.foldLeft(request) { case (ar, h) =>
+      if (h.schema.isArray || !h.required) {
+        q"$ar.headers(${Term.Name(h.name)}.map(v => Header(${h.name}, v.toString())).toList:_*)"
+      } else {
+        q"$ar.header(${h.name}, ${Term.Name(h.name)}.toString())"
+      }
+    }
 
   private def applyBodyToRequest(bodyParameter: Option[Term.Param])(
       request: Term,
@@ -90,16 +99,15 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
       q"$ar.body(${Term.Name(b.name.value)})",
     )
 
-  private def headerParameter(operation: SafeOperation) =
-    operation.parameters.collect { case headerParam: SafeHeaderParameter =>
-      val paramName = Term.Name(headerParam.name)
-      val paramType = modelGenerator.schemaToType(
-        headerParam.name,
-        headerParam.schema,
-        headerParam.required,
-      )
-      param"$paramName : $paramType"
-    }
+  private def headerAsFuncParam(headerParam: SafeHeaderParameter) = {
+    val paramName = Term.Name(headerParam.name)
+    val paramType = modelGenerator.schemaToType(
+      headerParam.name,
+      headerParam.schema,
+      headerParam.required,
+    )
+    param"$paramName : $paramType"
+  }
 
   private def createRequestCall(method: Method, uri: Term) =
     method match {
@@ -168,7 +176,7 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
     )
   }
 
-  private def pathParameter(
+  private def pathAsFuncParam(
       operation: SafeOperation,
   ) =
     operation.parameters
@@ -182,7 +190,7 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
         param"$paramName : $paramType"
       }
 
-  private def queryParameter(
+  private def queryAsFuncParam(
       operation: SafeOperation,
   ) =
     operation.parameters
@@ -196,7 +204,7 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
         param"$paramName : $paramType"
       }
 
-  private def requestBodyParameter(
+  private def reqBodyAsFuncParam(
       operation: SafeOperation,
   ) =
     operation.requestBody
@@ -205,17 +213,21 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
           .collectFirst {
             case ("application/json", jsonRequest) =>
               jsonRequest.schema match {
-                case rs: SafeRefSchema => modelGenerator.classNameFor(rs.ref)
+                case rs: SafeRefSchema =>
+                  modelGenerator.classNameFor(rs.ref) -> modelGenerator
+                    .schemaFor(rs.ref)
+                    .isArray
               }
             case ("application/octet-stream", _) =>
               ir.registerImport(q"import _root_.java.io.File")
-              "File"
+              "File" -> false
           }
-          .map { requestClassName =>
+          .map { case (requestClassName, isCollection) =>
             val paramName = Term.Name(s"a$requestClassName")
             val paramType = ModelGenerator.optionApplication(
               Type.Name(requestClassName),
               requestBody.required,
+              isCollection,
             )
             param"$paramName : $paramType"
           }

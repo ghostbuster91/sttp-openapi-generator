@@ -67,7 +67,10 @@ object GeneratorTest extends TestSuite {
     }
 
     "header" - {
-      "simple" - test()
+      "string" - test()
+      "array_of_strings" - test()
+      "optional" - test()
+      "int" - test()
     }
   }
 
