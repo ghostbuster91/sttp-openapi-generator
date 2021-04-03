@@ -20,12 +20,11 @@ object Codegen {
             .map(mt => k -> mt.schema)
         }
         .toMap
-    val enums = EnumGenerator.generate(schemas)
+    val enums = EnumGenerator.collectEnums(schemas, Nil)
+    val enumDefs = enums.flatMap(EnumGenerator.enumToSealedTraitDef)
     val ir = new ImportRegistry()
     ir.registerImport(q"import _root_.sttp.client3._")
     ir.registerImport(q"import _root_.sttp.model._")
-    ir.registerImport(q"import _root_.sttp.client3.circe._")
-    ir.registerImport(q"import _root_.io.circe.generic.auto._")
 
     val modelGenerator = ModelGenerator(schemas, requestBodies, ir)
     val model = modelGenerator.generate
@@ -36,17 +35,20 @@ object Codegen {
     val apiDefs = processedOps.map { case (key, apiCalls) =>
       val className =
         Type.Name(key.map(_.capitalize).getOrElse("Default") + "Api")
-      q"""class $className(baseUrl: String) {
+      q"""class $className(baseUrl: String) extends CirceCodecs {
             ..$apiCalls
           }
       """
     }.toList
+    val codecs = CirceCodecGeneration.generate(enums).stats
 
     source"""package io.github.ghostbuster91.sttp.client3.example {
 
           ..${ir.getImports}
 
-          ..$enums
+          ..$codecs
+
+          ..$enumDefs
           ..${model.values.toList}
 
           ..$apiDefs
@@ -85,26 +87,51 @@ object Codegen {
   }
 }
 
-case class Enum(
-    path: List[String],
-    values: List[EnumValue],
-    enumType: EnumType,
-) {
-  def name: String = path.takeRight(2).map(_.capitalize).mkString
-  def uncapitalizedName: String =
-    name.take(1).toLowerCase() + name.drop(1)
-}
-case class EnumValue(rawValue: Any) {
-  def name: String = rawValue.toString.capitalize
-}
-sealed trait EnumType
-object EnumType {
-  case object EString extends EnumType
-  case object EInt extends EnumType
-}
+// case class EnumValue(rawValue: Any) {
+//   def name: String = rawValue.toString.capitalize
+// }
+// sealed trait EnumType
+// object EnumType {
+//   case object EString extends EnumType
+//   case object EInt extends EnumType
+// }
 
 case class CollectedOperation(
     path: String,
     method: Method,
     operation: SafeOperation,
 )
+
+case class CodegenOutput(sources: Map[CodegenSourceType, Source])
+sealed trait CodegenSourceType
+object CodegenSourceType {
+  case object Api extends CodegenSourceType
+  case object Codecs extends CodegenSourceType
+}
+
+sealed trait Enum {
+  def path: List[String]
+  def values: List[EnumValue]
+
+  def name: String = path.takeRight(2).map(_.capitalize).mkString
+  def uncapitalizedName: String =
+    name.take(1).toLowerCase() + name.drop(1)
+}
+object Enum {
+  case class StringEnum(path: List[String], values: List[EnumValue.StringEv])
+      extends Enum
+  case class IntEnum(path: List[String], values: List[EnumValue.IntEv])
+      extends Enum
+}
+
+sealed trait EnumValue {
+  def name: Term.Name
+}
+object EnumValue {
+  case class StringEv(v: String) extends EnumValue {
+    def name: Term.Name = Term.Name(v.capitalize)
+  }
+  case class IntEv(v: Int) extends EnumValue {
+    def name: Term.Name = Term.Name(v.toString)
+  }
+}

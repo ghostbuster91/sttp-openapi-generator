@@ -20,7 +20,6 @@ components:
       enum:
         - happy
         - neutral
-        - sad
     Person:
       required:
         - status

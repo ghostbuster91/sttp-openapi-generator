@@ -25,4 +25,3 @@ components:
           enum:
             - happy
             - neutral
-            - sad

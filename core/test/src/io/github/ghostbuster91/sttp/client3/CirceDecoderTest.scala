@@ -10,12 +10,11 @@ object CirceDecoderTest extends TestSuite {
       val actual = CirceCodecGeneration
         .generate(
           List(
-            Enum(
+            Enum.StringEnum(
               List("Person", "Status"),
-              List(EnumValue("happy"), EnumValue("neutral")),
-              EnumType.EString
-            )
-          )
+              List(EnumValue.StringEv("happy"), EnumValue.StringEv("neutral")),
+            ),
+          ),
         )
       assert(actual.structure == expected.structure)
     }

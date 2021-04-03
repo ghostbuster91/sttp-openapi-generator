@@ -4,23 +4,16 @@ import scala.meta._
 
 object CirceCodecGeneration {
   def generate(enums: List[Enum]): Source = {
-
-    /**  implicit val personStatusEncoder: Encoder[PersonStatus] = Encoder.encodeString.contramap {
-      *    case PersonStatus.Happy => "happy"
-      *    case PersonStatus.Neutral => "neutral"
-      *  }
-      */
     val decoders = enums.map(decoder)
     val encoders = enums.map(encoder)
-    source"""package io.github.ghostbuster91.sttp.client3 {
+    source"""import _root_.io.circe.Decoder
+    import _root_.io.circe.Encoder
+    import _root_.io.circe.generic.AutoDerivation
+    import _root_.sttp.client3.circe.SttpCirceApi
 
-    import io.circe.Decoder
-    import io.circe.Encoder
-
-    trait CirceCodecs {
+    trait CirceCodecs extends AutoDerivation with SttpCirceApi {
         ..$decoders
         ..$encoders
-    }
     }"""
   }
 
@@ -28,9 +21,8 @@ object CirceCodecGeneration {
     val enumType = Type.Name(enum.name)
     val encoderName = Pat.Var(Term.Name(s"${enum.uncapitalizedName}Encoder"))
     val cases = encoderCases(enum)
-
     q"""
-    implicit val $encoderName: Encoder[$enumType]  = Encoder.encodeString.contramap {
+    implicit val $encoderName: Encoder[$enumType]  = ${baseEncoder(enum)}.contramap {
         ..case $cases
     }
     """
@@ -38,9 +30,10 @@ object CirceCodecGeneration {
 
   private def encoderCases(enum: Enum): List[Case] =
     enum.values.map { ev =>
-      val pWhen = ev.rawValue.toString()
-      val pThen = p"${Term.Name(enum.name)}.${Term.Name(ev.name)}"
-      p"case $pThen => $pWhen"
+      val pThen = evToLit(ev)
+      val enumValueName = ev.name
+      val pWhen = p"${Term.Name(enum.name)}.$enumValueName"
+      p"case $pWhen => $pThen"
     }
 
   private def decoder(enum: Enum) = {
@@ -48,16 +41,17 @@ object CirceCodecGeneration {
     val enumType = Type.Name(enum.name)
     val decoderName = Pat.Var(Term.Name(s"${enum.uncapitalizedName}Decoder"))
     q"""
-    implicit val $decoderName: Decoder[$enumType]  = Decoder.decodeString.emap {
+    implicit val $decoderName: Decoder[$enumType]  = ${baseDecoder(enum)}.emap {
         ..case $cases
     }
     """
   }
 
-  private def decoderCases(enum: Enum): List[Case] = {
+  private def decoderCases[T](enum: Enum): List[Case] = {
     val cases = enum.values.map { ev =>
-      val pWhen = p"${ev.rawValue.toString()}"
-      val pThen = q"${Term.Name(enum.name)}.${Term.Name(ev.name)}"
+      val pWhen = p"${evToLit(ev)}"
+      val enumValueName = ev.name
+      val pThen = q"${Term.Name(enum.name)}.$enumValueName"
       p"case $pWhen => Right($pThen)"
     }
     cases :+ decoderOtherwiseCase()
@@ -68,4 +62,22 @@ object CirceCodecGeneration {
     val otherTermBind = Pat.Var(otherTerm)
     p"""case $otherTermBind => Left("Unexpected value for enum:" + $otherTerm)"""
   }
+
+  private def evToLit[T](ev: EnumValue): Lit =
+    ev match {
+      case EnumValue.StringEv(v) => Lit.String(v)
+      case EnumValue.IntEv(v)    => Lit.Int(v)
+    }
+
+  private def baseDecoder(enum: Enum) =
+    enum match {
+      case _: Enum.StringEnum => q"Decoder.decodeString"
+      case _: Enum.IntEnum    => q"Decoder.decodeInt"
+    }
+
+  private def baseEncoder(enum: Enum) =
+    enum match {
+      case _: Enum.StringEnum => q"Encoder.encodeString"
+      case _: Enum.IntEnum    => q"Encoder.encodeInt"
+    }
 }

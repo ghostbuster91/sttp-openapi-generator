@@ -2,13 +2,11 @@ package io.github.ghostbuster91.sttp.client3
 import scala.meta._
 
 object EnumGenerator {
-  def generate(schemas: Map[String, SafeSchema]): List[Stat] =
-    collectEnums(schemas, Nil).flatMap(enumToSealedTraitDef)
 
-  private def enumToSealedTraitDef(enum: Enum) = {
+  def enumToSealedTraitDef(enum: Enum) = {
     val objs = enum.values.map { value =>
       val paranetInit = init"${Type.Name(enum.name)}()"
-      q"case object ${Term.Name(value.name)} extends $paranetInit{}"
+      q"case object ${value.name} extends $paranetInit{}"
     }
     source"""sealed trait ${Type.Name(enum.name)}
     object ${Term.Name(enum.name)} {
@@ -17,7 +15,7 @@ object EnumGenerator {
     """.stats
   }
 
-  private def collectEnums(
+  def collectEnums(
       schemas: Map[String, SafeSchema],
       path: List[String],
   ): List[Enum] =
@@ -37,15 +35,25 @@ object EnumGenerator {
       case _: SafeStringSchema =>
         schema.enum match {
           case list if list.nonEmpty =>
-            List(Enum(path, list.map(v => EnumValue(v)), EnumType.EString))
+            List(
+              Enum.StringEnum(
+                path,
+                list.map(v => EnumValue.StringEv(v.asInstanceOf[String])),
+              ),
+            )
           case Nil => Nil
         }
       case _: SafeIntegerSchema =>
         schema.enum match {
           case list if list.nonEmpty =>
-            List(Enum(path, list.map(v => EnumValue(v)), EnumType.EInt))
+            List(
+              Enum.IntEnum(
+                path,
+                list.map(v => EnumValue.IntEv(v.asInstanceOf[Int])),
+              ),
+            )
           case Nil => Nil
         }
-      case other => List.empty
+      case _ => List.empty
     }
 }

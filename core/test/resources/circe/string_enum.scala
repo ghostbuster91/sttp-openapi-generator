@@ -1,9 +1,9 @@
-package io.github.ghostbuster91.sttp.client3
+import _root_.io.circe.Decoder
+import _root_.io.circe.Encoder
+import _root_.io.circe.generic.AutoDerivation
+import _root_.sttp.client3.circe.SttpCirceApi
 
-import io.circe.Decoder
-import io.circe.Encoder
-
-trait CirceCodecs {
+trait CirceCodecs extends AutoDerivation with SttpCirceApi {
   implicit val personStatusDecoder: Decoder[PersonStatus] =
     Decoder.decodeString.emap({
       case "happy" =>
