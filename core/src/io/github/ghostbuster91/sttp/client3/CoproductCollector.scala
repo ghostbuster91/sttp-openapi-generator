@@ -31,7 +31,7 @@ class CoproductCollector(model: ModelGenerator, enums: List[Enum]) {
                 .mapValues(ref => CoproductChild(model.classNameFor(ref)))
                 .toMap
             )
-          case _: SafeStringSchema =>
+          case _: SafeIntegerSchema =>
             Discriminator.IntDsc(
               dsc.propertyName,
               dsc.mapping.map { case (k, v) =>
