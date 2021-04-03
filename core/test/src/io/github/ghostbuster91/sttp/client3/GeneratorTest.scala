@@ -9,8 +9,7 @@ object GeneratorTest extends TestSuite {
 
     "simple" - {
       "simple_get_person" - test()
-      "simple_put_person" - test()
-      "simple_post_person" - test()
+      "post" - test()
       "simple_get_nested_products" - test()
       "simple_get_person_optional" - test()
       "simple_get_product_array" - test()
@@ -38,6 +37,7 @@ object GeneratorTest extends TestSuite {
     }
 
     "request_body" - {
+      "simple" - test()
       "request_body_direct" - test()
       "request_body_indirect" - test()
     }

@@ -8,13 +8,6 @@ paths:
       summary: Create an existing person
       description: Create an existing person by Id
       operationId: createPerson
-      requestBody:
-        description: Create an existent person in the store
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Person"
-        required: true
       responses:
         "200":
           description: Successful operation
