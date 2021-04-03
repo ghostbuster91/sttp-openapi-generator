@@ -34,7 +34,7 @@ class CirceCoproductCodecGenerator(ir: ImportRegistry) {
   def decoder(coproduct: Coproduct) =
     coproduct.discriminator.flatMap { discriminator =>
       if (discriminator.mapping.nonEmpty) {
-        val cases = decoderCases(coproduct, discriminator)
+        val cases = decoderCases(discriminator)
         val coproductType = Type.Name(coproduct.name)
         val decoderName =
           Pat.Var(Term.Name(s"${coproduct.uncapitalizedName}Decoder"))
@@ -101,37 +101,29 @@ class CirceCoproductCodecGenerator(ir: ImportRegistry) {
     )
   }
 
-  private def decoderCases(
-      coproduct: Coproduct,
-      discriminator: Discriminator[_]
-  ): List[Case] = {
+  private def decoderCases(discriminator: Discriminator[_]): List[Case] = {
     val mappedCases = discriminator match {
       case Discriminator.StringDsc(_, mapping) =>
-        mapping.map(decoderCaseForString(coproduct).tupled).toList
+        mapping.map(decoderCaseForString.tupled).toList
       case Discriminator.IntDsc(_, mapping) =>
-        mapping.map(decoderCaseForInt(coproduct).tupled).toList
+        mapping.map(decoderCaseForInt.tupled).toList
       case Discriminator.EnumDsc(_, enum, mapping) =>
-        mapping.map(decoderCaseForEnum(coproduct, enum).tupled).toList
+        mapping.map(decoderCaseForEnum(enum).tupled).toList
     }
     mappedCases :+ decoderOtherwiseCase()
   }
 
-  private def decoderCaseForString(
-      coproduct: Coproduct
-  )(discValue: String, child: CoproductChild) = {
+  private def decoderCaseForString(discValue: String, child: CoproductChild) = {
     val discDecoderType = child.typeName
     p"case $discValue => Decoder[$discDecoderType].apply(c)"
   }
 
-  private def decoderCaseForInt(
-      coproduct: Coproduct
-  )(discValue: Int, child: CoproductChild) = {
+  private def decoderCaseForInt(discValue: Int, child: CoproductChild) = {
     val discDecoderType = child.typeName
     p"case $discValue => Decoder[$discDecoderType].apply(c)"
   }
 
   private def decoderCaseForEnum(
-      coproduct: Coproduct,
       enum: Enum
   )(discValue: EnumValue, child: CoproductChild) = {
     val discDecoderType = child.typeName
