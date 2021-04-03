@@ -169,6 +169,9 @@ class SafeComposedSchema(s: ComposedSchema) extends SafeSchema(s) {
 
 class SafeDiscriminator(d: Discriminator) {
   def propertyName: String = d.getPropertyName()
+  def mapping: Map[String, SchemaRef] = Option(d.getMapping())
+    .map(_.asScala.mapValues(SchemaRef.parse).toMap)
+    .getOrElse(Map.empty)
 }
 
 object SafeSchema {

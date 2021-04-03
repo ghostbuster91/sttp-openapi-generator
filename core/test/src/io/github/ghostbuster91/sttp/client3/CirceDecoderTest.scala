@@ -1,5 +1,6 @@
 package io.github.ghostbuster91.sttp.client3
 
+import io.github.ghostbuster91.sttp.client3.circe.CirceCodecGenerator
 import utest._
 import scala.meta._
 
@@ -7,7 +8,7 @@ object CirceDecoderTest extends TestSuite {
   val tests = Tests {
     "string_enum" - {
       val expected = load(s"string_enum.scala").parse[Source].get
-      val actual = CirceCodecGeneration
+      val actual = new CirceCodecGenerator(new ImportRegistry())
         .generate(
           List(
             Enum.StringEnum(
@@ -15,6 +16,7 @@ object CirceDecoderTest extends TestSuite {
               List(EnumValue.StringEv("happy"), EnumValue.StringEv("neutral")),
             ),
           ),
+          Nil,
         )
       assert(actual.structure == expected.structure)
     }

@@ -4,6 +4,7 @@ import io.swagger.parser.OpenAPIParser
 import io.swagger.v3.parser.core.models.ParseOptions
 import scala.collection.JavaConverters._
 import io.swagger.v3.parser.core.models.AuthorizationValue
+import circe._
 import scala.meta._
 
 object Codegen {
@@ -20,7 +21,7 @@ object Codegen {
             .map(mt => k -> mt.schema)
         }
         .toMap
-    val enums = EnumGenerator.collectEnums(schemas, Nil)
+    val enums = EnumCollector.collectEnums(schemas, Nil)
     val enumDefs = enums.flatMap(EnumGenerator.enumToSealedTraitDef)
     val ir = new ImportRegistry()
     ir.registerImport(q"import _root_.sttp.client3._")
@@ -40,7 +41,9 @@ object Codegen {
           }
       """
     }.toList
-    val codecs = CirceCodecGeneration.generate(enums).stats
+    val coproducts =
+      new CoproductCollector(modelGenerator, enums).collect(schemas)
+    val codecs = new CirceCodecGenerator(ir).generate(enums, coproducts).stats
 
     source"""package io.github.ghostbuster91.sttp.client3.example {
 
@@ -87,15 +90,6 @@ object Codegen {
   }
 }
 
-// case class EnumValue(rawValue: Any) {
-//   def name: String = rawValue.toString.capitalize
-// }
-// sealed trait EnumType
-// object EnumType {
-//   case object EString extends EnumType
-//   case object EInt extends EnumType
-// }
-
 case class CollectedOperation(
     path: String,
     method: Method,
@@ -114,8 +108,7 @@ sealed trait Enum {
   def values: List[EnumValue]
 
   def name: String = path.takeRight(2).map(_.capitalize).mkString
-  def uncapitalizedName: String =
-    name.take(1).toLowerCase() + name.drop(1)
+  def uncapitalizedName: String = name.take(1).toLowerCase() + name.drop(1)
 }
 object Enum {
   case class StringEnum(path: List[String], values: List[EnumValue.StringEv])
@@ -125,13 +118,18 @@ object Enum {
 }
 
 sealed trait EnumValue {
-  def name: Term.Name
+  def fqnName(enum: Enum): Term
+  def simpleName: Term.Name
 }
 object EnumValue {
   case class StringEv(v: String) extends EnumValue {
-    def name: Term.Name = Term.Name(v.capitalize)
+    override def fqnName(enum: Enum): Term =
+      q"${Term.Name(enum.name)}.${Term.Name(v.capitalize)}"
+    override def simpleName: Term.Name = Term.Name(v.capitalize)
   }
   case class IntEv(v: Int) extends EnumValue {
-    def name: Term.Name = Term.Name(v.toString)
+    override def fqnName(enum: Enum): Term =
+      q"${Term.Name(enum.name)}.${Term.Name(v.toString())}"
+    override def simpleName: Term.Name = Term.Name(v.toString())
   }
 }

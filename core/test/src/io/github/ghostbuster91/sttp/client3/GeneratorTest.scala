@@ -52,7 +52,9 @@ object GeneratorTest extends TestSuite {
     "coproduct" - {
       "simple" - test()
       "discriminator" - test()
-      "optional_discriminator" - test()
+      "discriminator_with_mapping" - test()
+      // Following case is actually invalid because there is no way to create discriminator mapping using empty value as a key
+      //"optional_discriminator" - test()
       "discriminator_enum" - testNoCompile()
     }
 
@@ -97,7 +99,7 @@ object GeneratorTest extends TestSuite {
       .mkString("\n")
 
   def mkToolbox(
-      compileOptions: String = "",
+      compileOptions: String = ""
   ): ToolBox[_ <: scala.reflect.api.Universe] = {
     val m = scala.reflect.runtime.currentMirror
     m.mkToolBox(options = compileOptions)
@@ -112,7 +114,7 @@ object GeneratorTest extends TestSuite {
 
   def compileWithoutHeader(code: String): Unit =
     compile(
-      code.linesIterator.filter(!_.trim.startsWith("package")).mkString("\n"),
+      code.linesIterator.filter(!_.trim.startsWith("package")).mkString("\n")
     )
 
   implicit class StringShouldCompileHelper(code: String) {
