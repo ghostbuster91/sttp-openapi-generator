@@ -20,89 +20,87 @@ import io.swagger.v3.oas.models.media._
 
 class SafeOpenApi(openApi: OpenAPI) {
   def components: Option[SafeComponents] =
-    Option(openApi.getComponents()).map(new SafeComponents(_))
+    Option(openApi.getComponents).map(new SafeComponents(_))
   def paths: Map[String, SafePathItem] =
     openApi
-      .getPaths()
+      .getPaths
       .asScala
       .toMap
       .mapValues(item => new SafePathItem(item))
       .toMap
 
-  override def toString(): String = openApi.toString()
+  override def toString: String = openApi.toString
   def unsafe: OpenAPI = openApi
 }
 
 class SafeComponents(c: Components) {
   def schemas: Map[String, SafeSchema] =
-    Option(c.getSchemas())
+    Option(c.getSchemas)
       .map(_.asScala.mapValues(SafeSchema.apply).toMap)
       .getOrElse(Map.empty)
   def requestBodies: Map[String, SafeRequestBody] =
-    Option(c.getRequestBodies())
+    Option(c.getRequestBodies)
       .map(_.asScala.mapValues(new SafeRequestBody(_)).toMap)
       .getOrElse(Map.empty)
-  override def toString(): String = c.toString()
+  override def toString: String = c.toString
   def unsafe: Components = c
 }
 
 class SafeRequestBody(rb: RequestBody) {
   def content: Map[String, SafeMediaType] =
-    Option(rb.getContent())
+    Option(rb.getContent)
       .map(_.asScala.mapValues(new SafeMediaType(_)).toMap)
       .getOrElse(Map.empty)
 
   def required: Boolean = rb.getRequired()
-  override def toString(): String = rb.toString()
+  override def toString: String = rb.toString
 }
 
 class SafePathItem(p: PathItem) {
   def operations: Map[Method, SafeOperation] =
     List(
       Option(p.getGet).map(op => (Method.Get: Method) -> new SafeOperation(op)),
-      Option(p.getPut()).map(op =>
+      Option(p.getPut).map(op =>
         (Method.Put: Method) -> new SafeOperation(op)
       ),
-      Option(p.getPost()).map(op =>
+      Option(p.getPost).map(op =>
         (Method.Post: Method) -> new SafeOperation(op)
       )
     ).flatten.toMap
-  override def toString(): String = p.toString()
+  override def toString: String = p.toString
 }
 
 class SafeOperation(op: Operation) {
-  def operationId: String = op.getOperationId()
+  def operationId: String = op.getOperationId
   def tags: Option[List[String]] =
-    Option(op.getTags()).map(_.asScala.toList)
+    Option(op.getTags).map(_.asScala.toList)
 
   def parameters: List[SafeParameter] =
-    Option(op.getParameters())
-      .map(_.asScala.toList.map { p =>
-        p match {
-          case pp: PathParameter   => new SafePathParameter(pp)
-          case cp: CookieParameter => new SafeCookieParameter(cp)
-          case hp: HeaderParameter => new SafeHeaderParameter(hp)
-          case qp: QueryParameter  => new SafeQueryParameter(qp)
-        }
+    Option(op.getParameters)
+      .map(_.asScala.toList.map {
+        case pp: PathParameter => new SafePathParameter(pp)
+        case cp: CookieParameter => new SafeCookieParameter(cp)
+        case hp: HeaderParameter => new SafeHeaderParameter(hp)
+        case qp: QueryParameter => new SafeQueryParameter(qp)
       })
       .getOrElse(List.empty)
 
   def responses: Map[String, SafeApiResponse] =
-    Option(op.getResponses())
+    Option(op.getResponses)
       .map(_.asScala.mapValues(r => new SafeApiResponse(r)).toMap)
       .getOrElse(Map.empty)
 
   def requestBody: Option[SafeRequestBody] =
-    Option(op.getRequestBody()).map(new SafeRequestBody(_))
+    Option(op.getRequestBody).map(new SafeRequestBody(_))
 
-  override def toString(): String = op.toString()
+  override def toString: String = op.toString
 }
 
 sealed abstract class SafeParameter(p: Parameter) {
-  def name: String = p.getName()
-  def schema: SafeSchema = SafeSchema(p.getSchema())
+  def name: String = p.getName
+  def schema: SafeSchema = SafeSchema(p.getSchema)
   def required: Boolean = p.getRequired()
-  override def toString(): String = p.toString()
+  override def toString: String = p.toString
   def unsafe: Parameter = p
 
 }
@@ -112,22 +110,22 @@ class SafeCookieParameter(p: CookieParameter) extends SafeParameter(p)
 class SafeQueryParameter(p: QueryParameter) extends SafeParameter(p)
 class SafeApiResponse(r: ApiResponse) {
   def content: Map[String, SafeMediaType] =
-    Option(r.getContent())
+    Option(r.getContent)
       .map(_.asScala.mapValues(v => new SafeMediaType(v)).toMap)
       .getOrElse(Map.empty)
 }
 
 class SafeMediaType(m: MediaType) {
-  def schema: SafeSchema = SafeSchema(m.getSchema())
+  def schema: SafeSchema = SafeSchema(m.getSchema)
   def unsafe: MediaType = m
 }
 
 sealed abstract class SafeSchema(s: Schema[_]) {
   def enum: List[Any] =
-    Option(s.getEnum()).map(_.asScala.toList).getOrElse(List.empty)
-  def isEnum = enum.nonEmpty
+    Option(s.getEnum).map(_.asScala.toList).getOrElse(List.empty)
+  def isEnum: Boolean = enum.nonEmpty
   def isArray = false
-  override def toString(): String = s.toString()
+  override def toString: String = s.toString
   def unsafe: Schema[_] = s
 }
 sealed abstract class SchemaWithProperties(s: Schema[_]) extends SafeSchema(s) {
@@ -135,11 +133,11 @@ sealed abstract class SchemaWithProperties(s: Schema[_]) extends SafeSchema(s) {
     .map(_.asScala.mapValues(SafeSchema.apply).toMap)
     .getOrElse(Map.empty)
   def requiredFields: List[String] =
-    Option(s.getRequired()).map(_.asScala.toList).getOrElse(List.empty)
+    Option(s.getRequired).map(_.asScala.toList).getOrElse(List.empty)
 }
 sealed abstract class SafePrimitiveSchema(s: Schema[_]) extends SafeSchema(s)
 class SafeArraySchema(s: ArraySchema) extends SafeSchema(s) {
-  def items: SafeSchema = SafeSchema(s.getItems())
+  def items: SafeSchema = SafeSchema(s.getItems)
   override def isArray = true
 }
 class SafeBinarySchema(s: BinarySchema) extends SafeSchema(s)
@@ -168,13 +166,13 @@ class SafeComposedSchema(s: ComposedSchema) extends SafeSchema(s) {
     s.getOneOf.asScala.map(new SafeRefSchema(_)).toList
 
   def discriminator: Option[SafeDiscriminator] =
-    Option(s.getDiscriminator()).map(new SafeDiscriminator(_))
-  override def toString(): String = s.toString()
+    Option(s.getDiscriminator).map(new SafeDiscriminator(_))
+  override def toString: String = s.toString
 }
 
 class SafeDiscriminator(d: Discriminator) {
-  def propertyName: String = d.getPropertyName()
-  def mapping: Map[String, SchemaRef] = Option(d.getMapping())
+  def propertyName: String = d.getPropertyName
+  def mapping: Map[String, SchemaRef] = Option(d.getMapping)
     .map(_.asScala.mapValues(SchemaRef.parse).toMap)
     .getOrElse(Map.empty)
 }
@@ -217,7 +215,7 @@ object SchemaRef {
     def ref: String = s"#/components/requestBodies/$key"
   }
 
-  def parse(ref: String) =
+  def parse(ref: String): SchemaRef =
     if (ref.contains("#/components/schemas/")) {
       SchemaRef.Schema(ref.replaceAll("#/components/schemas/", ""))
     } else if (ref.contains("#/components/requestBodies/")) {

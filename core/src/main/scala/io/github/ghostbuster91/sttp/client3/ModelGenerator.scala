@@ -31,7 +31,7 @@ class ModelGenerator(
         classNames(key),
         composed.discriminator,
         parentToChilds(key)
-          .map(c => c -> schemas(c).asInstanceOf[SafeObjectSchema])
+          .map(c => schemas(c).asInstanceOf[SafeObjectSchema])
       )
     }
     traits ++ classes
@@ -90,12 +90,12 @@ class ModelGenerator(
   private def schemaToSealedTrait(
       name: String,
       discriminator: Option[SafeDiscriminator],
-      childs: List[(SchemaRef, SafeObjectSchema)]
+      childs: List[SafeObjectSchema]
   ): Defn.Trait = {
     val traitName = Type.Name(name)
     discriminator match {
       case Some(d) =>
-        val (childRef, child) = childs.head
+        val child = childs.head
         val discriminatorProperty = child.properties(d.propertyName)
         val discriminatorType = schemaToType(
           discriminatorProperty,
@@ -134,7 +134,7 @@ class ModelGenerator(
 
   private def schemaToType(schema: SafeSchema): Type =
     schema match {
-      case ss: SafeStringSchema =>
+      case _: SafeStringSchema =>
         t"String"
       case si: SafeIntegerSchema =>
         si.format match {

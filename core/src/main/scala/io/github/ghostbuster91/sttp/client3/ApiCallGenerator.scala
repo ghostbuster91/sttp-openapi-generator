@@ -18,6 +18,7 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
     val apiCallByTag = taggedOperations
       .map { case (tag, op) => tag -> createApiCall(op) }
       .groupBy(_._1)
+      .view
       .mapValues(_.map(_._2))
       .toMap
     apiCallByTag
@@ -68,8 +69,8 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
     val body: Term = Term.Apply(
       Term.Select(
         List(
-          applyHeadersToRequest(headerParameters),
-          applyBodyToRequest(fReqBody)
+          applyHeadersToRequest(headerParameters) _,
+          applyBodyToRequest(fReqBody) _
         )
           .reduce(_ andThen _)
           .apply(basicRequestWithMethod),
