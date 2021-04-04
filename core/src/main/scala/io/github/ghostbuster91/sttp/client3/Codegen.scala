@@ -17,7 +17,7 @@ object Codegen {
             .map(mt => k -> mt.schema)
         }
         .toMap
-    val enums = EnumCollector.collectEnums(schemas, Nil)
+    val enums = EnumCollector.collectEnums(schemas)
     val enumDefs = enums.flatMap(EnumGenerator.enumToSealedTraitDef)
     val ir = new ImportRegistry()
     ir.registerImport(q"import _root_.sttp.client3._")
