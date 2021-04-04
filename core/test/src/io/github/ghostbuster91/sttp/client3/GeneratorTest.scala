@@ -57,6 +57,7 @@ object GeneratorTest extends TestSuite {
       // Following case is actually invalid because there is no way to create discriminator mapping using empty value as a key
       //"optional_discriminator" - test()
       "discriminator_enum" - testNoCompile()
+      "discriminator_with_enum_mapping" - testNoCompile()
     }
 
     "get_inline_response_200" - test()

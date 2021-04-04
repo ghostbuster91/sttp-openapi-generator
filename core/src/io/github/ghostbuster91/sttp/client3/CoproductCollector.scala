@@ -41,8 +41,25 @@ class CoproductCollector(model: ModelGenerator, enums: List[Enum]) {
           case sr: SafeRefSchema =>
             val enumClassName = model.classNameFor(sr.ref)
             val enum = enums.find(e => e.name == enumClassName).get
-            Discriminator.EnumDsc(dsc.propertyName, enum, Map.empty)
-
+            val enumMap: Map[EnumValue, CoproductChild] = enum match {
+              case _: Enum.IntEnum =>
+                dsc.mapping.map { case (k, v) =>
+                  EnumValue.IntEv(Integer.parseInt(k)) -> CoproductChild(
+                    model.classNameFor(v)
+                  )
+                }
+              case _: Enum.StringEnum =>
+                dsc.mapping.map { case (k, v) =>
+                  EnumValue.StringEv(k) -> CoproductChild(
+                    model.classNameFor(v)
+                  )
+                }
+            }
+            Discriminator.EnumDsc(
+              dsc.propertyName,
+              enum,
+              enumMap
+            )
         }
         Coproduct(key, Some(discriminator))
       }

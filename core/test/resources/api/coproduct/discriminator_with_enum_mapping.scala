@@ -1,5 +1,4 @@
 package io.github.ghostbuster91.sttp.client3.example
-
 import _root_.sttp.client3._
 import _root_.sttp.model._
 import _root_.io.circe.HCursor
@@ -15,14 +14,20 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi {
   implicit val entityDecoder: Decoder[Entity] = new Decoder[Entity] {
     override def apply(c: HCursor): Result[Entity] = c
       .downField("name")
-      .as[String]
+      .as[PersonName]
       .flatMap({
-        case "john" => Decoder[Person].apply(c)
-        case "sml"  => Decoder[Organization].apply(c)
+        case PersonName.Bob   => Decoder[Person].apply(c)
+        case PersonName.Alice => Decoder[Organization].apply(c)
         case other =>
           Left(DecodingFailure("Unexpected value for coproduct:" + other, Nil))
       })
   }
+  implicit val personNameDecoder: Decoder[PersonName] =
+    Decoder.decodeString.emap({
+      case "bob"   => Right(PersonName.Bob)
+      case "alice" => Right(PersonName.Alice)
+      case other   => Left("Unexpected value for enum:" + other)
+    })
   implicit val entityEncoder: Encoder[Entity] = new Encoder[Entity] {
     override def apply(entity: Entity): Json = entity match {
       case person: Person => Encoder[Person].apply(person)
@@ -30,11 +35,20 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi {
         Encoder[Organization].apply(organization)
     }
   }
+  implicit val personNameEncoder: Encoder[PersonName] =
+    Encoder.encodeString.contramap({
+      case PersonName.Bob   => "bob"
+      case PersonName.Alice => "alice"
+    })
 }
-sealed trait Entity { def name: String }
-case class Person(name: String, age: Int) extends Entity()
-case class Organization(name: String) extends Entity()
-
+sealed trait PersonName
+object PersonName {
+  case object Bob extends PersonName()
+  case object Alice extends PersonName()
+}
+sealed trait Entity { def name: PersonName }
+case class Person(name: PersonName, age: Int) extends Entity()
+case class Organization(name: PersonName) extends Entity()
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def getRoot(): Request[Entity, Any] =
     basicRequest.get(uri"$baseUrl").response(asJson[Entity].getRight)

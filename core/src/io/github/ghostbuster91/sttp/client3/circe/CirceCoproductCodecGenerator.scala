@@ -60,43 +60,37 @@ class CirceCoproductCodecGenerator(ir: ImportRegistry) {
   private def encoderCases(
       discriminator: Discriminator[_]
   ): List[Case] = {
-    val dscField = Lit.String(discriminator.fieldName)
     val encoderCasesForTypes = (discriminator match {
       case Discriminator.StringDsc(_, mapping) =>
-        mapping.map(encoderCaseForString.tupled)
+        mapping.values.map(encoderCaseForString)
       case Discriminator.IntDsc(_, mapping) =>
-        mapping.map(encoderCaseForInt.tupled)
-      case Discriminator.EnumDsc(_, enum, mapping) =>
-        mapping.map(encoderCaseForEnum(enum).tupled)
+        mapping.values.map(encoderCaseForInt)
+      case Discriminator.EnumDsc(_, _, mapping) =>
+        mapping.values.map(encoderCaseForEnum)
     })
-    encoderCasesForTypes.map {
-      case EncoderCase(when, discEncoderType, discValue, child) =>
-        p"case $when => Json.obj($dscField -> Encoder[$discEncoderType].apply($discValue)).deepMerge(Encoder[${child.typeName}].apply(${child.toVar}))"
+    encoderCasesForTypes.map { case EncoderCase(when, child) =>
+      p"case $when => Encoder[${child.typeName}].apply(${child.toVar})"
     }.toList
   }
 
-  private def encoderCaseForString(discValue: String, child: CoproductChild) = {
+  private def encoderCaseForString(child: CoproductChild) = {
     val patVarChild = Pat.Var(child.toVar)
     val typedPatVar = p"$patVarChild: ${child.typeName}"
-    EncoderCase(typedPatVar, t"String", Lit.String(discValue), child)
+    EncoderCase(typedPatVar, child)
 
   }
 
-  private def encoderCaseForInt(discValue: Int, child: CoproductChild) = {
+  private def encoderCaseForInt(child: CoproductChild) = {
     val patVarChild = Pat.Var(child.toVar)
     val typedPatVar = p"$patVarChild: ${child.typeName}"
-    EncoderCase(typedPatVar, t"Int", Lit.Int(discValue), child)
+    EncoderCase(typedPatVar, child)
   }
 
-  private def encoderCaseForEnum(
-      enum: Enum
-  )(discValue: EnumValue, child: CoproductChild) = {
+  private def encoderCaseForEnum(child: CoproductChild) = {
     val patVarChild = Pat.Var(child.toVar)
     val typedPatVar = p"$patVarChild: ${child.typeName}"
     EncoderCase(
       typedPatVar,
-      Type.Name(enum.name),
-      discValue.fqnName(enum),
       child
     )
   }
@@ -176,8 +170,6 @@ object Discriminator {
 
 case class EncoderCase(
     when: Pat,
-    discEncoderType: Type,
-    dicsValue: Term,
     child: CoproductChild
 )
 
