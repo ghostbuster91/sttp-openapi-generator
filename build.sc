@@ -8,7 +8,7 @@ import com.goyeau.mill.scalafix.ScalafixModule
 import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.9:0.1.1`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 
-object core extends BaseModule {
+object core extends BaseModule with SbtModule {
   def scalaVersion = "2.13.3"
 
   def ivyDeps = Agg(
@@ -34,8 +34,7 @@ trait CommonTestModule extends BaseModule with TestModule {
 }
 
 trait BaseModule
-    extends ScalaModule
-    with ScalafmtModule
+    extends ScalafmtModule
     with TpolecatModule
     with ScalafixModule {
   def scalacOptions = T {
