@@ -6,13 +6,23 @@ import scala.meta._
 class CirceCodecGenerator(ir: ImportRegistry) {
   def generate(enums: List[Enum], coproducts: List[Coproduct]): Source = {
     val coproductGen = new CirceCoproductCodecGenerator(ir)
-    val encoders = coproducts.flatMap(coproductGen.encoder) ++ enums.map(
-      CirceEnumCodecGenerator.encoder
-    )
+    val enumCodecs = enums.flatMap { e =>
+      q"""
+        ${CirceEnumCodecGenerator.decoder(e)}
+        ${CirceEnumCodecGenerator.encoder(e)}
+        """.stats
+    }
 
-    val decoders = coproducts.flatMap(coproductGen.decoder) ++ enums.map(
-      CirceEnumCodecGenerator.decoder
-    )
+    val coproductCodecs = coproducts.flatMap { cp =>
+      (coproductGen.decoder(cp), coproductGen.encoder(cp)) match {
+        case (Some(de), Some(en)) =>
+          q"""
+            $de
+            $en
+        """.stats
+        case _ => List.empty
+      }
+    }
 
     source"""import _root_.io.circe.Decoder
     import _root_.io.circe.Encoder
@@ -20,8 +30,8 @@ class CirceCodecGenerator(ir: ImportRegistry) {
     import _root_.sttp.client3.circe.SttpCirceApi
 
     trait CirceCodecs extends AutoDerivation with SttpCirceApi {
-        ..$decoders
-        ..$encoders
+        ..$enumCodecs
+        ..$coproductCodecs
     }"""
   }
 }

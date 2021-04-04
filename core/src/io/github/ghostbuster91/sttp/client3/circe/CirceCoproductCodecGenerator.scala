@@ -6,55 +6,43 @@ import scala.meta._
 class CirceCoproductCodecGenerator(ir: ImportRegistry) {
 
   def encoder(coproduct: Coproduct) =
-    coproduct.discriminator.flatMap { discriminator =>
-      if (discriminator.mapping.nonEmpty) {
-        ir.registerImport(q"import _root_.io.circe.HCursor")
-        ir.registerImport(q"import _root_.io.circe.Json")
-        ir.registerImport(q"import _root_.io.circe.DecodingFailure")
-        ir.registerImport(q"import _root_.io.circe.Decoder.Result")
-        val coproductType = Type.Name(coproduct.name)
-        val encoderName =
-          Pat.Var(Term.Name(s"${coproduct.uncapitalizedName}Encoder"))
-        val coproductVarName = Term.Name(coproduct.uncapitalizedName)
-        val cases = encoderCases(discriminator)
-        Some(
-          q"""implicit val $encoderName: Encoder[$coproductType] = new Encoder[$coproductType] {
+    coproduct.discriminator.filter(_.mapping.nonEmpty).map { discriminator =>
+      ir.registerImport(q"import _root_.io.circe.HCursor")
+      ir.registerImport(q"import _root_.io.circe.Json")
+      ir.registerImport(q"import _root_.io.circe.DecodingFailure")
+      ir.registerImport(q"import _root_.io.circe.Decoder.Result")
+      val coproductType = Type.Name(coproduct.name)
+      val encoderName =
+        Pat.Var(Term.Name(s"${coproduct.uncapitalizedName}Encoder"))
+      val coproductVarName = Term.Name(coproduct.uncapitalizedName)
+      val cases = encoderCases(discriminator)
+      q"""implicit val $encoderName: Encoder[$coproductType] = new Encoder[$coproductType] {
             override def apply($coproductVarName: $coproductType): Json = 
               $coproductVarName match {
                 ..case $cases
             }
-          }
-          """
-        )
-      } else {
-        None
-      }
+        }
+        """
     }
 
   def decoder(coproduct: Coproduct) =
-    coproduct.discriminator.flatMap { discriminator =>
-      if (discriminator.mapping.nonEmpty) {
-        val cases = decoderCases(discriminator)
-        val coproductType = Type.Name(coproduct.name)
-        val decoderName =
-          Pat.Var(Term.Name(s"${coproduct.uncapitalizedName}Decoder"))
-        val dscType = discriminator match {
-          case _: Discriminator.StringDsc        => t"String"
-          case _: Discriminator.IntDsc           => t"Int"
-          case Discriminator.EnumDsc(_, enum, _) => Type.Name(enum.name)
-        }
+    coproduct.discriminator.filter(_.mapping.nonEmpty).map { discriminator =>
+      val cases = decoderCases(discriminator)
+      val coproductType = Type.Name(coproduct.name)
+      val decoderName =
+        Pat.Var(Term.Name(s"${coproduct.uncapitalizedName}Decoder"))
+      val dscType = discriminator match {
+        case _: Discriminator.StringDsc        => t"String"
+        case _: Discriminator.IntDsc           => t"Int"
+        case Discriminator.EnumDsc(_, enum, _) => Type.Name(enum.name)
+      }
 
-        Some(
-          q"""implicit val $decoderName: Decoder[$coproductType] = new Decoder[$coproductType] {
+      q"""implicit val $decoderName: Decoder[$coproductType] = new Decoder[$coproductType] {
             override def apply(c: HCursor): Result[$coproductType] = 
               c.downField(${discriminator.fieldName}).as[$dscType].flatMap {
                 ..case $cases
             }
-          }"""
-        )
-      } else {
-        None
-      }
+        }"""
     }
 
   private def encoderCases(
