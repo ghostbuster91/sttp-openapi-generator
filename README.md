@@ -13,6 +13,7 @@ Why creating another openapi-generator when there is an official one? While the 
 - support major sttp version
 - support discriminators
 - proper integration with sbt and other build tools
+- support for error encoding
 
 ## Teaser
 
