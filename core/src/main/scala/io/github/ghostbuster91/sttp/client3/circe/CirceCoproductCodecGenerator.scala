@@ -86,11 +86,11 @@ class CirceCoproductCodecGenerator(ir: ImportRegistry) {
   private def decoderCases(discriminator: Discriminator[_]): List[Case] = {
     val mappedCases = discriminator match {
       case Discriminator.StringDsc(_, mapping) =>
-        mapping.map(decoderCaseForString.tupled).toList
+        mapping.map { case (k, v) => decoderCaseForString(k, v) }.toList
       case Discriminator.IntDsc(_, mapping) =>
-        mapping.map(decoderCaseForInt.tupled).toList
+        mapping.map { case (k, v) => decoderCaseForInt(k, v) }.toList
       case Discriminator.EnumDsc(_, enum, mapping) =>
-        mapping.map(decoderCaseForEnum(enum).tupled).toList
+        mapping.map { case (k, v) => decoderCaseForEnum(enum)(k, v) }.toList
     }
     mappedCases :+ decoderOtherwiseCase()
   }
