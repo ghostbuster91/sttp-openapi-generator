@@ -21,9 +21,6 @@ components:
         - $ref: "#/components/schemas/Organization"
       discriminator:
         propertyName: name
-        mapping:
-          bob: "#/components/schemas/Person"
-          alice: "#/components/schemas/Organization"
     PersonName:
       type: string
       enum:

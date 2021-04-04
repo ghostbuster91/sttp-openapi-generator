@@ -1,0 +1,42 @@
+openapi: 3.0.3
+info:
+  title: Entities
+  version: "1.0"
+servers:
+  - url: /
+paths:
+  /:
+    get:
+      operationId: getRoot
+      parameters:
+        - name: id
+          in: query
+          required: true
+          style: form
+          explode: true
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+components:
+  schemas:
+    Person:
+      required:
+        - age
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          minimum: 11
+          type: integer
+    Id:
+      type: string
+      enum:
+        - a
+        - b

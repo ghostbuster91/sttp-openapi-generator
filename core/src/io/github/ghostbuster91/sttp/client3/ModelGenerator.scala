@@ -5,7 +5,7 @@ import scala.meta._
 class ModelGenerator(
     schemas: Map[SchemaRef, SafeSchema],
     classNames: Map[SchemaRef, String],
-    ir: ImportRegistry,
+    ir: ImportRegistry
 ) {
   def generate: Map[SchemaRef, Defn] = {
     val childToParentRef = schemas
@@ -23,7 +23,7 @@ class ModelGenerator(
       key -> schemaToClassDef(
         classNames(key),
         schema,
-        childToParentRef.get(key).map(classNames.apply),
+        childToParentRef.get(key).map(classNames.apply)
       )
     }
     val traits = schemas.collect { case (key, composed: SafeComposedSchema) =>
@@ -31,7 +31,7 @@ class ModelGenerator(
         classNames(key),
         composed.discriminator,
         parentToChilds(key)
-          .map(c => c -> schemas(c).asInstanceOf[SafeObjectSchema]),
+          .map(c => c -> schemas(c).asInstanceOf[SafeObjectSchema])
       )
     }
     traits ++ classes
@@ -43,14 +43,14 @@ class ModelGenerator(
   private def schemaToClassDef(
       name: String,
       schema: SchemaWithProperties,
-      parentClassName: Option[String],
+      parentClassName: Option[String]
   ) = {
     val props = schema.properties.map { case (k, v) =>
       processParams(
         name,
         k,
         v,
-        schema.requiredFields.contains(k),
+        schema.requiredFields.contains(k)
       )
     }.toList
     val className = Type.Name(name)
@@ -91,7 +91,7 @@ class ModelGenerator(
   private def schemaToSealedTrait(
       name: String,
       discriminator: Option[SafeDiscriminator],
-      childs: List[(SchemaRef, SafeObjectSchema)],
+      childs: List[(SchemaRef, SafeObjectSchema)]
   ): Defn.Trait = {
     val traitName = Type.Name(name)
     discriminator match {
@@ -101,7 +101,7 @@ class ModelGenerator(
         val discriminatorType = schemaToType(
           s"${childRef.key}${d.propertyName}",
           discriminatorProperty,
-          child.requiredFields.contains(d.propertyName),
+          child.requiredFields.contains(d.propertyName)
         )
         val propName = Term.Name(d.propertyName)
         q"""sealed trait $traitName {
@@ -118,12 +118,12 @@ class ModelGenerator(
       className: String,
       name: String,
       schema: SafeSchema,
-      isRequired: Boolean,
+      isRequired: Boolean
   ): Term.Param = {
     val declType = schemaToType(
-      s"${className.capitalize}${name.capitalize}", //TODO className shouldn't be needed here as enums have to be unique globally
+      "shouldnt be used!!",
       schema,
-      isRequired,
+      isRequired
     )
     paramDeclFromType(name, declType)
   }
@@ -131,7 +131,7 @@ class ModelGenerator(
   def schemaToType(
       enumName: String,
       schema: SafeSchema,
-      isRequired: Boolean,
+      isRequired: Boolean
   ): Type = {
     val declType = schemaToType(enumName, schema)
     ModelGenerator.optionApplication(declType, isRequired, schema.isArray)
@@ -178,7 +178,7 @@ object ModelGenerator {
   def apply(
       schemas: Map[String, SafeSchema],
       requestBodies: Map[String, SafeSchema],
-      ir: ImportRegistry,
+      ir: ImportRegistry
   ): ModelGenerator = {
     val modelClassNames = schemas.map { case (key, _) =>
       SchemaRef.schema(key) -> snakeToCamelCase(key)
@@ -191,7 +191,7 @@ object ModelGenerator {
       } ++ requestBodies
         .map { case (k, v) => SchemaRef.requestBody(k) -> v },
       modelClassNames,
-      ir,
+      ir
     )
   }
 
@@ -201,7 +201,7 @@ object ModelGenerator {
   def optionApplication(
       declType: Type,
       isRequired: Boolean,
-      isCollection: Boolean,
+      isCollection: Boolean
   ): Type =
     if (isRequired || isCollection) {
       declType

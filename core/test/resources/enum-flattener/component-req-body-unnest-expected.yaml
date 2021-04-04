@@ -1,0 +1,48 @@
+openapi: 3.0.2
+info:
+  title: Swagger Petstore - OpenAPI 3.0
+servers:
+  - url: /
+paths:
+  /pet:
+    post:
+      operationId: addPet
+      requestBody:
+        description: Create a new pet in the store
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/PetRequest"
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PetResponse"
+components:
+  schemas:
+    PetResponse:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+    Id:
+      type: string
+      enum:
+        - a
+        - b
+  requestBodies:
+    PetRequest:
+      content:
+        application/json:
+          schema:
+            required:
+              - id
+            type: object
+            properties:
+              id:
+                $ref: "#/components/schemas/Id"

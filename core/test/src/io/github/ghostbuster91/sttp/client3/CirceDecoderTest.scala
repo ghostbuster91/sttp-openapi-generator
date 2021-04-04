@@ -12,11 +12,11 @@ object CirceDecoderTest extends TestSuite {
         .generate(
           List(
             Enum.StringEnum(
-              List("Person", "Status"),
-              List(EnumValue.StringEv("happy"), EnumValue.StringEv("neutral")),
-            ),
+              "PersonStatus",
+              List(EnumValue.StringEv("happy"), EnumValue.StringEv("neutral"))
+            )
           ),
-          Nil,
+          Nil
         )
       assert(actual.structure == expected.structure)
     }

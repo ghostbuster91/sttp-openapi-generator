@@ -27,7 +27,8 @@ trait CommonTestModule extends BaseModule with TestModule {
     ivy"com.softwaremill.sttp.client3::circe::3.1.9",
     ivy"io.circe::circe-core::0.13.0",
     ivy"io.circe::circe-generic::0.13.0",
-    ivy"io.circe::circe-parser::0.13.0"
+    ivy"io.circe::circe-parser::0.13.0",
+    ivy"io.circe::circe-yaml::0.12.0"
   )
   def testFrameworks = Seq("utest.runner.Framework")
 }

@@ -4,7 +4,7 @@ object EnumCollector {
 
   def collectEnums(
       schemas: Map[String, SafeSchema],
-      path: List[String],
+      path: List[String]
   ): List[Enum] =
     schemas.flatMap { case (k, v) =>
       collectEnumsFromSingleSchema(path :+ k, v)
@@ -12,7 +12,7 @@ object EnumCollector {
 
   private def collectEnumsFromSingleSchema(
       path: List[String],
-      schema: SafeSchema,
+      schema: SafeSchema
   ): List[Enum] =
     schema match {
       case os: SafeObjectSchema =>
@@ -24,9 +24,9 @@ object EnumCollector {
           case list if list.nonEmpty =>
             List(
               Enum.StringEnum(
-                path,
-                list.map(v => EnumValue.StringEv(v.asInstanceOf[String])),
-              ),
+                path.last,
+                list.map(v => EnumValue.StringEv(v.asInstanceOf[String]))
+              )
             )
           case Nil => Nil
         }
@@ -35,9 +35,9 @@ object EnumCollector {
           case list if list.nonEmpty =>
             List(
               Enum.IntEnum(
-                path,
-                list.map(v => EnumValue.IntEv(v.asInstanceOf[Int])),
-              ),
+                path.last,
+                list.map(v => EnumValue.IntEv(v.asInstanceOf[Int]))
+              )
             )
           case Nil => Nil
         }

@@ -8,33 +8,33 @@ import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends AutoDerivation with SttpCirceApi {
-  implicit val personStatusDecoder: Decoder[PersonStatus] =
+  implicit val statusDecoder: Decoder[Status] =
     Decoder.decodeInt.emap({
       case 1 =>
-        Right(PersonStatus.`1`)
+        Right(Status.`1`)
       case 2 =>
-        Right(PersonStatus.`2`)
+        Right(Status.`2`)
       case 3 =>
-        Right(PersonStatus.`3`)
+        Right(Status.`3`)
       case other =>
         Left("Unexpected value for enum:" + other)
     })
-  implicit val personStatusEncoder: Encoder[PersonStatus] =
+  implicit val statusEncoder: Encoder[Status] =
     Encoder.encodeInt.contramap({
-      case PersonStatus.`1` => 1
-      case PersonStatus.`2` => 2
-      case PersonStatus.`3` => 3
+      case Status.`1` => 1
+      case Status.`2` => 2
+      case Status.`3` => 3
     })
 }
 
-sealed trait PersonStatus
-object PersonStatus {
-  case object `1` extends PersonStatus()
-  case object `2` extends PersonStatus()
-  case object `3` extends PersonStatus()
+sealed trait Status
+object Status {
+  case object `1` extends Status()
+  case object `2` extends Status()
+  case object `3` extends Status()
 }
 
-case class Person(status: PersonStatus)
+case class Person(status: Status)
 
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def getPerson(): Request[Person, Any] =

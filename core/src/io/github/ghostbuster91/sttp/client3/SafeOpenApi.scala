@@ -30,6 +30,7 @@ class SafeOpenApi(openApi: OpenAPI) {
       .toMap
 
   override def toString(): String = openApi.toString()
+  def unsafe: OpenAPI = openApi
 }
 
 class SafeComponents(c: Components) {
@@ -42,6 +43,7 @@ class SafeComponents(c: Components) {
       .map(_.asScala.mapValues(new SafeRequestBody(_)).toMap)
       .getOrElse(Map.empty)
   override def toString(): String = c.toString()
+  def unsafe: Components = c
 }
 
 class SafeRequestBody(rb: RequestBody) {
@@ -59,11 +61,11 @@ class SafePathItem(p: PathItem) {
     List(
       Option(p.getGet).map(op => (Method.Get: Method) -> new SafeOperation(op)),
       Option(p.getPut()).map(op =>
-        (Method.Put: Method) -> new SafeOperation(op),
+        (Method.Put: Method) -> new SafeOperation(op)
       ),
       Option(p.getPost()).map(op =>
-        (Method.Post: Method) -> new SafeOperation(op),
-      ),
+        (Method.Post: Method) -> new SafeOperation(op)
+      )
     ).flatten.toMap
   override def toString(): String = p.toString()
 }
@@ -101,6 +103,7 @@ sealed abstract class SafeParameter(p: Parameter) {
   def schema: SafeSchema = SafeSchema(p.getSchema())
   def required: Boolean = p.getRequired()
   override def toString(): String = p.toString()
+  def unsafe: Parameter = p
 
 }
 class SafePathParameter(p: PathParameter) extends SafeParameter(p)
@@ -116,6 +119,7 @@ class SafeApiResponse(r: ApiResponse) {
 
 class SafeMediaType(m: MediaType) {
   def schema: SafeSchema = SafeSchema(m.getSchema())
+  def unsafe: MediaType = m
 }
 
 sealed abstract class SafeSchema(s: Schema[_]) {
@@ -124,6 +128,7 @@ sealed abstract class SafeSchema(s: Schema[_]) {
   def isEnum = enum.nonEmpty
   def isArray = false
   override def toString(): String = s.toString()
+  def unsafe: Schema[_] = s
 }
 sealed abstract class SchemaWithProperties(s: Schema[_]) extends SafeSchema(s) {
   def properties: Map[String, SafeSchema] = Option(s.getProperties)
@@ -199,6 +204,7 @@ object SafeSchema {
 
 sealed trait SchemaRef {
   def key: String
+  def ref: String
 }
 object SchemaRef {
   def schema(key: String): SchemaRef = SchemaRef.Schema(key)

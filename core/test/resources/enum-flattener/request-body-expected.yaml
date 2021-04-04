@@ -1,0 +1,44 @@
+openapi: 3.0.2
+info:
+  title: Entities
+  version: "1.0"
+servers:
+  - url: /
+paths:
+  /person:
+    put:
+      summary: Update an existing person
+      description: Update an existing person by Id
+      operationId: updatePerson
+      requestBody:
+        description: Update an existent person in the store
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePerson"
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+components:
+  schemas:
+    Person:
+      required:
+        - age
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          minimum: 11
+          type: integer
+    UpdatePerson:
+      type: string
+      enum:
+        - a
+        - b

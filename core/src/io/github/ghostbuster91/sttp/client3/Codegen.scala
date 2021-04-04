@@ -1,15 +1,11 @@
 package io.github.ghostbuster91.sttp.client3
 
-import io.swagger.parser.OpenAPIParser
-import io.swagger.v3.parser.core.models.ParseOptions
-import scala.collection.JavaConverters._
-import io.swagger.v3.parser.core.models.AuthorizationValue
 import circe._
 import scala.meta._
 
 object Codegen {
   def generateUnsafe(openApiYaml: String): Source = {
-    val openApi = loadOpenApi(openApiYaml)
+    val openApi = OpenApiLoader.load(openApiYaml)
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
     val requestBodies =
       openApi.components
@@ -60,40 +56,19 @@ object Codegen {
   }
 
   private def collectOperations(
-      openApi: SafeOpenApi,
+      openApi: SafeOpenApi
   ) =
     openApi.paths.toList.flatMap { case (path, item) =>
       item.operations.map { case (method, operation) =>
         CollectedOperation(path, method, operation)
       }
     }
-
-  private def loadOpenApi(yaml: String): SafeOpenApi = {
-    val parser = new OpenAPIParser
-    val opts = new ParseOptions()
-    opts.setResolve(true)
-    opts.setFlatten(true)
-    val parserResult = parser.readContents(
-      yaml,
-      List.empty[AuthorizationValue].asJava,
-      opts,
-    )
-    Option(parserResult.getMessages).foreach { messages =>
-      messages.asScala.foreach(println)
-    }
-    Option(parserResult.getOpenAPI) match {
-      case Some(spec) =>
-        new SafeOpenApi(spec)
-      case None =>
-        throw new RuntimeException(s"Failed to parse k8s swagger specs")
-    }
-  }
 }
 
 case class CollectedOperation(
     path: String,
     method: Method,
-    operation: SafeOperation,
+    operation: SafeOperation
 )
 
 case class CodegenOutput(sources: Map[CodegenSourceType, Source])
@@ -104,17 +79,16 @@ object CodegenSourceType {
 }
 
 sealed trait Enum {
-  def path: List[String]
+  def path: String
   def values: List[EnumValue]
 
-  def name: String = path.takeRight(2).map(_.capitalize).mkString
+  def name: String = path.capitalize
   def uncapitalizedName: String = name.take(1).toLowerCase() + name.drop(1)
 }
 object Enum {
-  case class StringEnum(path: List[String], values: List[EnumValue.StringEv])
+  case class StringEnum(path: String, values: List[EnumValue.StringEv])
       extends Enum
-  case class IntEnum(path: List[String], values: List[EnumValue.IntEv])
-      extends Enum
+  case class IntEnum(path: String, values: List[EnumValue.IntEv]) extends Enum
 }
 
 sealed trait EnumValue {
@@ -129,7 +103,7 @@ object EnumValue {
   }
   case class IntEv(v: Int) extends EnumValue {
     override def fqnName(enum: Enum): Term =
-      q"${Term.Name(enum.name)}.${Term.Name(v.toString())}"
-    override def simpleName: Term.Name = Term.Name(v.toString())
+      q"${Term.Name(enum.name)}.${Term.Name(v.toString)}"
+    override def simpleName: Term.Name = Term.Name(v.toString)
   }
 }
