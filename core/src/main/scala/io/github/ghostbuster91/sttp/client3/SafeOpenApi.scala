@@ -1,7 +1,9 @@
 package io.github.ghostbuster91.sttp.client3
 
+import io.github.ghostbuster91.sttp.client3.http.Method
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.Components
+
 import scala.collection.JavaConverters._
 import io.swagger.v3.oas.models.media.Schema
 import io.swagger.v3.oas.models.PathItem

@@ -1,9 +1,13 @@
+val Scala212 = "2.12.13"
 
 val commonSettings = Seq(
-  scalaVersion := "2.13.3",
   organization := "io.github.ghostbuster91",
-  homepage := Some(url("https://github.com/ghostbuster91/sttp-openapi-generator")),
-  licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+  homepage := Some(
+    url("https://github.com/ghostbuster91/sttp-openapi-generator")
+  ),
+  licenses := List(
+    "Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")
+  ),
   developers := List(
     Developer(
       "ghostbuster91",
@@ -38,8 +42,18 @@ lazy val testDependencies = Seq(
 lazy val core: Project = (project in file("core"))
   .settings(commonSettings)
   .settings(
+    scalaVersion := Scala212,
     libraryDependencies ++= Seq(
       "org.scalameta" %% "scalameta" % "4.3.21",
       "io.swagger.parser.v3" % "swagger-parser" % "2.0.24"
     ) ++ testDependencies
   )
+
+lazy val codegenSbtPlugin: Project = (project in file("codegen-sbt-plugin"))
+  .settings(commonSettings)
+  .settings(
+    name := "sbt-sttp-openapi-codegen",
+    sbtPlugin := true
+  )
+  .enablePlugins(SbtPlugin)
+  .dependsOn(core)
