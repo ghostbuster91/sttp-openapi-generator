@@ -5,7 +5,7 @@ import scala.meta._
 class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
 
   def generate(
-      operations: List[CollectedOperation],
+      operations: List[CollectedOperation]
   ): Map[Option[String], List[Defn.Def]] = {
     val taggedOperations: List[(Option[String], CollectedOperation)] =
       operations.flatMap { op =>
@@ -24,12 +24,12 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
   }
 
   private def createApiCall(
-      co: CollectedOperation,
+      co: CollectedOperation
   ): Defn.Def = {
     val CollectedOperation(path, method, operation) = co
     val uri = constructUrl(
       path,
-      operation.parameters,
+      operation.parameters
     )
     val request = createRequestCall(method, uri)
     createApiCall(operation, request)
@@ -37,7 +37,7 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
 
   private def createApiCall(
       operation: SafeOperation,
-      basicRequestWithMethod: Term,
+      basicRequestWithMethod: Term
   ): Defn.Def = {
     val operationId = operation.operationId
 
@@ -46,9 +46,8 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
         response.content
           .collectFirst { case ("application/json", jsonResponse) =>
             modelGenerator.schemaToType(
-              "SomeRandomEnum",
               jsonResponse.schema,
-              isRequired = true,
+              isRequired = true
             )
           }
 
@@ -70,19 +69,19 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
       Term.Select(
         List(
           applyHeadersToRequest(headerParameters),
-          applyBodyToRequest(fReqBody),
+          applyBodyToRequest(fReqBody)
         )
           .reduce(_ andThen _)
           .apply(basicRequestWithMethod),
-        Term.Name("response"),
+        Term.Name("response")
       ),
-      List(q"asJson[$responseClassType].getRight"),
+      List(q"asJson[$responseClassType].getRight")
     )
     q"def $functionName(..$parameters): Request[$responseClassType, Any] = $body"
   }
 
   private def applyHeadersToRequest(
-      headers: List[SafeHeaderParameter],
+      headers: List[SafeHeaderParameter]
   )(request: Term) =
     headers.foldLeft(request) { case (ar, h) =>
       if (h.schema.isArray || !h.required) {
@@ -93,18 +92,17 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
     }
 
   private def applyBodyToRequest(bodyParameter: Option[Term.Param])(
-      request: Term,
+      request: Term
   ) =
     bodyParameter.foldLeft(request)((ar, b) =>
-      q"$ar.body(${Term.Name(b.name.value)})",
+      q"$ar.body(${Term.Name(b.name.value)})"
     )
 
   private def headerAsFuncParam(headerParam: SafeHeaderParameter) = {
     val paramName = Term.Name(headerParam.name)
     val paramType = modelGenerator.schemaToType(
-      headerParam.name,
       headerParam.schema,
-      headerParam.required,
+      headerParam.required
     )
     param"$paramName : $paramType"
   }
@@ -140,12 +138,12 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
           case list if list.nonEmpty =>
             list ++ List(
               PathElement.QuerySegment(s"&$item="),
-              PathElement.QueryParam,
+              PathElement.QueryParam
             )
           case Nil =>
             List(
               PathElement.QuerySegment(s"?$item="),
-              PathElement.QueryParam,
+              PathElement.QueryParam
             )
         }
       }
@@ -172,40 +170,38 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
     Term.Interpolate(
       Term.Name("uri"),
       List(Lit.String("")) ++ pathAndQuery.map(Lit.String(_)),
-      List(Term.Name("baseUrl")) ++ pathParams ++ queryParams,
+      List(Term.Name("baseUrl")) ++ pathParams ++ queryParams
     )
   }
 
   private def pathAsFuncParam(
-      operation: SafeOperation,
+      operation: SafeOperation
   ) =
     operation.parameters
       .collect { case pathParam: SafePathParameter =>
         val paramName = Term.Name(pathParam.name)
         val paramType = modelGenerator.schemaToType(
-          pathParam.name,
           pathParam.schema,
-          pathParam.required,
+          pathParam.required
         )
         param"$paramName : $paramType"
       }
 
   private def queryAsFuncParam(
-      operation: SafeOperation,
+      operation: SafeOperation
   ) =
     operation.parameters
       .collect { case queryParam: SafeQueryParameter =>
         val paramName = Term.Name(queryParam.name)
         val paramType = modelGenerator.schemaToType(
-          queryParam.name,
           queryParam.schema,
-          queryParam.required,
+          queryParam.required
         )
         param"$paramName : $paramType"
       }
 
   private def reqBodyAsFuncParam(
-      operation: SafeOperation,
+      operation: SafeOperation
   ) =
     operation.requestBody
       .flatMap { requestBody =>
@@ -227,7 +223,7 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
             val paramType = ModelGenerator.optionApplication(
               Type.Name(requestClassName),
               requestBody.required,
-              isCollection,
+              isCollection
             )
             param"$paramName : $paramType"
           }

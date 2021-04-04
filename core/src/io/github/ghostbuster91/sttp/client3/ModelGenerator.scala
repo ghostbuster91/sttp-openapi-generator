@@ -47,7 +47,6 @@ class ModelGenerator(
   ) = {
     val props = schema.properties.map { case (k, v) =>
       processParams(
-        name,
         k,
         v,
         schema.requiredFields.contains(k)
@@ -99,7 +98,6 @@ class ModelGenerator(
         val (childRef, child) = childs.head
         val discriminatorProperty = child.properties(d.propertyName)
         val discriminatorType = schemaToType(
-          s"${childRef.key}${d.propertyName}",
           discriminatorProperty,
           child.requiredFields.contains(d.propertyName)
         )
@@ -115,13 +113,11 @@ class ModelGenerator(
   }
 
   private def processParams(
-      className: String,
       name: String,
       schema: SafeSchema,
       isRequired: Boolean
   ): Term.Param = {
     val declType = schemaToType(
-      "shouldnt be used!!",
       schema,
       isRequired
     )
@@ -129,30 +125,21 @@ class ModelGenerator(
   }
 
   def schemaToType(
-      enumName: String,
       schema: SafeSchema,
       isRequired: Boolean
   ): Type = {
-    val declType = schemaToType(enumName, schema)
+    val declType = schemaToType(schema)
     ModelGenerator.optionApplication(declType, isRequired, schema.isArray)
   }
 
-  private def schemaToType(enumName: String, schema: SafeSchema): Type =
+  private def schemaToType(schema: SafeSchema): Type =
     schema match {
       case ss: SafeStringSchema =>
-        if (ss.isEnum) {
-          Type.Name(enumName)
-        } else {
-          t"String"
-        }
+        t"String"
       case si: SafeIntegerSchema =>
-        if (si.isEnum) {
-          Type.Name(enumName)
-        } else {
-          si.format match {
-            case Some("int64") => t"Long"
-            case _             => t"Int"
-          }
+        si.format match {
+          case Some("int64") => t"Long"
+          case _             => t"Int"
         }
       case sn: SafeNumberSchema =>
         sn.format match {
@@ -160,7 +147,7 @@ class ModelGenerator(
           case _             => t"Double"
         }
       case s: SafeArraySchema =>
-        t"List[${schemaToType(enumName, s.items)}]"
+        t"List[${schemaToType(s.items)}]"
       case ref: SafeRefSchema =>
         Type.Name(classNames(ref.ref))
       case _: SafeUUIDSchema =>
