@@ -60,8 +60,9 @@ lazy val codegenSbtPlugin: Project = (project in file("codegen-sbt-plugin"))
       scriptedLaunchOpts.value ++
         Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
     },
+    libraryDependencies += "org.scalameta" %% "scalafmt-dynamic" % "2.7.5",
     scripted := {
-      (core / publishLocal).value
+      val x = (core / publishLocal).value
       scripted.evaluated
     }
   )
