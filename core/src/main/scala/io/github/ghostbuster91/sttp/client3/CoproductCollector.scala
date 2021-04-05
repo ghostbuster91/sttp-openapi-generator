@@ -27,7 +27,7 @@ class CoproductCollector(model: ModelGenerator, enums: List[Enum]) {
           case _: SafeStringSchema =>
             Discriminator.StringDsc(
               dsc.propertyName,
-              dsc.mapping.view
+              dsc.mapping
                 .mapValues(ref => CoproductChild(model.classNameFor(ref)))
                 .toMap
             )

@@ -12,15 +12,16 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi
 case class Person(name: String, age: Int) extends Map[String, Any] {
   private val _internal_map = Map.empty[String, Any]
 
-  override def removed(key: String): Map[String, Any] =
-    _internal_map.removed(key)
-
   override def updated[V1 >: Any](key: String, value: V1): Map[String, V1] =
     _internal_map.updated(key, value)
 
   override def get(key: String): Option[Any] = _internal_map.get(key)
 
   override def iterator: Iterator[(String, Any)] = _internal_map.iterator
+
+  override def +[V1 >: Any](kv: (String, V1)): Map[String, V1] =
+    _internal_map + kv
+  override def -(key: String): Map[String, Any] = _internal_map - key
 }
 
 class DefaultApi(baseUrl: String) extends CirceCodecs {

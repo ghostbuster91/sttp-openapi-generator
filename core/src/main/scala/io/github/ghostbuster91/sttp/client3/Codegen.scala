@@ -1,9 +1,11 @@
 package io.github.ghostbuster91.sttp.client3
 
 import circe._
+
+import io.github.ghostbuster91.sttp.client3.http._
 import scala.meta._
 
-object Codegen {
+class Codegen(logger: LogAdapter) {
   def generateUnsafe(openApiYaml: String): Source = {
     val openApi = OpenApiLoader.load(openApiYaml)
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)

@@ -82,7 +82,7 @@ object GeneratorTest extends TestSuite {
   def testNoCompile()(implicit testPath: utest.framework.TestPath) = {
     val testName = testPath.value.mkString("/")
     val yaml = load(s"$testName.yaml")
-    val result = Codegen.generateUnsafe(yaml)
+    val result = new Codegen(LogAdapter.StdOut).generateUnsafe(yaml)
     val expected = load(s"$testName.scala")
     assert(result.structure == expected.parse[Source].get.structure)
   }

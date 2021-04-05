@@ -1,6 +1,8 @@
 package io.github.ghostbuster91.sttp.client3
 
 import scala.meta._
+import _root_.io.github.ghostbuster91.sttp.client3.http.Method
+import scala.collection.immutable.ListMap
 
 class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
 
@@ -15,13 +17,14 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
           case None => List(None -> op)
         }
       }
-    val apiCallByTag = taggedOperations
-      .map { case (tag, op) => tag -> createApiCall(op) }
-      .groupBy(_._1)
-      .view
-      .mapValues(_.map(_._2))
-      .toMap
-    apiCallByTag
+    val apiCallByTag =
+      taggedOperations
+        .map { case (tag, op) => tag -> createApiCall(op) }
+        .groupBy(_._1)
+        .mapValues(_.map(_._2))
+        .toMap
+
+    ListMap(apiCallByTag.toSeq.sortBy(_._1): _*)
   }
 
   private def createApiCall(

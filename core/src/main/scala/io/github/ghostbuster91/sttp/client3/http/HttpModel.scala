@@ -1,4 +1,4 @@
-package io.github.ghostbuster91.sttp.client3
+package io.github.ghostbuster91.sttp.client3.http
 
 sealed trait Method
 object Method {
