@@ -1,4 +1,5 @@
 # sttp-openapi-generator
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/ghostbuster91/sttp-openapi-generator/CI/master?style=for-the-badge" height="24">](https://github.com/ghostbuster91/sttp-openapi-generator/actions)
 
 _This project is in a very early stage, use it at your own risk!_
 
