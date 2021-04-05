@@ -56,8 +56,13 @@ lazy val codegenSbtPlugin: Project = (project in file("codegen-sbt-plugin"))
   .settings(
     name := "sbt-codegen-plugin",
     sbtPlugin := true,
-    scriptedLaunchOpts := { scriptedLaunchOpts.value ++
-      Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
+    scriptedLaunchOpts := {
+      scriptedLaunchOpts.value ++
+        Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
+    },
+    scripted := {
+      (core / publishLocal).value
+      scripted.evaluated
     }
   )
   .dependsOn(core)

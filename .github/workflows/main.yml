@@ -23,7 +23,5 @@ jobs:
         run: ./mill _.test
       - name: Run tests with sbt
         run: sbt test
-      - name: Publish core locally
-        run: sbt core/publishLocal
       - name: Run sbt-plugin tests
         run: sbt scripted
