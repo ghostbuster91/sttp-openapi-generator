@@ -13,9 +13,9 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
 
         val sourcesDir = (Compile / sourceManaged).value
         val ver = scalaVersion.value
-        val swaggerDir = (Compile / resourceDirectory).value / "swagger.yaml"
+        val swaggerDir = (Compile / resourceDirectory).value / "openapi.yaml"
         val cachedFun = FileFunction.cached(
-          streams.value.cacheDirectory / s"k8s-monocle-src-${ver}",
+          streams.value.cacheDirectory / s"sttp-openapi-src-$ver",
           FileInfo.hash
         ) { input: Set[File] =>
           input.foldLeft(Set.empty[File]) { (result, swaggerPath) =>
