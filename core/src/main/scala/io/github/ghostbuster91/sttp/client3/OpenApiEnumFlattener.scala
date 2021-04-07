@@ -5,11 +5,6 @@ import io.swagger.v3.oas.models.media.Schema
 
 object OpenApiEnumFlattener {
   def flatten(openApi: OpenAPI): SafeOpenApi = {
-    // operation params v
-    // operation reqBody v
-    // operation response v
-    //components schema v
-    // components reqBody v
     val safeApi = new SafeOpenApi(openApi)
     val schemas: List[(String, SchemaWithReassign)] = safeApi.components
       .map { cmp =>
@@ -78,7 +73,7 @@ object OpenApiEnumFlattener {
         .toList
     val enums = collectEnums(
       schemas ++ rbSchemas ++ operationParameters ++ operationReqBodies ++ operationResponses
-    ) //todo there can be duplicates
+    ) //todo there can naming conflicts with other entities
     val nameMap = generateUniqueName(NameGeneratorProgress(), enums).nameMap
     nameMap.foreach { case (name, enum) =>
       safeApi.components.get.unsafe.addSchemas(name, enum.swr.schema.unsafe)

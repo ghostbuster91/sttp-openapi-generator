@@ -25,7 +25,8 @@ class Codegen(logger: LogAdapter) {
     ir.registerImport(q"import _root_.sttp.client3._")
     ir.registerImport(q"import _root_.sttp.model._")
 
-    val modelGenerator = ModelGenerator(schemas, requestBodies, ir)
+    val modelGenerator =
+      ModelGenerator(schemas, requestBodies, ir, new CirceTypeProvider(ir))
     val model = modelGenerator.generate
     val operations = collectOperations(openApi)
     val processedOps =

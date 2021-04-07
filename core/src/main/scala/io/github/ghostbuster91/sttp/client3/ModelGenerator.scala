@@ -5,7 +5,8 @@ import scala.meta._
 class ModelGenerator(
     schemas: Map[SchemaRef, SafeSchema],
     classNames: Map[SchemaRef, String],
-    ir: ImportRegistry
+    ir: ImportRegistry,
+    jsonTypeProvider: JsonTypeProvider
 ) {
   def generate: Map[SchemaRef, Defn] = {
     val childToParentRef = schemas
@@ -53,39 +54,19 @@ class ModelGenerator(
       )
     }.toList
     val className = Type.Name(name)
-    schema match {
+    val adjustedProps = schema match {
       case _: SafeMapSchema =>
-        parentClassName match {
-          case Some(value) =>
-            val parentTypeName = Type.Name(value)
-            val parentInit = init"$parentTypeName()"
-            q"""case class $className(..$props) extends Map[String,Any] with $parentInit{
-                private val _internal_map = Map.empty[String,Any]
-                override def updated[V1 >: Any](key: String, value: V1): Map[String, V1] = _internal_map.updated(key,value)
-                override def get(key: String): Option[Any] = _internal_map.get(key)
-                override def iterator: Iterator[(String, Any)] = _internal_map.iterator
-                override def +[V1 >: Any](kv: (String, V1)): Map[String, V1] = _internal_map + kv
-                override def -(key: String): Map[String, Any] = _internal_map - key
-            }"""
-          case None =>
-            q"""case class $className(..$props) extends Map[String, Any] {
-                private val _internal_map = Map.empty[String,Any]
-                override def updated[V1 >: Any](key: String, value: V1): Map[String, V1] = _internal_map.updated(key,value)
-                override def get(key: String): Option[Any] = _internal_map.get(key)
-                override def iterator: Iterator[(String, Any)] = _internal_map.iterator
-                override def +[V1 >: Any](kv: (String, V1)): Map[String, V1] = _internal_map + kv
-                override def -(key: String): Map[String, Any] = _internal_map - key
-            }"""
-        }
-      case _: SafeObjectSchema =>
-        parentClassName match {
-          case Some(value) =>
-            val parentTypeName = Type.Name(value)
-            val parentInit = init"$parentTypeName()"
-            q"case class $className(..$props) extends $parentInit{}"
-          case None =>
-            q"case class $className(..$props)"
-        }
+        val anyType = jsonTypeProvider.anyType
+        props :+ param"_additionalProperties: Map[String, $anyType]"
+      case _: SafeObjectSchema => props
+    }
+    parentClassName match {
+      case Some(value) =>
+        val parentTypeName = Type.Name(value)
+        val parentInit = init"$parentTypeName()"
+        q"case class $className(..$adjustedProps) extends $parentInit{}"
+      case None =>
+        q"case class $className(..$adjustedProps)"
     }
   }
 
@@ -167,7 +148,8 @@ object ModelGenerator {
   def apply(
       schemas: Map[String, SafeSchema],
       requestBodies: Map[String, SafeSchema],
-      ir: ImportRegistry
+      ir: ImportRegistry,
+      jsonTypeProvider: JsonTypeProvider
   ): ModelGenerator = {
     val modelClassNames = schemas.map { case (key, _) =>
       SchemaRef.schema(key) -> snakeToCamelCase(key)
@@ -180,7 +162,8 @@ object ModelGenerator {
       } ++ requestBodies
         .map { case (k, v) => SchemaRef.requestBody(k) -> v },
       modelClassNames,
-      ir
+      ir,
+      jsonTypeProvider
     )
   }
 
