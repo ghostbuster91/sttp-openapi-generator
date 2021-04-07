@@ -5,7 +5,13 @@ import scala.meta._
 
 class CirceCoproductCodecGenerator(ir: ImportRegistry) {
 
-  def encoder(coproduct: Coproduct) =
+  def generate(coproduct: Coproduct): List[Stat] =
+    q"""
+    ..${decoder(coproduct)}
+    ..${encoder(coproduct)}
+    """.stats
+
+  private def encoder(coproduct: Coproduct) =
     coproduct.discriminator.filter(_.mapping.nonEmpty).map { discriminator =>
       ir.registerImport(q"import _root_.io.circe.HCursor")
       ir.registerImport(q"import _root_.io.circe.Json")
@@ -25,7 +31,7 @@ class CirceCoproductCodecGenerator(ir: ImportRegistry) {
         """
     }
 
-  def decoder(coproduct: Coproduct) =
+  private def decoder(coproduct: Coproduct) =
     coproduct.discriminator.filter(_.mapping.nonEmpty).map { discriminator =>
       val cases = decoderCases(discriminator)
       val coproductType = Type.Name(coproduct.name)

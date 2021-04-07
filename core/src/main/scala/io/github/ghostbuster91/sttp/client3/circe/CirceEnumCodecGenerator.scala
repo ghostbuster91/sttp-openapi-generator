@@ -4,7 +4,13 @@ import io.github.ghostbuster91.sttp.client3._
 import scala.meta._
 
 object CirceEnumCodecGenerator {
-  def encoder(enum: Enum) = {
+  def generate(enum: Enum): List[Stat] =
+    q"""
+    ${decoder(enum)}
+    ${encoder(enum)}
+    """.stats
+
+  private def encoder(enum: Enum) = {
     val enumType = Type.Name(enum.name)
     val encoderName = Pat.Var(Term.Name(s"${enum.uncapitalizedName}Encoder"))
     val cases = encoderCases(enum)
@@ -15,7 +21,7 @@ object CirceEnumCodecGenerator {
     """
   }
 
-  def decoder(enum: Enum) = {
+  private def decoder(enum: Enum) = {
     val cases = decoderCases(enum)
     val enumType = Type.Name(enum.name)
     val decoderName = Pat.Var(Term.Name(s"${enum.uncapitalizedName}Decoder"))

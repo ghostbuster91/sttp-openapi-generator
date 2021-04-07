@@ -6,23 +6,8 @@ import scala.meta._
 class CirceCodecGenerator(ir: ImportRegistry) {
   def generate(enums: List[Enum], coproducts: List[Coproduct]): Source = {
     val coproductGen = new CirceCoproductCodecGenerator(ir)
-    val enumCodecs = enums.flatMap { e =>
-      q"""
-        ${CirceEnumCodecGenerator.decoder(e)}
-        ${CirceEnumCodecGenerator.encoder(e)}
-        """.stats
-    }
-
-    val coproductCodecs = coproducts.flatMap { cp =>
-      (coproductGen.decoder(cp), coproductGen.encoder(cp)) match {
-        case (Some(de), Some(en)) =>
-          q"""
-            $de
-            $en
-        """.stats
-        case _ => List.empty
-      }
-    }
+    val enumCodecs = enums.flatMap(CirceEnumCodecGenerator.generate)
+    val coproductCodecs = coproducts.flatMap(coproductGen.generate)
 
     source"""import _root_.io.circe.Decoder
     import _root_.io.circe.Encoder
