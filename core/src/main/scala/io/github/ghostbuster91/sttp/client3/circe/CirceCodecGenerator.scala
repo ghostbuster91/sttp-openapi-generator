@@ -4,7 +4,7 @@ import io.github.ghostbuster91.sttp.client3._
 import io.github.ghostbuster91.sttp.client3.model._
 import scala.meta._
 
-class CirceCodecGenerator(ir: ImportRegistry) {
+class CirceCodecGenerator(ir: ImportRegistry) extends JsonCodecGenerator {
   def generate(
       enums: List[Enum],
       coproducts: List[Coproduct],
