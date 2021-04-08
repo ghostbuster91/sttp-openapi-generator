@@ -1,5 +1,6 @@
 package io.github.ghostbuster91.sttp.client3
 
+import io.github.ghostbuster91.sttp.client3.model._
 import scala.meta._
 
 object EnumGenerator {

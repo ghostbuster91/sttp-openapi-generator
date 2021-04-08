@@ -1,5 +1,7 @@
 package io.github.ghostbuster91.sttp.client3
 
+import io.github.ghostbuster91.sttp.client3.model._
+
 object EnumCollector {
 
   def collectEnums(schemas: Map[String, SafeSchema]): List[Enum] =

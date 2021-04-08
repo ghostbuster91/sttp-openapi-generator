@@ -1,6 +1,6 @@
 package io.github.ghostbuster91.sttp.client3
 
-import io.github.ghostbuster91.sttp.client3.circe._
+import io.github.ghostbuster91.sttp.client3.model._
 
 class OpenProductCollector(model: ModelGenerator) {
   def collect(schema: Map[String, SafeSchema]): List[OpenProduct] =

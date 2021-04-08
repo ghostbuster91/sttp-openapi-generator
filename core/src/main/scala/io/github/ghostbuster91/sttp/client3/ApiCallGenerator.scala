@@ -1,8 +1,9 @@
 package io.github.ghostbuster91.sttp.client3
 
-import scala.meta._
-import _root_.io.github.ghostbuster91.sttp.client3.http.Method
+import io.github.ghostbuster91.sttp.client3.http.Method
+import io.github.ghostbuster91.sttp.client3.model._
 import scala.collection.immutable.ListMap
+import scala.meta._
 
 class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
 
@@ -220,12 +221,12 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
               }
             case ("application/octet-stream", _) =>
               ir.registerImport(q"import _root_.java.io.File")
-              "File" -> false
+              ClassName("File") -> false
           }
           .map { case (requestClassName, isCollection) =>
-            val paramName = Term.Name(s"a$requestClassName")
+            val paramName = requestClassName.toVar
             val paramType = ModelGenerator.optionApplication(
-              Type.Name(requestClassName),
+              requestClassName.asType,
               requestBody.required,
               isCollection
             )

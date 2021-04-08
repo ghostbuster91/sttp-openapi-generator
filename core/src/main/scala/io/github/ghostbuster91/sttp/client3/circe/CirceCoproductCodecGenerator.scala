@@ -1,6 +1,7 @@
 package io.github.ghostbuster91.sttp.client3.circe
 
-import io.github.ghostbuster91.sttp.client3._
+import io.github.ghostbuster91.sttp.client3.model._
+import io.github.ghostbuster91.sttp.client3.ImportRegistry
 import scala.meta._
 
 class CirceCoproductCodecGenerator(ir: ImportRegistry) {
@@ -67,20 +68,20 @@ class CirceCoproductCodecGenerator(ir: ImportRegistry) {
     }.toList
   }
 
-  private def encoderCaseForString(child: CoproductChild) = {
+  private def encoderCaseForString(child: ClassName) = {
     val patVarChild = Pat.Var(child.toVar)
     val typedPatVar = p"$patVarChild: ${child.typeName}"
     EncoderCase(typedPatVar, child)
 
   }
 
-  private def encoderCaseForInt(child: CoproductChild) = {
+  private def encoderCaseForInt(child: ClassName) = {
     val patVarChild = Pat.Var(child.toVar)
     val typedPatVar = p"$patVarChild: ${child.typeName}"
     EncoderCase(typedPatVar, child)
   }
 
-  private def encoderCaseForEnum(child: CoproductChild) = {
+  private def encoderCaseForEnum(child: ClassName) = {
     val patVarChild = Pat.Var(child.toVar)
     val typedPatVar = p"$patVarChild: ${child.typeName}"
     EncoderCase(
@@ -101,19 +102,19 @@ class CirceCoproductCodecGenerator(ir: ImportRegistry) {
     mappedCases :+ decoderOtherwiseCase()
   }
 
-  private def decoderCaseForString(discValue: String, child: CoproductChild) = {
+  private def decoderCaseForString(discValue: String, child: ClassName) = {
     val discDecoderType = child.typeName
     p"case $discValue => Decoder[$discDecoderType].apply(c)"
   }
 
-  private def decoderCaseForInt(discValue: Int, child: CoproductChild) = {
+  private def decoderCaseForInt(discValue: Int, child: ClassName) = {
     val discDecoderType = child.typeName
     p"case $discValue => Decoder[$discDecoderType].apply(c)"
   }
 
   private def decoderCaseForEnum(
       enum: Enum
-  )(discValue: EnumValue, child: CoproductChild) = {
+  )(discValue: EnumValue, child: ClassName) = {
     val discDecoderType = child.typeName
     val evPatVar = p"${Term.Name(enum.name)}.${discValue.simpleName}"
     p"case $evPatVar => Decoder[$discDecoderType].apply(c)"
@@ -126,50 +127,14 @@ class CirceCoproductCodecGenerator(ir: ImportRegistry) {
   }
 }
 
-case class Coproduct(
-    name: String,
-    discriminator: Option[Discriminator[_]]
-) {
-
-  def uncapitalizedName: String = name.take(1).toLowerCase() + name.drop(1)
-}
-
-case class CoproductChild(name: String) {
-  def toVar: Term.Name =
-    Term.Name(name.take(1).toLowerCase() + name.drop(1))
-  def toFqnType(coproduct: Coproduct): Type =
-    t"${Term.Name(coproduct.name)}.${Type.Name(name)}"
-  def typeName: Type.Name = Type.Name(name)
-}
-
-sealed trait Discriminator[T] {
-  def fieldName: String
-  def mapping: Map[T, CoproductChild]
-}
-object Discriminator {
-  case class StringDsc(
-      fieldName: String,
-      mapping: Map[String, CoproductChild]
-  ) extends Discriminator[String]
-  case class IntDsc(
-      fieldName: String,
-      mapping: Map[Int, CoproductChild]
-  ) extends Discriminator[Int]
-  case class EnumDsc(
-      fieldName: String,
-      enum: Enum,
-      mapping: Map[EnumValue, CoproductChild]
-  ) extends Discriminator[EnumValue]
-}
-
 case class EncoderCase(
     when: Pat,
-    child: CoproductChild
+    child: ClassName
 )
 
 case class DecoderCase(
     when: Pat,
     discDecoderType: Type,
     discValue: Term,
-    child: CoproductChild
+    child: ClassName
 )

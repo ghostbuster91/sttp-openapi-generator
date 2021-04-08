@@ -1,5 +1,6 @@
 package io.github.ghostbuster91.sttp.client3
 
+import io.github.ghostbuster91.sttp.client3.model._
 import scala.meta._
 
 class ModelGenerator(
@@ -38,7 +39,9 @@ class ModelGenerator(
     traits ++ classes
   }
 
-  def classNameFor(schemaRef: SchemaRef): String = classNames(schemaRef)
+  def classNameFor(schemaRef: SchemaRef): ClassName = ClassName(
+    classNames(schemaRef)
+  )
   def schemaFor(schemaRef: SchemaRef): SafeSchema = schemas(schemaRef)
 
   private def schemaToClassDef(

@@ -13,8 +13,8 @@ case class PetRequest(id: String)
 case class PetResponse(name: String)
 
 class DefaultApi(baseUrl: String) extends CirceCodecs {
-  def addPet(aPetRequest: PetRequest): Request[PetResponse, Any] = basicRequest
+  def addPet(petRequest: PetRequest): Request[PetResponse, Any] = basicRequest
     .post(uri"$baseUrl/pet")
-    .body(aPetRequest)
+    .body(petRequest)
     .response(asJson[PetResponse].getRight)
 }

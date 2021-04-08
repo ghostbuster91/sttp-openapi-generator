@@ -1,8 +1,6 @@
 package io.github.ghostbuster91.sttp.client3
 
-import io.github.ghostbuster91.sttp.client3.circe.Coproduct
-import io.github.ghostbuster91.sttp.client3.circe.Discriminator
-import io.github.ghostbuster91.sttp.client3.circe.CoproductChild
+import io.github.ghostbuster91.sttp.client3.model._
 
 class CoproductCollector(model: ModelGenerator, enums: List[Enum]) {
   def collect(
@@ -30,31 +28,27 @@ class CoproductCollector(model: ModelGenerator, enums: List[Enum]) {
             Discriminator.StringDsc(
               dsc.propertyName,
               dsc.mapping
-                .mapValues(ref => CoproductChild(model.classNameFor(ref)))
+                .mapValues(ref => model.classNameFor(ref))
                 .toMap
             )
           case _: SafeIntegerSchema =>
             Discriminator.IntDsc(
               dsc.propertyName,
               dsc.mapping.map { case (k, v) =>
-                Integer.parseInt(k) -> CoproductChild(model.classNameFor(v))
+                Integer.parseInt(k) -> model.classNameFor(v)
               }.toMap
             )
           case sr: SafeRefSchema =>
             val enumClassName = model.classNameFor(sr.ref)
-            val enum = enums.find(e => e.name == enumClassName).get
-            val enumMap: Map[EnumValue, CoproductChild] = enum match {
+            val enum = enums.find(e => e.name == enumClassName.v).get
+            val enumMap: Map[EnumValue, ClassName] = enum match {
               case _: Enum.IntEnum =>
                 dsc.mapping.map { case (k, v) =>
-                  EnumValue.IntEv(Integer.parseInt(k)) -> CoproductChild(
-                    model.classNameFor(v)
-                  )
+                  EnumValue.IntEv(Integer.parseInt(k)) -> model.classNameFor(v)
                 }
               case _: Enum.StringEnum =>
                 dsc.mapping.map { case (k, v) =>
-                  EnumValue.StringEv(k) -> CoproductChild(
-                    model.classNameFor(v)
-                  )
+                  EnumValue.StringEv(k) -> model.classNameFor(v)
                 }
             }
             Discriminator.EnumDsc(
