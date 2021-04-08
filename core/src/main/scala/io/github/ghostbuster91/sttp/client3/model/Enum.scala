@@ -6,7 +6,7 @@ sealed trait Enum {
   def values: List[EnumValue]
   def name: ClassName
 
-  def asType = name.typeName
+  def typeName: Type.Name = name.typeName
   def term = name.term
   def asPrefix(postfix: String) = name.asPrefix(postfix)
 }

@@ -18,14 +18,12 @@ class CirceCoproductCodecGenerator(ir: ImportRegistry) {
       ir.registerImport(q"import _root_.io.circe.Json")
       ir.registerImport(q"import _root_.io.circe.DecodingFailure")
       ir.registerImport(q"import _root_.io.circe.Decoder.Result")
-      val coproductType = Type.Name(coproduct.name)
-      val encoderName =
-        Pat.Var(Term.Name(s"${coproduct.uncapitalizedName}Encoder"))
-      val coproductVarName = Term.Name(coproduct.uncapitalizedName)
+      val coproductType = coproduct.typeName
+      val encoderName = coproduct.asPrefix("Encoder")
       val cases = encoderCases(discriminator)
       q"""implicit val $encoderName: Encoder[$coproductType] = new Encoder[$coproductType] {
-            override def apply($coproductVarName: $coproductType): Json = 
-              $coproductVarName match {
+            override def apply(${coproduct.toVar}: $coproductType): Json = 
+              ${coproduct.toVar} match {
                 ..case $cases
             }
         }
@@ -35,13 +33,12 @@ class CirceCoproductCodecGenerator(ir: ImportRegistry) {
   private def decoder(coproduct: Coproduct) =
     coproduct.discriminator.filter(_.mapping.nonEmpty).map { discriminator =>
       val cases = decoderCases(discriminator)
-      val coproductType = Type.Name(coproduct.name)
-      val decoderName =
-        Pat.Var(Term.Name(s"${coproduct.uncapitalizedName}Decoder"))
+      val coproductType = coproduct.typeName
+      val decoderName = coproduct.asPrefix("Decoder")
       val dscType = discriminator match {
         case _: Discriminator.StringDsc        => t"String"
         case _: Discriminator.IntDsc           => t"Int"
-        case Discriminator.EnumDsc(_, enum, _) => enum.name.typeName
+        case Discriminator.EnumDsc(_, enum, _) => enum.typeName
       }
 
       q"""implicit val $decoderName: Decoder[$coproductType] = new Decoder[$coproductType] {
@@ -92,9 +89,8 @@ class CirceCoproductCodecGenerator(ir: ImportRegistry) {
   private def decoderCaseForEnum(
       enum: Enum
   )(discValue: EnumValue, child: ClassName) = {
-    val discDecoderType = child.typeName
     val evPatVar = p"${enum.term}.${discValue.simpleName}"
-    p"case $evPatVar => Decoder[$discDecoderType].apply(c)"
+    p"case $evPatVar => Decoder[${child.typeName}].apply(c)"
   }
 
   private def decoderOtherwiseCase() = {

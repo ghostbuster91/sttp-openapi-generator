@@ -16,7 +16,7 @@ case class ClassName(v: String) {
   def toVar: Term.Name =
     Term.Name(uncapitalized)
   def toFqnType(coproduct: Coproduct): Type =
-    t"${Term.Name(coproduct.name)}.${Type.Name(v)}"
+    t"${coproduct.name.term}.${Type.Name(v)}"
   def typeName: Type.Name = Type.Name(v)
 
   def asParam: Pat =

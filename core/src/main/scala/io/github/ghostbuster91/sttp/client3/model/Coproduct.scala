@@ -1,11 +1,12 @@
 package io.github.ghostbuster91.sttp.client3.model
 
 case class Coproduct(
-    name: String,
+    name: ClassName,
     discriminator: Option[Discriminator[_]]
 ) {
-
-  def uncapitalizedName: String = name.take(1).toLowerCase() + name.drop(1)
+  def typeName = name.typeName
+  def asPrefix(postfix: String) = name.asPrefix(postfix)
+  def toVar = name.toVar
 }
 
 sealed trait Discriminator[T] {

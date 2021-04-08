@@ -14,7 +14,7 @@ object CirceEnumCodecGenerator {
     val encoderName = enum.asPrefix("Encoder")
     val cases = encoderCases(enum)
     q"""
-    implicit val $encoderName: Encoder[${enum.asType}]  = ${baseEncoder(enum)}.contramap {
+    implicit val $encoderName: Encoder[${enum.typeName}]  = ${baseEncoder(enum)}.contramap {
         ..case $cases
     }
     """
@@ -24,7 +24,7 @@ object CirceEnumCodecGenerator {
     val cases = decoderCases(enum)
     val decoderName = enum.asPrefix("Decoder")
     q"""
-    implicit val $decoderName: Decoder[${enum.asType}]  = ${baseDecoder(enum)}.emap {
+    implicit val $decoderName: Decoder[${enum.typeName}]  = ${baseDecoder(enum)}.emap {
         ..case $cases
     }
     """
