@@ -13,13 +13,14 @@ case class ClassName(v: String) {
     v.take(1).toLowerCase() + v.drop(1)
 
   def term = Term.Name(v)
-  def asType: Type.Name = Type.Name(v)
-
   def toVar: Term.Name =
     Term.Name(uncapitalized)
   def toFqnType(coproduct: Coproduct): Type =
     t"${Term.Name(coproduct.name)}.${Type.Name(v)}"
   def typeName: Type.Name = Type.Name(v)
+
+  def asParam: Pat =
+    p"${Pat.Var(toVar)}: $typeName"
 }
 
 case class PropertyName(v: String) {

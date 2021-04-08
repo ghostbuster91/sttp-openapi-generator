@@ -17,14 +17,14 @@ object EnumCollector {
       case ss: SafeStringSchema if ss.isEnum =>
         Some(
           Enum.StringEnum(
-            schemaName,
+            ClassName(schemaName.capitalize),
             ss.enum.map(v => EnumValue.StringEv(v.asInstanceOf[String]))
           )
         )
       case si: SafeIntegerSchema if si.isEnum =>
         Some(
           Enum.IntEnum(
-            schemaName,
+            ClassName(schemaName.capitalize),
             si.enum.map(v => EnumValue.IntEv(v.asInstanceOf[Int]))
           )
         )

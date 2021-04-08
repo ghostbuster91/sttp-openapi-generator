@@ -3,16 +3,18 @@ package io.github.ghostbuster91.sttp.client3.model
 import scala.meta._
 
 sealed trait Enum {
-  def path: String
   def values: List[EnumValue]
+  def name: ClassName
 
-  def name: String = path.capitalize
-  def uncapitalizedName: String = name.take(1).toLowerCase() + name.drop(1)
+  def asType = name.typeName
+  def term = name.term
+  def asPrefix(postfix: String) = name.asPrefix(postfix)
 }
 object Enum {
-  case class StringEnum(path: String, values: List[EnumValue.StringEv])
+  case class StringEnum(name: ClassName, values: List[EnumValue.StringEv])
       extends Enum
-  case class IntEnum(path: String, values: List[EnumValue.IntEv]) extends Enum
+  case class IntEnum(name: ClassName, values: List[EnumValue.IntEv])
+      extends Enum
 }
 
 sealed trait EnumValue {
@@ -22,12 +24,12 @@ sealed trait EnumValue {
 object EnumValue {
   case class StringEv(v: String) extends EnumValue {
     override def fqnName(enum: Enum): Term =
-      q"${Term.Name(enum.name)}.${Term.Name(v.capitalize)}"
+      q"${enum.name.term}.${Term.Name(v.capitalize)}"
     override def simpleName: Term.Name = Term.Name(v.capitalize)
   }
   case class IntEv(v: Int) extends EnumValue {
     override def fqnName(enum: Enum): Term =
-      q"${Term.Name(enum.name)}.${Term.Name(v.toString)}"
+      q"${enum.name.term}.${Term.Name(v.toString)}"
     override def simpleName: Term.Name = Term.Name(v.toString)
   }
 }

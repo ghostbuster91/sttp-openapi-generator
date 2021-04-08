@@ -41,7 +41,7 @@ class CirceCoproductCodecGenerator(ir: ImportRegistry) {
       val dscType = discriminator match {
         case _: Discriminator.StringDsc        => t"String"
         case _: Discriminator.IntDsc           => t"Int"
-        case Discriminator.EnumDsc(_, enum, _) => Type.Name(enum.name)
+        case Discriminator.EnumDsc(_, enum, _) => enum.name.typeName
       }
 
       q"""implicit val $decoderName: Decoder[$coproductType] = new Decoder[$coproductType] {
@@ -57,38 +57,19 @@ class CirceCoproductCodecGenerator(ir: ImportRegistry) {
   ): List[Case] = {
     val encoderCasesForTypes = (discriminator match {
       case Discriminator.StringDsc(_, mapping) =>
-        mapping.values.map(encoderCaseForString)
+        mapping.values.map(clazzToEncoderCase)
       case Discriminator.IntDsc(_, mapping) =>
-        mapping.values.map(encoderCaseForInt)
+        mapping.values.map(clazzToEncoderCase)
       case Discriminator.EnumDsc(_, _, mapping) =>
-        mapping.values.map(encoderCaseForEnum)
+        mapping.values.map(clazzToEncoderCase)
     })
     encoderCasesForTypes.map { case EncoderCase(when, child) =>
       p"case $when => Encoder[${child.typeName}].apply(${child.toVar})"
     }.toList
   }
 
-  private def encoderCaseForString(child: ClassName) = {
-    val patVarChild = Pat.Var(child.toVar)
-    val typedPatVar = p"$patVarChild: ${child.typeName}"
-    EncoderCase(typedPatVar, child)
-
-  }
-
-  private def encoderCaseForInt(child: ClassName) = {
-    val patVarChild = Pat.Var(child.toVar)
-    val typedPatVar = p"$patVarChild: ${child.typeName}"
-    EncoderCase(typedPatVar, child)
-  }
-
-  private def encoderCaseForEnum(child: ClassName) = {
-    val patVarChild = Pat.Var(child.toVar)
-    val typedPatVar = p"$patVarChild: ${child.typeName}"
-    EncoderCase(
-      typedPatVar,
-      child
-    )
-  }
+  private def clazzToEncoderCase(clazz: ClassName) =
+    EncoderCase(clazz.asParam, clazz)
 
   private def decoderCases(discriminator: Discriminator[_]): List[Case] = {
     val mappedCases = discriminator match {
@@ -102,21 +83,17 @@ class CirceCoproductCodecGenerator(ir: ImportRegistry) {
     mappedCases :+ decoderOtherwiseCase()
   }
 
-  private def decoderCaseForString(discValue: String, child: ClassName) = {
-    val discDecoderType = child.typeName
-    p"case $discValue => Decoder[$discDecoderType].apply(c)"
-  }
+  private def decoderCaseForString(discValue: String, child: ClassName) =
+    p"case $discValue => Decoder[${child.typeName}].apply(c)"
 
-  private def decoderCaseForInt(discValue: Int, child: ClassName) = {
-    val discDecoderType = child.typeName
-    p"case $discValue => Decoder[$discDecoderType].apply(c)"
-  }
+  private def decoderCaseForInt(discValue: Int, child: ClassName) =
+    p"case $discValue => Decoder[${child.typeName}].apply(c)"
 
   private def decoderCaseForEnum(
       enum: Enum
   )(discValue: EnumValue, child: ClassName) = {
     val discDecoderType = child.typeName
-    val evPatVar = p"${Term.Name(enum.name)}.${discValue.simpleName}"
+    val evPatVar = p"${enum.term}.${discValue.simpleName}"
     p"case $evPatVar => Decoder[$discDecoderType].apply(c)"
   }
 

@@ -226,7 +226,7 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
           .map { case (requestClassName, isCollection) =>
             val paramName = requestClassName.toVar
             val paramType = ModelGenerator.optionApplication(
-              requestClassName.asType,
+              requestClassName.typeName,
               requestBody.required,
               isCollection
             )

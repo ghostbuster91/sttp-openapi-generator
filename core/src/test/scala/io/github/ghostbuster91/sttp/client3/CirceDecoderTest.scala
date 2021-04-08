@@ -13,7 +13,7 @@ object CirceDecoderTest extends TestSuite {
         .generate(
           List(
             Enum.StringEnum(
-              "PersonStatus",
+              ClassName("PersonStatus"),
               List(EnumValue.StringEv("happy"), EnumValue.StringEv("neutral"))
             )
           ),

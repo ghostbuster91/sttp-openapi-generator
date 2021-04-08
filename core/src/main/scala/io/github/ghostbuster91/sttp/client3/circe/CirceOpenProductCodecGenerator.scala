@@ -15,7 +15,7 @@ class CirceOpenProductCodecGenerator(ir: ImportRegistry) {
 
   private def encoderForSchema(openProduct: OpenProduct) = {
     val resultClassName = openProduct.name.v
-    val resultClassType = openProduct.name.asType
+    val resultClassType = openProduct.name.typeName
     val resultUncapitalized = uncapitalized(resultClassName)
     val encoderName = openProduct.name.asPrefix("Encoder")
     val encodedVarName = Term.Name(resultUncapitalized)
@@ -35,7 +35,7 @@ class CirceOpenProductCodecGenerator(ir: ImportRegistry) {
   private def baseEncoderApplication(openProduct: OpenProduct) = {
     val productEncoder = Term.Name(s"forProduct${openProduct.properties.size}")
     val encoderTypes =
-      openProduct.name.asType +: openProduct.properties.values.toList
+      openProduct.name.typeName +: openProduct.properties.values.toList
     val propNames = openProduct.properties.keys.toList
     val extractors = propNames.map(p => q"p.${p.term}")
     val prodKeys = propNames.map(n => Lit.String(n.v))
@@ -45,7 +45,7 @@ class CirceOpenProductCodecGenerator(ir: ImportRegistry) {
   private def decoderForSchema(openProduct: OpenProduct) = {
     ir.registerImport(q"import _root_.io.circe.HCursor")
     ir.registerImport(q"import _root_.io.circe.Decoder.Result")
-    val resultClassType = openProduct.name.asType
+    val resultClassType = openProduct.name.typeName
     val decoderName = p"${openProduct.name.asPrefix("Decoder")}"
     q"""implicit val $decoderName: Decoder[$resultClassType] = 
           new Decoder[$resultClassType] {

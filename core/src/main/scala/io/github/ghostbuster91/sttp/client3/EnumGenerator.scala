@@ -6,11 +6,11 @@ import scala.meta._
 object EnumGenerator {
   def enumToSealedTraitDef(enum: Enum) = {
     val objs = enum.values.map { value =>
-      val paranetInit = init"${Type.Name(enum.name)}()"
+      val paranetInit = init"${enum.name.typeName}()"
       q"case object ${value.simpleName} extends $paranetInit{}"
     }
-    source"""sealed trait ${Type.Name(enum.name)}
-    object ${Term.Name(enum.name)} {
+    source"""sealed trait ${enum.name.typeName}
+    object ${enum.name.term} {
           ..$objs
       }
     """.stats

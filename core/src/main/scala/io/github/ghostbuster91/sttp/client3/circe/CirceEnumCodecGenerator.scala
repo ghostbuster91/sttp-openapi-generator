@@ -11,11 +11,10 @@ object CirceEnumCodecGenerator {
     """.stats
 
   private def encoder(enum: Enum) = {
-    val enumType = Type.Name(enum.name)
-    val encoderName = Pat.Var(Term.Name(s"${enum.uncapitalizedName}Encoder"))
+    val encoderName = enum.asPrefix("Encoder")
     val cases = encoderCases(enum)
     q"""
-    implicit val $encoderName: Encoder[$enumType]  = ${baseEncoder(enum)}.contramap {
+    implicit val $encoderName: Encoder[${enum.asType}]  = ${baseEncoder(enum)}.contramap {
         ..case $cases
     }
     """
@@ -23,10 +22,9 @@ object CirceEnumCodecGenerator {
 
   private def decoder(enum: Enum) = {
     val cases = decoderCases(enum)
-    val enumType = Type.Name(enum.name)
-    val decoderName = Pat.Var(Term.Name(s"${enum.uncapitalizedName}Decoder"))
+    val decoderName = enum.asPrefix("Decoder")
     q"""
-    implicit val $decoderName: Decoder[$enumType]  = ${baseDecoder(enum)}.emap {
+    implicit val $decoderName: Decoder[${enum.asType}]  = ${baseDecoder(enum)}.emap {
         ..case $cases
     }
     """
@@ -35,7 +33,7 @@ object CirceEnumCodecGenerator {
   private def encoderCases(enum: Enum): List[Case] =
     enum.values.map { ev =>
       val pThen = evToLit(ev)
-      val pWhen = p"${Term.Name(enum.name)}.${ev.simpleName}"
+      val pWhen = p"${enum.name.term}.${ev.simpleName}"
       p"case $pWhen => $pThen"
     }
 
