@@ -1,6 +1,6 @@
 package io.github.ghostbuster91.sttp.client3
 
-import circe._
+import io.github.ghostbuster91.sttp.client3.json.circe._
 
 import io.github.ghostbuster91.sttp.client3.http._
 import io.github.ghostbuster91.sttp.client3.model._

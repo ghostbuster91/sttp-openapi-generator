@@ -1,4 +1,4 @@
-package io.github.ghostbuster91.sttp.client3.circe
+package io.github.ghostbuster91.sttp.client3.json.circe
 
 import io.github.ghostbuster91.sttp.client3.ImportRegistry
 import io.github.ghostbuster91.sttp.client3.model._

@@ -1,7 +1,8 @@
-package io.github.ghostbuster91.sttp.client3.circe
+package io.github.ghostbuster91.sttp.client3.json.circe
 
 import io.github.ghostbuster91.sttp.client3._
 import io.github.ghostbuster91.sttp.client3.model._
+import io.github.ghostbuster91.sttp.client3.json._
 import scala.meta._
 
 class CirceCodecGenerator(ir: ImportRegistry) extends JsonCodecGenerator {

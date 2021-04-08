@@ -1,6 +1,6 @@
 package io.github.ghostbuster91.sttp.client3
 
-import io.github.ghostbuster91.sttp.client3.circe.CirceCodecGenerator
+import io.github.ghostbuster91.sttp.client3.json.circe.CirceCodecGenerator
 import io.github.ghostbuster91.sttp.client3.model._
 import utest._
 import scala.meta._

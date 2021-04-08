@@ -1,6 +1,6 @@
-package io.github.ghostbuster91.sttp.client3.circe
+package io.github.ghostbuster91.sttp.client3.json.circe
 
-import io.github.ghostbuster91.sttp.client3.JsonTypeProvider
+import io.github.ghostbuster91.sttp.client3.json.JsonTypeProvider
 import io.github.ghostbuster91.sttp.client3.ImportRegistry
 
 import scala.meta._
