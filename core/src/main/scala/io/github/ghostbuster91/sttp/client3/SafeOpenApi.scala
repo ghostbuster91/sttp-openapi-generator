@@ -24,10 +24,7 @@ class SafeOpenApi(openApi: OpenAPI) {
   def components: Option[SafeComponents] =
     Option(openApi.getComponents).map(new SafeComponents(_))
   def paths: Map[String, SafePathItem] =
-    openApi
-      .getPaths
-      .asScala
-      .toMap
+    openApi.getPaths.asScala.toMap
       .mapValues(item => new SafePathItem(item))
       .toMap
 
@@ -62,9 +59,7 @@ class SafePathItem(p: PathItem) {
   def operations: Map[Method, SafeOperation] =
     List(
       Option(p.getGet).map(op => (Method.Get: Method) -> new SafeOperation(op)),
-      Option(p.getPut).map(op =>
-        (Method.Put: Method) -> new SafeOperation(op)
-      ),
+      Option(p.getPut).map(op => (Method.Put: Method) -> new SafeOperation(op)),
       Option(p.getPost).map(op =>
         (Method.Post: Method) -> new SafeOperation(op)
       )
@@ -80,10 +75,10 @@ class SafeOperation(op: Operation) {
   def parameters: List[SafeParameter] =
     Option(op.getParameters)
       .map(_.asScala.toList.map {
-        case pp: PathParameter => new SafePathParameter(pp)
+        case pp: PathParameter   => new SafePathParameter(pp)
         case cp: CookieParameter => new SafeCookieParameter(cp)
         case hp: HeaderParameter => new SafeHeaderParameter(hp)
-        case qp: QueryParameter => new SafeQueryParameter(qp)
+        case qp: QueryParameter  => new SafeQueryParameter(qp)
       })
       .getOrElse(List.empty)
 
@@ -152,7 +147,15 @@ class SafeFileSchema(s: FileSchema) extends SafeSchema(s)
 class SafeIntegerSchema(s: IntegerSchema) extends SafeSchema(s) {
   def format: Option[String] = Option(s.getFormat)
 }
-class SafeMapSchema(s: MapSchema) extends SchemaWithProperties(s)
+class SafeMapSchema(s: MapSchema) extends SchemaWithProperties(s) {
+  def additionalProperties: Either[Boolean, SafeSchema] =
+    Option(s.getAdditionalProperties())
+      .map {
+        case v: SafeSchema => Right(v)
+        case v             => Left(v.asInstanceOf[Boolean])
+      }
+      .getOrElse(Left(false))
+}
 class SafeNumberSchema(s: NumberSchema) extends SafeSchema(s) {
   def format: Option[String] = Option(s.getFormat)
 }

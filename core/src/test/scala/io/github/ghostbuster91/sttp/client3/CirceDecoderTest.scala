@@ -16,6 +16,7 @@ object CirceDecoderTest extends TestSuite {
               List(EnumValue.StringEv("happy"), EnumValue.StringEv("neutral"))
             )
           ),
+          Nil,
           Nil
         )
       assert(actual.structure == expected.structure)

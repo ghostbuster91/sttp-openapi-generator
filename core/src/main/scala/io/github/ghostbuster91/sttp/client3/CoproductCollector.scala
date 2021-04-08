@@ -20,7 +20,9 @@ class CoproductCollector(model: ModelGenerator, enums: List[Enum]) {
       .map { dsc =>
         val childRef = schema.oneOf.head.ref
         val child =
-          model.schemaFor(childRef).asInstanceOf[SafeObjectSchema] //TODO
+          model
+            .schemaFor(childRef)
+            .asInstanceOf[SafeObjectSchema] //TODO handle error
         val discriminatorSchema = child.properties(dsc.propertyName)
 
         val discriminator = discriminatorSchema match {

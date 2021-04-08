@@ -42,7 +42,10 @@ class Codegen(logger: LogAdapter) {
     }.toList
     val coproducts =
       new CoproductCollector(modelGenerator, enums).collect(schemas)
-    val codecs = new CirceCodecGenerator(ir).generate(enums, coproducts).stats
+    val openProducts = new OpenProductCollector(modelGenerator).collect(schemas)
+    val codecs = new CirceCodecGenerator(ir)
+      .generate(enums, coproducts, openProducts)
+      .stats
 
     source"""package io.github.ghostbuster91.sttp.client3.example {
 
