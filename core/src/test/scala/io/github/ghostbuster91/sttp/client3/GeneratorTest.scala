@@ -35,6 +35,7 @@ object GeneratorTest extends TestSuite {
       "int_enum" - testNoCompile()
       "component_enum" - testNoCompile()
       "duplicated_enum_usage" - testNoCompile()
+      "duplicated_enum" - testNoCompile()
     }
 
     "request_body" - {

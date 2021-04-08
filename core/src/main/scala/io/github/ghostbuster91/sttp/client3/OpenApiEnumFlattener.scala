@@ -93,7 +93,7 @@ object OpenApiEnumFlattener {
         val propertyName = head.propertyName.capitalize
         val counter = progress.nameCounter.getOrElse(propertyName, 0)
         val alteredName = if (counter > 0) {
-          s"$propertyName$counter"
+          s"$propertyName${counter + 1}"
         } else {
           propertyName
         }
