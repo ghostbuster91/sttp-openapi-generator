@@ -4,4 +4,5 @@ import scala.meta.Type
 
 trait JsonTypeProvider {
   def anyType: Type.Name
+  def errorType: Type
 }

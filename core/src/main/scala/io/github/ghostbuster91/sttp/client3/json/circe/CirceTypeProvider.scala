@@ -10,4 +10,6 @@ class CirceTypeProvider(ir: ImportRegistry) extends JsonTypeProvider {
     ir.registerImport(q"import _root_.io.circe.Json")
     t"Json"
   }
+  def errorType: Type =
+    t"io.circe.Error"
 }

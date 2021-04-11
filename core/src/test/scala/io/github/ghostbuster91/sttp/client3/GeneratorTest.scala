@@ -91,18 +91,26 @@ object GeneratorTest extends TestSuite {
       "optional" - test()
       "int" - test()
     }
+    "errors" - {
+      "product" - test(handleErrors = true)
+    }
   }
 
-  def testNoCompile()(implicit testPath: utest.framework.TestPath) = {
+  def testNoCompile(
+      handleErrors: Boolean = false
+  )(implicit testPath: utest.framework.TestPath) = {
     val testName = testPath.value.mkString("/")
     val yaml = load(s"$testName.yaml")
-    val result = new Codegen(LogAdapter.StdOut).generateUnsafe(yaml)
+    val result = new Codegen(LogAdapter.StdOut)
+      .generateUnsafe(yaml, CodegenConfig(handleErrors))
     val expected = load(s"$testName.scala")
     assert(result.structure == expected.parse[Source].get.structure)
   }
 
-  def test()(implicit testPath: utest.framework.TestPath) = {
-    testNoCompile()
+  def test(
+      handleErrors: Boolean = false
+  )(implicit testPath: utest.framework.TestPath) = {
+    testNoCompile(handleErrors)
     val testName = testPath.value.mkString("/")
     val expected = load(s"$testName.scala")
     expected.shouldCompile()

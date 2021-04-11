@@ -7,7 +7,7 @@ import io.github.ghostbuster91.sttp.client3.model._
 import scala.meta._
 
 class Codegen(logger: LogAdapter) {
-  def generateUnsafe(openApiYaml: String): Source = {
+  def generateUnsafe(openApiYaml: String, config: CodegenConfig): Source = {
     val openApi = OpenApiLoader.load(openApiYaml)
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
     val requestBodies = collectRequestBodies(openApi)
@@ -16,12 +16,14 @@ class Codegen(logger: LogAdapter) {
     ir.registerImport(q"import _root_.sttp.client3._")
     ir.registerImport(q"import _root_.sttp.model._")
 
+    val jsonTypeProvider = new CirceTypeProvider(ir)
     val modelGenerator =
-      ModelGenerator(schemas, requestBodies, ir, new CirceTypeProvider(ir))
+      ModelGenerator(schemas, requestBodies, ir, jsonTypeProvider)
     val model = modelGenerator.generate
     val operations = collectOperations(openApi)
     val processedOps =
-      new ApiCallGenerator(modelGenerator, ir).generate(operations)
+      new ApiCallGenerator(modelGenerator, ir, config, jsonTypeProvider)
+        .generate(operations)
 
     val coproducts = new CoproductCollector(modelGenerator, enums)
       .collect(schemas)
@@ -97,3 +99,5 @@ case class CollectedOperation(
     method: Method,
     operation: SafeOperation
 )
+
+case class CodegenConfig(handleErrors: Boolean)

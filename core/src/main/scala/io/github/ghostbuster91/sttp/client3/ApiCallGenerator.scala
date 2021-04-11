@@ -5,8 +5,14 @@ import io.github.ghostbuster91.sttp.client3.model._
 import io.github.ghostbuster91.sttp.client3.http.MediaType
 import scala.collection.immutable.ListMap
 import scala.meta._
+import _root_.io.github.ghostbuster91.sttp.client3.json.JsonTypeProvider
 
-class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
+class ApiCallGenerator(
+    modelGenerator: ModelGenerator,
+    ir: ImportRegistry,
+    config: CodegenConfig,
+    jsonTypeProvider: JsonTypeProvider
+) {
 
   def generate(
       operations: List[CollectedOperation]
@@ -45,25 +51,23 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
       operation: SafeOperation,
       basicRequestWithMethod: Term
   ): Defn.Def = {
-    val operationId = operation.operationId
+    val successClassTypes =
+      operation.responses //todo handle multiple success responses
+        .collectFirst { case ("200", response) =>
+          response.content
+            .collectFirst { case (MediaType.ApplicationJson.v, jsonResponse) =>
+              modelGenerator
+                .schemaToType(
+                  jsonResponse.schema,
+                  isRequired = true
+                )
+                .tpe
+            }
 
-    val responseClassType = operation.responses
-      .collectFirst { case ("200", response) =>
-        response.content
-          .collectFirst { case (MediaType.ApplicationJson.v, jsonResponse) =>
-            modelGenerator
-              .schemaToType(
-                jsonResponse.schema,
-                isRequired = true
-              )
-              .tpe
-          }
-
-      }
-      .flatten
-      .getOrElse(Type.Name("Unit"))
-
-    val functionName = Term.Name(operationId)
+        }
+        .flatten
+        .getOrElse(t"Unit")
+    val functionName = Term.Name(operation.operationId)
     val fQueries = queryAsFuncParam(operation)
     val fPaths = pathAsFuncParam(operation)
     val fReqBody = reqBodyAsFuncParam(operation)
@@ -73,19 +77,49 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
     val fHeaders = headerParameters.map(headerAsFuncParam)
     val parameters =
       fPaths ++ fQueries ++ fHeaders ++ fReqBody.map(_.paramDecl)
-    val body: Term = Term.Apply(
-      Term.Select(
-        (List(
-          applyHeadersToRequest(headerParameters) _
-        ) ++ fReqBody.map(_.bodyApplication).toList)
-          .reduce(_ andThen _)
-          .apply(basicRequestWithMethod),
-        Term.Name("response")
-      ),
-      List(q"asJson[$responseClassType].getRight")
+    val modifiedReq = applyOnRequest(
+      basicRequestWithMethod,
+      List(
+        applyHeadersToRequest(headerParameters) _
+      ) ++ fReqBody.map(_.bodyApplication).toList
     )
-    q"def $functionName(..$parameters): Request[$responseClassType, Any] = $body"
+    val errorClassTypes = operation.responses.collect {
+      case (statusCode, response) if statusCode != "200" =>
+        response.content
+          .collectFirst { case (MediaType.ApplicationJson.v, jsonResponse) =>
+            ErrorResponseType(
+              modelGenerator
+                .schemaToType(
+                  jsonResponse.schema,
+                  isRequired = true
+                )
+                .tpe,
+              statusCode.toInt
+            )
+          }
+
+    }.flatten
+    (config.handleErrors, errorClassTypes) match {
+      case (true, head :: Nil) =>
+        val statusCode = Lit.Int(head.statusCode)
+        val body = //TODO handle multiple success responses?
+          q"""$modifiedReq.response(fromMetadata(
+            asJsonEither[${head.tpe}, $successClassTypes],
+            ConditionalResponseAs(_.code == $statusCode, asJsonEither[${head.tpe}, $successClassTypes]), 
+            )
+          )"""
+        q"def $functionName(..$parameters): Request[Either[ResponseException[${head.tpe}, io.circe.Error], Unit], Any] = $body"
+      case (true, head :: tail) => ??? //TODo
+      case _ =>
+        val body = q"$modifiedReq.response(asJson[$successClassTypes].getRight)"
+        q"def $functionName(..$parameters): Request[$successClassTypes, Any] = $body"
+    }
   }
+
+  private def applyOnRequest(request: Term, mods: List[Term => Term]) =
+    mods
+      .reduce(_ andThen _)
+      .apply(request)
 
   private def applyHeadersToRequest(
       headers: List[SafeHeaderParameter]
@@ -281,3 +315,5 @@ object PathElement {
 }
 
 case class BodySpec(paramDecl: Term.Param, bodyApplication: Term => Term)
+
+case class ErrorResponseType(tpe: Type, statusCode: Int)

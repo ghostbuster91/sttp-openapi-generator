@@ -1,0 +1,25 @@
+openapi: 3.0.2
+info:
+  title: Entities
+  version: "1.0"
+paths:
+  /person:
+    put:
+      summary: Update an existing person
+      description: Update an existing person by Id
+      operationId: updatePerson
+      responses:
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+components:
+  schemas:
+    ErrorModel:
+      required:
+        - msg
+      type: object
+      properties:
+        msg:
+          type: string
