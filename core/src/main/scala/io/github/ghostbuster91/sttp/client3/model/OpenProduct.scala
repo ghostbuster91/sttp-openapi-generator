@@ -18,13 +18,16 @@ case class ClassName(v: String) {
   def asParam: Pat = p"${Pat.Var(toVar)}: $typeName"
 }
 
-case class TypeRef(tpe: Type, paramName: String) {
-  def asParam: Term.Param = param"${Term.Name(paramName)} : $tpe"
+case class TypeRef(tpe: Type, paramName: String, defaultValue: Option[Term]) {
+  def asParam: Term.Param = defaultValue match {
+    case Some(value) => param"${Term.Name(paramName)} : $tpe = $value"
+    case None        => param"${Term.Name(paramName)} : $tpe"
+  }
 }
 
 object TypeRef {
-  def apply(v: String): TypeRef =
-    new TypeRef(Type.Name(v), uncapitalized(v))
+  def apply(v: String, defaultValue: Option[Term]): TypeRef =
+    new TypeRef(Type.Name(v), uncapitalized(v), defaultValue)
 }
 
 case class PropertyName(v: String) {

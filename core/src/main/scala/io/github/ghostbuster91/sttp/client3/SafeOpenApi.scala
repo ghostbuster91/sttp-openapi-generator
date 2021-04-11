@@ -138,14 +138,19 @@ class SafeArraySchema(s: ArraySchema) extends SafeSchema(s) {
   override def isArray = true
 }
 class SafeBinarySchema(s: BinarySchema) extends SafeSchema(s)
-class SafeBooleanSchema(s: BooleanSchema) extends SafeSchema(s)
+class SafeBooleanSchema(s: BooleanSchema) extends SafeSchema(s) {
+  def default: Option[Boolean] = Option(s.getDefault()).map(_.booleanValue())
+}
 class SafeByteArraySchema(s: ByteArraySchema) extends SafeSchema(s)
 class SafeDateSchema(s: DateSchema) extends SafeSchema(s)
 class SafeDateTimeSchema(s: DateTimeSchema) extends SafeSchema(s)
 class SafeEmailSchema(s: EmailSchema) extends SafeSchema(s)
 class SafeFileSchema(s: FileSchema) extends SafeSchema(s)
 class SafeIntegerSchema(s: IntegerSchema) extends SafeSchema(s) {
-  def format: Option[String] = Option(s.getFormat)
+  def default: Option[Int] = Option(s.getDefault()).map(_.intValue())
+}
+class SafeLongSchema(s: IntegerSchema) extends SafeSchema(s) {
+  def default: Option[Long] = Option(s.getDefault()).map(_.longValue())
 }
 class SafeMapSchema(s: MapSchema) extends SchemaWithProperties(s) {
   def additionalProperties: Either[Boolean, SafeSchema] =
@@ -156,12 +161,17 @@ class SafeMapSchema(s: MapSchema) extends SchemaWithProperties(s) {
       }
       .getOrElse(Left(false))
 }
-class SafeNumberSchema(s: NumberSchema) extends SafeSchema(s) {
-  def format: Option[String] = Option(s.getFormat)
+class SafeDoubleSchema(s: NumberSchema) extends SafeSchema(s) {
+  def default: Option[Double] = Option(s.getDefault()).map(_.doubleValue())
+}
+class SafeFloatSchema(s: NumberSchema) extends SafeSchema(s) {
+  def default: Option[Float] = Option(s.getDefault()).map(_.floatValue())
 }
 class SafeObjectSchema(s: ObjectSchema) extends SchemaWithProperties(s)
 class SafePasswordSchema(s: PasswordSchema) extends SafeSchema(s)
-class SafeStringSchema(s: StringSchema) extends SafeSchema(s)
+class SafeStringSchema(s: StringSchema) extends SafeSchema(s) {
+  def default: Option[String] = Option(s.getDefault())
+}
 class SafeUUIDSchema(s: UUIDSchema) extends SafeSchema(s)
 class SafeRefSchema(s: Schema[_]) extends SafeSchema(s) {
   def ref: SchemaRef = SchemaRef.parse(s.get$ref)
@@ -185,16 +195,20 @@ class SafeDiscriminator(d: Discriminator) {
 object SafeSchema {
   def apply(s: Schema[_]): SafeSchema =
     s match {
-      case as: ArraySchema                => new SafeArraySchema(as)
-      case bs: BooleanSchema              => new SafeBooleanSchema(bs)
-      case bas: ByteArraySchema           => new SafeByteArraySchema(bas)
-      case ds: DateSchema                 => new SafeDateSchema(ds)
-      case dts: DateTimeSchema            => new SafeDateTimeSchema(dts)
-      case es: EmailSchema                => new SafeEmailSchema(es)
-      case fs: FileSchema                 => new SafeFileSchema(fs)
-      case is: IntegerSchema              => new SafeIntegerSchema(is)
-      case ms: MapSchema                  => new SafeMapSchema(ms)
-      case ns: NumberSchema               => new SafeNumberSchema(ns)
+      case as: ArraySchema      => new SafeArraySchema(as)
+      case bs: BooleanSchema    => new SafeBooleanSchema(bs)
+      case bas: ByteArraySchema => new SafeByteArraySchema(bas)
+      case ds: DateSchema       => new SafeDateSchema(ds)
+      case dts: DateTimeSchema  => new SafeDateTimeSchema(dts)
+      case es: EmailSchema      => new SafeEmailSchema(es)
+      case fs: FileSchema       => new SafeFileSchema(fs)
+      case is: IntegerSchema if Option(is.getFormat()).contains("int64") =>
+        new SafeLongSchema(is)
+      case is: IntegerSchema => new SafeIntegerSchema(is)
+      case ms: MapSchema     => new SafeMapSchema(ms)
+      case ns: NumberSchema if Option(ns.getFormat).contains("float") =>
+        new SafeFloatSchema(ns)
+      case ns: NumberSchema               => new SafeDoubleSchema(ns)
       case os: ObjectSchema               => new SafeObjectSchema(os)
       case ps: PasswordSchema             => new SafePasswordSchema(ps)
       case ss: StringSchema               => new SafeStringSchema(ss)

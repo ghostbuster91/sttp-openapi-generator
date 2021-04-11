@@ -119,30 +119,42 @@ class ModelGenerator(
     ModelGenerator.optionApplication(declType, isRequired, schema.isArray)
   }
 
+  def schemaToParam(
+      schema: SafeSchema,
+      isRequired: Boolean
+  ): Term.Param = {
+    val declType = schemaToType(schema)
+    ModelGenerator
+      .optionApplication(declType, isRequired, schema.isArray)
+      .asParam
+  }
+
   private def schemaToType(schema: SafeSchema): TypeRef =
     schema match {
-      case _: SafeStringSchema =>
-        TypeRef("String")
+      case ss: SafeStringSchema =>
+        TypeRef("String", ss.default.map(Lit.String(_)))
       case si: SafeIntegerSchema =>
-        si.format match {
-          case Some("int64") => TypeRef("Long")
-          case _             => TypeRef("Int")
-        }
-      case sn: SafeNumberSchema =>
-        sn.format match {
-          case Some("float") => TypeRef("Float")
-          case _             => TypeRef("Double")
-        }
-      case _: SafeBooleanSchema =>
-        TypeRef("Boolean")
+        TypeRef("Int", si.default.map(Lit.Int(_)))
+      case sl: SafeLongSchema =>
+        TypeRef("Long", sl.default.map(Lit.Long(_)))
+      case sf: SafeFloatSchema =>
+        TypeRef("Float", sf.default.map(Lit.Float(_)))
+      case sd: SafeDoubleSchema =>
+        TypeRef("Double", sd.default.map(Lit.Double(_)))
+      case sb: SafeBooleanSchema =>
+        TypeRef("Boolean", sb.default.map(Lit.Boolean(_)))
       case s: SafeArraySchema =>
         val itemTypeRef = schemaToType(s.items)
-        TypeRef(t"List[${itemTypeRef.tpe}]", itemTypeRef.paramName + "List")
+        TypeRef(
+          t"List[${itemTypeRef.tpe}]",
+          itemTypeRef.paramName + "List",
+          None
+        )
       case ref: SafeRefSchema =>
-        TypeRef(classNames(ref.ref))
+        TypeRef(classNames(ref.ref), None)
       case _: SafeUUIDSchema =>
         ir.registerImport(q"import _root_.java.util.UUID")
-        TypeRef(t"UUID", "uuid")
+        TypeRef(t"UUID", "uuid", None)
     }
 }
 

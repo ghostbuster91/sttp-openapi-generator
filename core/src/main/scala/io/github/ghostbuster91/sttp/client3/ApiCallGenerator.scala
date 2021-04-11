@@ -50,7 +50,7 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
     val responseClassType = operation.responses
       .collectFirst { case ("200", response) =>
         response.content
-          .collectFirst { case ("application/json", jsonResponse) =>
+          .collectFirst { case (MediaType.ApplicationJson.v, jsonResponse) =>
             modelGenerator
               .schemaToType(
                 jsonResponse.schema,
@@ -221,7 +221,7 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
             case (MediaType.ApplicationOctetStream.v, _) =>
               ir.registerImport(q"import _root_.java.io.File")
               ModelGenerator.optionApplication(
-                TypeRef("File"),
+                TypeRef("File", None),
                 requestBody.required,
                 false
               )

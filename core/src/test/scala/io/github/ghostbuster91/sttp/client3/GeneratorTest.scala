@@ -40,8 +40,11 @@ object GeneratorTest extends TestSuite {
 
     "request_body" - {
       "string" - test()
+      "string_with_default" - test()
       "int" - test()
+      "int_with_default" - test()
       "bool" - test()
+      "bool_with_default" - test()
       "product" - test()
       "optional_product" - test()
       "array_product" - test()
