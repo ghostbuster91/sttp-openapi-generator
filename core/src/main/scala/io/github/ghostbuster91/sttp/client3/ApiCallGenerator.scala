@@ -2,9 +2,9 @@ package io.github.ghostbuster91.sttp.client3
 
 import io.github.ghostbuster91.sttp.client3.http.Method
 import io.github.ghostbuster91.sttp.client3.model._
+import io.github.ghostbuster91.sttp.client3.http.MediaType
 import scala.collection.immutable.ListMap
 import scala.meta._
-import _root_.io.github.ghostbuster91.sttp.client3.http.MediaType
 
 class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
 
@@ -72,13 +72,12 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
     }
     val fHeaders = headerParameters.map(headerAsFuncParam)
     val parameters =
-      fPaths ++ fQueries ++ fHeaders ++ fReqBody
+      fPaths ++ fQueries ++ fHeaders ++ fReqBody.map(_.paramDecl)
     val body: Term = Term.Apply(
       Term.Select(
-        List(
-          applyHeadersToRequest(headerParameters) _,
-          applyBodyToRequest(fReqBody) _
-        )
+        (List(
+          applyHeadersToRequest(headerParameters) _
+        ) ++ fReqBody.map(_.bodyApplication).toList)
           .reduce(_ andThen _)
           .apply(basicRequestWithMethod),
         Term.Name("response")
@@ -98,13 +97,6 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
         q"$ar.header(${h.name}, ${Term.Name(h.name)}.toString())"
       }
     }
-
-  private def applyBodyToRequest(bodyParameter: Option[Term.Param])(
-      request: Term
-  ) =
-    bodyParameter.foldLeft(request)((ar, b) =>
-      q"$ar.body(${Term.Name(b.name.value)})"
-    )
 
   private def headerAsFuncParam(headerParam: SafeHeaderParameter) = {
     val paramType = modelGenerator.schemaToType(
@@ -207,27 +199,77 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
 
   private def reqBodyAsFuncParam(
       operation: SafeOperation
-  ): Option[Term.Param] =
+  ): Option[BodySpec] =
     operation.requestBody
       .flatMap { requestBody =>
         requestBody.content
           .collectFirst {
             case (MediaType.ApplicationJson.v, jsonRequest) =>
-              modelGenerator.schemaToType(
+              val tRef = modelGenerator.schemaToType(
                 jsonRequest.schema,
                 requestBody.required
               )
+              BodySpec(
+                tRef.asParam,
+                req => q"$req.body(${Term.Name(tRef.paramName)})"
+              )
+            case (MediaType.FormUrlEncoded.v, formReq) =>
+              formUrlEncodedRequestBody(requestBody, formReq)
 
             case (MediaType.ApplicationOctetStream.v, _) =>
               ir.registerImport(q"import _root_.java.io.File")
-              ModelGenerator.optionApplication(
+              val tRef = ModelGenerator.optionApplication(
                 TypeRef("File", None),
                 requestBody.required,
                 false
               )
+              BodySpec(
+                tRef.asParam,
+                req => q"$req.body(${Term.Name(tRef.paramName)})"
+              )
           }
-          .map(requestBodyType => requestBodyType.asParam)
       }
+  private def formUrlEncodedRequestBody(
+      requestBody: SafeRequestBody,
+      formReq: SafeMediaType
+  ) = {
+    val tRef = modelGenerator.schemaToType(
+      formReq.schema,
+      requestBody.required
+    )
+    val schemaRef = formReq.schema match {
+      case so: SafeRefSchema => so.ref
+    }
+    val schema = modelGenerator.schemaFor(schemaRef) match {
+      case so: SafeObjectSchema => so
+      case other =>
+        throw new IllegalArgumentException(
+          s"form url encoded parameter should be object but was: $other"
+        )
+    }
+
+    val topParamName = Term.Name(tRef.paramName)
+    val extractors =
+      schema.properties.map { case (p, pSchema) =>
+        val isRequired = schema.requiredFields.contains(p)
+        val stringify: Term => Term = value =>
+          pSchema match {
+            case _: SafeStringSchema => value
+            case _                   => q"$value.toString"
+          }
+        val paramName = Term.Name(p)
+        if (isRequired) {
+          q"List($p -> $topParamName.$paramName)"
+        } else {
+          val paramParamName = param"$paramName"
+          q"$topParamName.$paramName.map($paramParamName=> $p -> ${stringify(paramName)})"
+        }
+      }.toList
+    BodySpec(
+      tRef.asParam,
+      req => q"$req.body(List(..$extractors).flatten)"
+    )
+  }
 }
 
 sealed trait PathElement
@@ -237,3 +279,5 @@ object PathElement {
   case class QuerySegment(v: String) extends PathElement
   case object QueryParam extends PathElement
 }
+
+case class BodySpec(paramDecl: Term.Param, bodyApplication: Term => Term)

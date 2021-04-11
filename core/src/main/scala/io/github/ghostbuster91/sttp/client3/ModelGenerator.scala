@@ -119,16 +119,6 @@ class ModelGenerator(
     ModelGenerator.optionApplication(declType, isRequired, schema.isArray)
   }
 
-  def schemaToParam(
-      schema: SafeSchema,
-      isRequired: Boolean
-  ): Term.Param = {
-    val declType = schemaToType(schema)
-    ModelGenerator
-      .optionApplication(declType, isRequired, schema.isArray)
-      .asParam
-  }
-
   private def schemaToType(schema: SafeSchema): TypeRef =
     schema match {
       case ss: SafeStringSchema =>
