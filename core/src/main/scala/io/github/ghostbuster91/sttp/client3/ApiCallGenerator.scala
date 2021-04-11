@@ -4,6 +4,7 @@ import io.github.ghostbuster91.sttp.client3.http.Method
 import io.github.ghostbuster91.sttp.client3.model._
 import scala.collection.immutable.ListMap
 import scala.meta._
+import _root_.io.github.ghostbuster91.sttp.client3.http.MediaType
 
 class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
 
@@ -50,10 +51,12 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
       .collectFirst { case ("200", response) =>
         response.content
           .collectFirst { case ("application/json", jsonResponse) =>
-            modelGenerator.schemaToType(
-              jsonResponse.schema,
-              isRequired = true
-            )
+            modelGenerator
+              .schemaToType(
+                jsonResponse.schema,
+                isRequired = true
+              )
+              .tpe
           }
 
       }
@@ -104,12 +107,11 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
     )
 
   private def headerAsFuncParam(headerParam: SafeHeaderParameter) = {
-    val paramName = Term.Name(headerParam.name)
     val paramType = modelGenerator.schemaToType(
       headerParam.schema,
       headerParam.required
     )
-    param"$paramName : $paramType"
+    paramType.copy(paramName = headerParam.name).asParam
   }
 
   private def createRequestCall(method: Method, uri: Term) =
@@ -181,57 +183,50 @@ class ApiCallGenerator(modelGenerator: ModelGenerator, ir: ImportRegistry) {
 
   private def pathAsFuncParam(
       operation: SafeOperation
-  ) =
+  ): List[Term.Param] =
     operation.parameters
       .collect { case pathParam: SafePathParameter =>
-        val paramName = Term.Name(pathParam.name)
         val paramType = modelGenerator.schemaToType(
           pathParam.schema,
           pathParam.required
         )
-        param"$paramName : $paramType"
+        paramType.copy(paramName = pathParam.name).asParam
       }
 
   private def queryAsFuncParam(
       operation: SafeOperation
-  ) =
+  ): List[Term.Param] =
     operation.parameters
       .collect { case queryParam: SafeQueryParameter =>
-        val paramName = Term.Name(queryParam.name)
         val paramType = modelGenerator.schemaToType(
           queryParam.schema,
           queryParam.required
         )
-        param"$paramName : $paramType"
+        paramType.copy(paramName = queryParam.name).asParam
       }
 
   private def reqBodyAsFuncParam(
       operation: SafeOperation
-  ) =
+  ): Option[Term.Param] =
     operation.requestBody
       .flatMap { requestBody =>
         requestBody.content
           .collectFirst {
-            case ("application/json", jsonRequest) =>
-              jsonRequest.schema match {
-                case rs: SafeRefSchema =>
-                  modelGenerator.classNameFor(rs.ref) -> modelGenerator
-                    .schemaFor(rs.ref)
-                    .isArray
-              }
-            case ("application/octet-stream", _) =>
+            case (MediaType.ApplicationJson.v, jsonRequest) =>
+              modelGenerator.schemaToType(
+                jsonRequest.schema,
+                requestBody.required
+              )
+
+            case (MediaType.ApplicationOctetStream.v, _) =>
               ir.registerImport(q"import _root_.java.io.File")
-              ClassName("File") -> false
+              ModelGenerator.optionApplication(
+                TypeRef("File"),
+                requestBody.required,
+                false
+              )
           }
-          .map { case (requestClassName, isCollection) =>
-            val paramName = requestClassName.toVar
-            val paramType = ModelGenerator.optionApplication(
-              requestClassName.typeName,
-              requestBody.required,
-              isCollection
-            )
-            param"$paramName : $paramType"
-          }
+          .map(requestBodyType => requestBodyType.asParam)
       }
 }
 

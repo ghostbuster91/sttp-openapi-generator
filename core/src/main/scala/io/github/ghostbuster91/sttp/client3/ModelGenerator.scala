@@ -90,7 +90,7 @@ class ModelGenerator(
         )
         val propName = Term.Name(d.propertyName)
         q"""sealed trait $traitName {
-          def $propName: $discriminatorType
+          def $propName: ${discriminatorType.tpe}
         }
         """
       case None =>
@@ -108,44 +108,42 @@ class ModelGenerator(
       schema,
       isRequired
     )
-    paramDeclFromType(name, declType)
+    declType.copy(paramName = name).asParam
   }
 
   def schemaToType(
       schema: SafeSchema,
       isRequired: Boolean
-  ): Type = {
+  ): TypeRef = {
     val declType = schemaToType(schema)
     ModelGenerator.optionApplication(declType, isRequired, schema.isArray)
   }
 
-  private def schemaToType(schema: SafeSchema): Type =
+  private def schemaToType(schema: SafeSchema): TypeRef =
     schema match {
       case _: SafeStringSchema =>
-        t"String"
+        TypeRef("String")
       case si: SafeIntegerSchema =>
         si.format match {
-          case Some("int64") => t"Long"
-          case _             => t"Int"
+          case Some("int64") => TypeRef("Long")
+          case _             => TypeRef("Int")
         }
       case sn: SafeNumberSchema =>
         sn.format match {
-          case Some("float") => t"Float"
-          case _             => t"Double"
+          case Some("float") => TypeRef("Float")
+          case _             => TypeRef("Double")
         }
+      case _: SafeBooleanSchema =>
+        TypeRef("Boolean")
       case s: SafeArraySchema =>
-        t"List[${schemaToType(s.items)}]"
+        val itemTypeRef = schemaToType(s.items)
+        TypeRef(t"List[${itemTypeRef.tpe}]", itemTypeRef.paramName + "List")
       case ref: SafeRefSchema =>
-        Type.Name(classNames(ref.ref))
+        TypeRef(classNames(ref.ref))
       case _: SafeUUIDSchema =>
         ir.registerImport(q"import _root_.java.util.UUID")
-        t"UUID"
+        TypeRef(t"UUID", "uuid")
     }
-
-  private def paramDeclFromType(paramName: String, declType: Type) = {
-    val tpeName = Term.Name(paramName)
-    param"$tpeName: $declType"
-  }
 }
 
 object ModelGenerator {
@@ -175,13 +173,13 @@ object ModelGenerator {
     snake.split('_').toList.map(_.capitalize).mkString
 
   def optionApplication(
-      declType: Type,
+      declType: TypeRef,
       isRequired: Boolean,
       isCollection: Boolean
-  ): Type =
+  ): TypeRef =
     if (isRequired || isCollection) {
       declType
     } else {
-      t"Option[$declType]"
+      declType.copy(tpe = t"Option[${declType.tpe}]")
     }
 }

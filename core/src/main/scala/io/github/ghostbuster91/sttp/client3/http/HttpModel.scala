@@ -14,4 +14,6 @@ object Method {
 sealed abstract class MediaType(val v: String)
 object MediaType {
   case object ApplicationJson extends MediaType("application/json")
+  case object ApplicationOctetStream
+      extends MediaType("application/octet-stream")
 }

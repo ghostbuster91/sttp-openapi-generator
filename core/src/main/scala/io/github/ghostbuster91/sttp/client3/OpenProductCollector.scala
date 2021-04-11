@@ -8,10 +8,12 @@ class OpenProductCollector(model: ModelGenerator) {
       OpenProduct(
         ClassName(k),
         schema.properties.map { case (k, v) =>
-          PropertyName(k) -> model.schemaToType(
-            v,
-            schema.requiredFields.contains(k)
-          )
+          PropertyName(k) -> model
+            .schemaToType(
+              v,
+              schema.requiredFields.contains(k)
+            )
+            .tpe
         }
       )
     }.toList

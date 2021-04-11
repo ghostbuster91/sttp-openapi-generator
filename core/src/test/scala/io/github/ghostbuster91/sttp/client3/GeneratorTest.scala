@@ -39,8 +39,12 @@ object GeneratorTest extends TestSuite {
     }
 
     "request_body" - {
-      "simple" - test()
-      "optional" - test()
+      "string" - test()
+      "int" - test()
+      "bool" - test()
+      "product" - test()
+      "optional_product" - test()
+      "array_product" - test()
       "request_body_direct" - test()
       "request_body_indirect" - test()
     }
