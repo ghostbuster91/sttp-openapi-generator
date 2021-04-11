@@ -192,6 +192,9 @@ object ModelGenerator {
     if (isRequired || isCollection) {
       declType
     } else {
-      declType.copy(tpe = t"Option[${declType.tpe}]")
+      declType.copy(
+        tpe = t"Option[${declType.tpe}]",
+        defaultValue = declType.defaultValue.map(d => q"Some($d)")
+      )
     }
 }
