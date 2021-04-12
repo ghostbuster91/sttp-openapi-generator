@@ -3,6 +3,7 @@ package io.github.ghostbuster91.sttp.client3
 import utest._
 import io.swagger.v3.core.util.Yaml
 import io.circe.yaml.parser
+import io.github.ghostbuster91.sttp.client3.openapi.OpenApiLoader
 
 object FlattenerTest extends TestSuite {
   val tests = Tests {

@@ -1,7 +1,13 @@
-package io.github.ghostbuster91.sttp.client3
+package io.github.ghostbuster91.sttp.client3.openapi
 
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.media.Schema
+import io.github.ghostbuster91.sttp.client3.SafeOpenApi
+import io.github.ghostbuster91.sttp.client3.http.MediaType
+import io.github.ghostbuster91.sttp.client3.SchemaRef
+import io.github.ghostbuster91.sttp.client3.SafeRefSchema
+import io.github.ghostbuster91.sttp.client3.SafeSchema
+import io.github.ghostbuster91.sttp.client3.SafeObjectSchema
 
 object OpenApiEnumFlattener {
   def flatten(openApi: OpenAPI): SafeOpenApi = {
@@ -18,11 +24,10 @@ object OpenApiEnumFlattener {
       .getOrElse(List.empty)
     val requestBodies =
       safeApi.components.map(_.requestBodies).getOrElse(Map.empty)
-    val ApplicationJson = "application/json"
     val rbSchemas: List[(String, SchemaWithReassign)] =
       requestBodies.toList.flatMap { case (k, rb) =>
         rb.content
-          .get(ApplicationJson)
+          .get(MediaType.ApplicationJson.v)
           .map(mt =>
             k -> SchemaWithReassign(
               mt.schema,
@@ -47,7 +52,7 @@ object OpenApiEnumFlattener {
         .flatMap(o =>
           o.requestBody.flatMap(
             _.content
-              .get(ApplicationJson)
+              .get(MediaType.ApplicationJson.v)
               .map(mt =>
                 o.operationId -> SchemaWithReassign(
                   mt.schema,
@@ -62,7 +67,7 @@ object OpenApiEnumFlattener {
         .flatMap(_.operations.values)
         .flatMap(o =>
           o.responses.values
-            .flatMap(_.content.get(ApplicationJson))
+            .flatMap(_.content.get(MediaType.ApplicationJson.v))
             .map(mt =>
               o.operationId -> SchemaWithReassign(
                 mt.schema,

@@ -1,9 +1,10 @@
-package io.github.ghostbuster91.sttp.client3
+package io.github.ghostbuster91.sttp.client3.openapi
 
 import io.swagger.parser.OpenAPIParser
 import io.swagger.v3.parser.core.models.ParseOptions
 import scala.collection.JavaConverters._
 import io.swagger.v3.parser.core.models.AuthorizationValue
+import io.github.ghostbuster91.sttp.client3.SafeOpenApi
 
 object OpenApiLoader {
   def load(yaml: String): SafeOpenApi = {
