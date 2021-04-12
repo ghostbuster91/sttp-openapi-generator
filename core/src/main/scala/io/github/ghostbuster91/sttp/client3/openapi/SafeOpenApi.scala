@@ -29,7 +29,7 @@ class SafeOpenApi(openApi: OpenAPI) {
       .toMap
 
   override def toString: String = openApi.toString
-  def unsafe: OpenAPI = openApi
+  private[openapi] def unsafe: OpenAPI = openApi
 }
 
 class SafeComponents(c: Components) {
@@ -42,7 +42,7 @@ class SafeComponents(c: Components) {
       .map(_.asScala.mapValues(new SafeRequestBody(_)).toMap)
       .getOrElse(Map.empty)
   override def toString: String = c.toString
-  def unsafe: Components = c
+  private[openapi] def unsafe: Components = c
 }
 
 class SafeRequestBody(rb: RequestBody) {
@@ -98,8 +98,7 @@ sealed abstract class SafeParameter(p: Parameter) {
   def schema: SafeSchema = SafeSchema(p.getSchema)
   def required: Boolean = p.getRequired()
   override def toString: String = p.toString
-  def unsafe: Parameter = p
-
+  private[openapi] def unsafe: Parameter = p
 }
 class SafePathParameter(p: PathParameter) extends SafeParameter(p)
 class SafeHeaderParameter(p: HeaderParameter) extends SafeParameter(p)
@@ -114,7 +113,7 @@ class SafeApiResponse(r: ApiResponse) {
 
 class SafeMediaType(m: MediaType) {
   def schema: SafeSchema = SafeSchema(m.getSchema)
-  def unsafe: MediaType = m
+  private[openapi] def unsafe: MediaType = m
 }
 
 sealed abstract class SafeSchema(s: Schema[_]) {
@@ -123,7 +122,7 @@ sealed abstract class SafeSchema(s: Schema[_]) {
   def isEnum: Boolean = enum.nonEmpty
   def isArray = false
   override def toString: String = s.toString
-  def unsafe: Schema[_] = s
+  private[openapi] def unsafe: Schema[_] = s
 }
 sealed abstract class SchemaWithProperties(s: Schema[_]) extends SafeSchema(s) {
   def properties: Map[String, SafeSchema] = Option(s.getProperties)

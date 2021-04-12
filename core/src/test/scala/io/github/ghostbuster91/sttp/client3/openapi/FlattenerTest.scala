@@ -1,9 +1,10 @@
-package io.github.ghostbuster91.sttp.client3
+package io.github.ghostbuster91.sttp.client3.openapi
 
 import utest._
 import io.swagger.v3.core.util.Yaml
 import io.circe.yaml.parser
 import io.github.ghostbuster91.sttp.client3.openapi.OpenApiLoader
+import io.github.ghostbuster91.sttp.client3.FileLoader
 
 object FlattenerTest extends TestSuite {
   val tests = Tests {
@@ -25,6 +26,6 @@ object FlattenerTest extends TestSuite {
   }
 
   private def load(fileName: String): String =
-    FileLoader.loadFile("enum_flattener", fileName)
+    FileLoader.loadFile("openapi/enum_flattener", fileName)
 
 }
