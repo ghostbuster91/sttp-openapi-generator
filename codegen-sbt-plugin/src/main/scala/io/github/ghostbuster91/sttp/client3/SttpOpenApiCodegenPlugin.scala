@@ -13,7 +13,10 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
     lazy val generateSources =
       Def.task {
         val log = streams.value.log
-        val codegen = new Codegen(new SbtLogAdapter(log))
+        val codegen = new Codegen(
+          new SbtLogAdapter(log),
+          CodegenConfig(handleErrors = false)
+        )
 
         val sourcesDir = (Compile / sourceManaged).value
         val scalaVer = scalaVersion.value

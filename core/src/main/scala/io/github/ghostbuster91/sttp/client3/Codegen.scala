@@ -6,8 +6,8 @@ import io.github.ghostbuster91.sttp.client3.http._
 import io.github.ghostbuster91.sttp.client3.model._
 import scala.meta._
 
-class Codegen(logger: LogAdapter) {
-  def generateUnsafe(openApiYaml: String, config: CodegenConfig): Source = {
+class Codegen(logger: LogAdapter, config: CodegenConfig) {
+  def generateUnsafe(openApiYaml: String): Source = {
     val openApi = OpenApiLoader.load(openApiYaml)
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
     val requestBodies = collectRequestBodies(openApi)

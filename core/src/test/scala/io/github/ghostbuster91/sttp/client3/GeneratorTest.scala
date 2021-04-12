@@ -101,8 +101,8 @@ object GeneratorTest extends TestSuite {
   )(implicit testPath: utest.framework.TestPath) = {
     val testName = testPath.value.mkString("/")
     val yaml = load(s"$testName.yaml")
-    val result = new Codegen(LogAdapter.StdOut)
-      .generateUnsafe(yaml, CodegenConfig(handleErrors))
+    val result = new Codegen(LogAdapter.StdOut, CodegenConfig(handleErrors))
+      .generateUnsafe(yaml)
     val expected = load(s"$testName.scala")
     assert(result.structure == expected.parse[Source].get.structure)
   }
