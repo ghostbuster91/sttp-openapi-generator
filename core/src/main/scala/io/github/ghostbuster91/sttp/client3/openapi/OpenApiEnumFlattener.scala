@@ -1,13 +1,10 @@
 package io.github.ghostbuster91.sttp.client3.openapi
 
-import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.media.Schema
 import io.github.ghostbuster91.sttp.client3.http.MediaType
-import io.github.ghostbuster91.sttp.client3.openapi._
 
 object OpenApiEnumFlattener {
-  def flatten(openApi: OpenAPI): SafeOpenApi = {
-    val safeApi = new SafeOpenApi(openApi)
+  def flatten(safeApi: SafeOpenApi): SafeOpenApi = {
     val schemas: List[(String, SchemaWithReassign)] = safeApi.components
       .map { cmp =>
         cmp.schemas.toList.map { case (k, v) =>

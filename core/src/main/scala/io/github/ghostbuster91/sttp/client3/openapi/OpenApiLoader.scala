@@ -21,7 +21,10 @@ object OpenApiLoader {
     }
     Option(parserResult.getOpenAPI) match {
       case Some(spec) =>
-        OpenApiEnumFlattener.flatten(spec)
+        List(
+          OpenApiEnumFlattener.flatten(_),
+          OpenApiCoproductGenerator.generate(_)
+        ).foldLeft(new SafeOpenApi(spec))((acc, item) => item(acc))
       case None =>
         throw new RuntimeException(s"Failed to parse k8s swagger specs")
     }

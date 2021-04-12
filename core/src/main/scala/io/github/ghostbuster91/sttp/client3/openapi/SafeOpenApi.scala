@@ -68,7 +68,8 @@ class SafePathItem(p: PathItem) {
 }
 
 class SafeOperation(op: Operation) {
-  def operationId: String = op.getOperationId
+  def operationId: String =
+    op.getOperationId //TODO introduce operationId value object
   def tags: Option[List[String]] =
     Option(op.getTags).map(_.asScala.toList)
 

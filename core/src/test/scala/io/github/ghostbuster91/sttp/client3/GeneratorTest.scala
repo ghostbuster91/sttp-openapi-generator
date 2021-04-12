@@ -7,93 +7,93 @@ import scala.tools.reflect.ToolBox
 object GeneratorTest extends TestSuite {
   val tests = Tests {
 
-    "simple" - {
-      "simple_get_person" - test()
-      "post" - test()
-      "simple_get_nested_products" - test()
-      "simple_get_person_optional" - test()
-      "simple_get_product_array" - test()
-      "simple_put_no_response" - test()
-      "simple_get_reserved" - test()
-    }
-    "uri" - {
-      "get_with_query_param" - test()
-      "get_with_optional_query_param" - test()
-      "get_with_multiple_query_param" - test()
-      "get_with_path_param" - test()
-      "get_with_path_param_fixed_ending" - test()
-      "get_with_multiple_path_param" - test()
-      "get_with_multiple_path_param_2" - test()
-      "mixed_path_and_query" - test()
-    }
-    "enum" - {
-      //TODO:
-      //reflective compilation has failed:
-      //Internal error: unable to find the outer accessor symbol of class Api
-      //    scala.tools.reflect.ToolBoxFactory$ToolBoxImpl$ToolBoxGlobal.throwIfErrors(ToolBoxFactory.scala:332)
-      "string_enum" - testNoCompile()
-      "int_enum" - testNoCompile()
-      "component_enum" - testNoCompile()
-      "duplicated_enum_usage" - testNoCompile()
-      "duplicated_enum" - testNoCompile()
-    }
+    // "simple" - {
+    //   "simple_get_person" - test()
+    //   "post" - test()
+    //   "simple_get_nested_products" - test()
+    //   "simple_get_person_optional" - test()
+    //   "simple_get_product_array" - test()
+    //   "simple_put_no_response" - test()
+    //   "simple_get_reserved" - test()
+    // }
+    // "uri" - {
+    //   "get_with_query_param" - test()
+    //   "get_with_optional_query_param" - test()
+    //   "get_with_multiple_query_param" - test()
+    //   "get_with_path_param" - test()
+    //   "get_with_path_param_fixed_ending" - test()
+    //   "get_with_multiple_path_param" - test()
+    //   "get_with_multiple_path_param_2" - test()
+    //   "mixed_path_and_query" - test()
+    // }
+    // "enum" - {
+    //   //TODO:
+    //   //reflective compilation has failed:
+    //   //Internal error: unable to find the outer accessor symbol of class Api
+    //   //    scala.tools.reflect.ToolBoxFactory$ToolBoxImpl$ToolBoxGlobal.throwIfErrors(ToolBoxFactory.scala:332)
+    //   "string_enum" - testNoCompile()
+    //   "int_enum" - testNoCompile()
+    //   "component_enum" - testNoCompile()
+    //   "duplicated_enum_usage" - testNoCompile()
+    //   "duplicated_enum" - testNoCompile()
+    // }
 
-    "request_body" - {
-      "string" - test()
-      "string_with_default" - test()
-      "optional_string_with_default" - test()
-      "int" - test()
-      "int_with_default" - test()
-      "bool" - test()
-      "bool_with_default" - test()
-      "product" - test()
-      //TODO
-      //scala.tools.reflect.ToolBoxError: reflective compilation has failed:
-      //No implicit view available from Product with Serializable => scala.collection.GenTraversableOnce[B].
-      "product_form_encoded" - testNoCompile()
-      "optional_product" - test()
-      "array_product" - test()
-      "request_body_direct" - test()
-      "request_body_indirect" - test()
-    }
+    // "request_body" - {
+    //   "string" - test()
+    //   "string_with_default" - test()
+    //   "optional_string_with_default" - test()
+    //   "int" - test()
+    //   "int_with_default" - test()
+    //   "bool" - test()
+    //   "bool_with_default" - test()
+    //   "product" - test()
+    //   //TODO
+    //   //scala.tools.reflect.ToolBoxError: reflective compilation has failed:
+    //   //No implicit view available from Product with Serializable => scala.collection.GenTraversableOnce[B].
+    //   "product_form_encoded" - testNoCompile()
+    //   "optional_product" - test()
+    //   "array_product" - test()
+    //   "request_body_direct" - test()
+    //   "request_body_indirect" - test()
+    // }
 
-    "tag" - {
-      "operation_with_tag" - test()
-      "multiple_operations_with_same_tag" - test()
-      "multiple_operations_with_different_tag" - test()
-    }
+    // "tag" - {
+    //   "operation_with_tag" - test()
+    //   "multiple_operations_with_same_tag" - test()
+    //   "multiple_operations_with_different_tag" - test()
+    // }
 
-    "coproduct" - {
-      "simple" - test()
-      "string_discriminator" - test()
-      "int_discriminator" - test()
-      "discriminator_with_mapping" - test()
-      // Following case is actually invalid because there is no way to create discriminator mapping using empty value as a key
-      //"optional_discriminator" - test()
-      "discriminator_enum" - testNoCompile()
-      "discriminator_with_enum_mapping" - testNoCompile()
-    }
+    // "coproduct" - {
+    //   "simple" - test()
+    //   "string_discriminator" - test()
+    //   "int_discriminator" - test()
+    //   "discriminator_with_mapping" - test()
+    //   // Following case is actually invalid because there is no way to create discriminator mapping using empty value as a key
+    //   //"optional_discriminator" - test()
+    //   "discriminator_enum" - testNoCompile()
+    //   "discriminator_with_enum_mapping" - testNoCompile()
+    // }
 
-    "get_inline_response_200" - test()
-    "get_additional_props" - test()
+    // "get_inline_response_200" - test()
+    // "get_additional_props" - test()
 
-    "format" - {
-      "int32" - test()
-      "int64" - test()
-      "double" - test()
-      "float" - test()
-      "uuid" - test()
-    }
+    // "format" - {
+    //   "int32" - test()
+    //   "int64" - test()
+    //   "double" - test()
+    //   "float" - test()
+    //   "uuid" - test()
+    // }
 
-    "header" - {
-      "string" - test()
-      "array_of_strings" - test()
-      "optional" - test()
-      "int" - test()
-    }
-    "errors" - {
-      "product" - test(handleErrors = true)
-    }
+    // "header" - {
+    //   "string" - test()
+    //   "array_of_strings" - test()
+    //   "optional" - test()
+    //   "int" - test()
+    // }
+    // "errors" - {
+    //   "product" - test(handleErrors = true)
+    // }
   }
 
   def testNoCompile(
