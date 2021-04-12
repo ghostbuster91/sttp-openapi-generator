@@ -2,10 +2,11 @@ package io.github.ghostbuster91.sttp.client3
 
 import io.github.ghostbuster91.sttp.client3.http.Method
 import io.github.ghostbuster91.sttp.client3.model._
+import io.github.ghostbuster91.sttp.client3.openapi._
 import io.github.ghostbuster91.sttp.client3.http.MediaType
 import scala.collection.immutable.ListMap
+import io.github.ghostbuster91.sttp.client3.json.JsonTypeProvider
 import scala.meta._
-import _root_.io.github.ghostbuster91.sttp.client3.json.JsonTypeProvider
 
 class ApiCallGenerator(
     modelGenerator: ModelGenerator,

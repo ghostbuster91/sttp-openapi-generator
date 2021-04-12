@@ -2,12 +2,8 @@ package io.github.ghostbuster91.sttp.client3.openapi
 
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.media.Schema
-import io.github.ghostbuster91.sttp.client3.SafeOpenApi
 import io.github.ghostbuster91.sttp.client3.http.MediaType
-import io.github.ghostbuster91.sttp.client3.SchemaRef
-import io.github.ghostbuster91.sttp.client3.SafeRefSchema
-import io.github.ghostbuster91.sttp.client3.SafeSchema
-import io.github.ghostbuster91.sttp.client3.SafeObjectSchema
+import io.github.ghostbuster91.sttp.client3.openapi._
 
 object OpenApiEnumFlattener {
   def flatten(openApi: OpenAPI): SafeOpenApi = {

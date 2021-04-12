@@ -1,4 +1,4 @@
-package io.github.ghostbuster91.sttp.client3
+package io.github.ghostbuster91.sttp.client3.openapi
 
 import io.github.ghostbuster91.sttp.client3.http.Method
 import io.swagger.v3.oas.models.OpenAPI

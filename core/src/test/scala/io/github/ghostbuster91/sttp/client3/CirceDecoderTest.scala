@@ -25,9 +25,6 @@ object CirceDecoderTest extends TestSuite {
   }
 
   private def load(fileName: String): String =
-    scala.io.Source
-      .fromInputStream(getClass.getResourceAsStream(s"/circe/$fileName"))
-      .getLines()
-      .mkString("\n")
+    FileLoader.loadFile("circe", fileName)
 
 }

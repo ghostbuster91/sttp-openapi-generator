@@ -2,6 +2,7 @@ package io.github.ghostbuster91.sttp.client3
 
 import io.github.ghostbuster91.sttp.client3.model._
 import io.github.ghostbuster91.sttp.client3.json._
+import io.github.ghostbuster91.sttp.client3.openapi._
 import scala.meta._
 
 class ModelGenerator(
