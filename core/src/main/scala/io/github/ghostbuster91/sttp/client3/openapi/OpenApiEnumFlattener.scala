@@ -5,7 +5,36 @@ import io.github.ghostbuster91.sttp.client3.http.MediaType
 
 object OpenApiEnumFlattener {
   def flatten(safeApi: SafeOpenApi): SafeOpenApi = {
-    val schemas: List[(String, SchemaWithReassign)] = safeApi.components
+    val schemas = collectSchemas(safeApi)
+    val rbSchemas = collectRequestBodiesSchemas(safeApi)
+    //TODO below 3 could be refactored
+    val operationParameters = collectOperationParameters(safeApi)
+    val operationReqBodies = collectOperationRequestBodies(safeApi)
+    val operationResponses = collectOperationResponses(safeApi)
+    val enums = collectEnums(
+      schemas ++ rbSchemas ++ operationParameters ++ operationReqBodies ++ operationResponses
+    ) //todo there can naming conflicts with other entities
+    val nameMap = generateUniqueName(NameGeneratorProgress(), enums).nameMap
+    registerEnumsAndUpdateLinks(safeApi, nameMap)
+  }
+
+  private def registerEnumsAndUpdateLinks(
+      safeApi: SafeOpenApi,
+      nameMap: Map[String, Enum]
+  ): SafeOpenApi = {
+    nameMap.foreach { case (name, enum) =>
+      safeApi.components.get.unsafe.addSchemas(name, enum.swr.schema.unsafe)
+      val unsafeNewSchema = new Schema[Object]
+      unsafeNewSchema.set$ref(SchemaRef.schema(name).ref)
+      enum.swr.reassign(new SafeRefSchema(unsafeNewSchema))
+    }
+    safeApi
+  }
+
+  private def collectSchemas(
+      safeApi: SafeOpenApi
+  ): List[(String, SchemaWithReassign)] =
+    safeApi.components
       .map { cmp =>
         cmp.schemas.toList.map { case (k, v) =>
           k -> SchemaWithReassign(
@@ -15,52 +44,48 @@ object OpenApiEnumFlattener {
         }
       }
       .getOrElse(List.empty)
-    val requestBodies =
-      safeApi.components.map(_.requestBodies).getOrElse(Map.empty)
-    val rbSchemas: List[(String, SchemaWithReassign)] =
-      requestBodies.toList.flatMap { case (k, rb) =>
-        rb.content
-          .get(MediaType.ApplicationJson.v)
-          .map(mt =>
-            k -> SchemaWithReassign(
-              mt.schema,
-              s => mt.unsafe.setSchema(s.unsafe)
-            )
-          )
-      }
-    val operationParameters: List[(String, SchemaWithReassign)] =
-      safeApi.paths.values
-        .flatMap(_.operations.values)
-        .flatMap(_.parameters)
-        .map(p =>
-          p.name -> SchemaWithReassign(
-            p.schema,
-            s => p.unsafe.setSchema(s.unsafe)
+
+  private def collectRequestBodiesSchemas(
+      safeApi: SafeOpenApi
+  ): List[(String, SchemaWithReassign)] = {
+    val requestBodies = safeApi.components
+      .map(_.requestBodies)
+      .getOrElse(Map.empty)
+    requestBodies.toList.flatMap { case (k, rb) =>
+      rb.content
+        .get(MediaType.ApplicationJson.v)
+        .map(mt =>
+          k -> SchemaWithReassign(
+            mt.schema,
+            s => mt.unsafe.setSchema(s.unsafe)
           )
         )
-        .toList
-    val operationReqBodies: List[(String, SchemaWithReassign)] =
-      safeApi.paths.values
-        .flatMap(_.operations.values)
-        .flatMap(o =>
-          o.requestBody.flatMap(
-            _.content
-              .get(MediaType.ApplicationJson.v)
-              .map(mt =>
-                o.operationId -> SchemaWithReassign(
-                  mt.schema,
-                  s => mt.unsafe.setSchema(s.unsafe)
-                )
-              )
-          )
+    }
+  }
+
+  private def collectOperationParameters(
+      safeApi: SafeOpenApi
+  ): List[(String, SchemaWithReassign)] =
+    safeApi.paths.values
+      .flatMap(_.operations.values)
+      .flatMap(_.parameters)
+      .map(p =>
+        p.name -> SchemaWithReassign(
+          p.schema,
+          s => p.unsafe.setSchema(s.unsafe)
         )
-        .toList
-    val operationResponses: List[(String, SchemaWithReassign)] =
-      safeApi.paths.values
-        .flatMap(_.operations.values)
-        .flatMap(o =>
-          o.responses.values
-            .flatMap(_.content.get(MediaType.ApplicationJson.v))
+      )
+      .toList
+
+  private def collectOperationRequestBodies(
+      safeApi: SafeOpenApi
+  ): List[(String, SchemaWithReassign)] =
+    safeApi.paths.values
+      .flatMap(_.operations.values)
+      .flatMap(o =>
+        o.requestBody.flatMap(
+          _.content
+            .get(MediaType.ApplicationJson.v)
             .map(mt =>
               o.operationId -> SchemaWithReassign(
                 mt.schema,
@@ -68,19 +93,25 @@ object OpenApiEnumFlattener {
               )
             )
         )
-        .toList
-    val enums = collectEnums(
-      schemas ++ rbSchemas ++ operationParameters ++ operationReqBodies ++ operationResponses
-    ) //todo there can naming conflicts with other entities
-    val nameMap = generateUniqueName(NameGeneratorProgress(), enums).nameMap
-    nameMap.foreach { case (name, enum) =>
-      safeApi.components.get.unsafe.addSchemas(name, enum.swr.schema.unsafe)
-      val unsafeNewSchema = new Schema[Object]
-      unsafeNewSchema.set$ref(SchemaRef.schema(name).ref)
-      enum.swr.reassign(new SafeRefSchema(unsafeNewSchema))
-    }
-    safeApi
-  }
+      )
+      .toList
+
+  private def collectOperationResponses(
+      safeApi: SafeOpenApi
+  ): List[(String, SchemaWithReassign)] =
+    safeApi.paths.values
+      .flatMap(_.operations.values)
+      .flatMap(o =>
+        o.responses.values
+          .flatMap(_.content.get(MediaType.ApplicationJson.v))
+          .map(mt =>
+            o.operationId -> SchemaWithReassign(
+              mt.schema,
+              s => mt.unsafe.setSchema(s.unsafe)
+            )
+          )
+      )
+      .toList
 
   private def generateUniqueName(
       progress: NameGeneratorProgress,
@@ -126,6 +157,7 @@ object OpenApiEnumFlattener {
         List(Enum(propertyName, swr))
       case _ => Nil
     }
+
   case class NameGeneratorProgress(
       nameMap: Map[String, Enum] = Map.empty,
       nameCounter: Map[String, Int] = Map.empty
