@@ -8,6 +8,7 @@ import utest._
 object DynamicCoproductTest extends TestSuite {
   val tests = Tests {
     "multiple_errors" - test()
+    "multiple_errors_with_parent" - test()
   }
 
   def test()(implicit testPath: utest.framework.TestPath) = {
