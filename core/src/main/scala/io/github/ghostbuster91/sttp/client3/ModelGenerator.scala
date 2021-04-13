@@ -41,6 +41,13 @@ class ModelGenerator(
   )
   def schemaFor(schemaRef: SchemaRef): SafeSchema = schemas(schemaRef)
 
+  def commonAncestor(childs: List[SchemaRef]): List[SchemaRef] =
+    childs
+      .map(childToParentRef.apply)
+      .map(_.toSet)
+      .reduce(_ intersect _)
+      .toList
+
   private def schemaToClassDef(
       name: String,
       schema: SchemaWithProperties,
