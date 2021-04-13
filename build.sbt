@@ -54,7 +54,7 @@ lazy val codegenSbtPlugin: Project = (project in file("codegen-sbt-plugin"))
   .enablePlugins(SbtPlugin)
   .settings(commonSettings)
   .settings(
-    name := "sbt-codegen-plugin",
+    name := "sbt-codegen-plugin-circe",
     sbtPlugin := true,
     scriptedLaunchOpts := {
       scriptedLaunchOpts.value ++
