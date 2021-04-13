@@ -5,14 +5,12 @@ import io.github.ghostbuster91.sttp.client3.http.MediaType
 
 object OpenApiEnumFlattener {
   def flatten(safeApi: SafeOpenApi): SafeOpenApi = {
-    val schemas = collectSchemas(safeApi)
+    val schemas = collectComponentsSchemas(safeApi)
     val rbSchemas = collectRequestBodiesSchemas(safeApi)
     //TODO below 3 could be refactored
-    val operationParameters = collectOperationParameters(safeApi)
-    val operationReqBodies = collectOperationRequestBodies(safeApi)
-    val operationResponses = collectOperationResponses(safeApi)
+    val operationSchemas = collectFromOperations(safeApi)
     val enums = collectEnums(
-      schemas ++ rbSchemas ++ operationParameters ++ operationReqBodies ++ operationResponses
+      schemas ++ rbSchemas ++ operationSchemas
     ) //todo there can naming conflicts with other entities
     val nameMap = generateUniqueName(NameGeneratorProgress(), enums).nameMap
     registerEnumsAndUpdateLinks(safeApi, nameMap)
@@ -31,7 +29,7 @@ object OpenApiEnumFlattener {
     safeApi
   }
 
-  private def collectSchemas(
+  private def collectComponentsSchemas(
       safeApi: SafeOpenApi
   ): List[(String, SchemaWithReassign)] =
     safeApi.components
@@ -63,12 +61,22 @@ object OpenApiEnumFlattener {
     }
   }
 
-  private def collectOperationParameters(
+  private def collectFromOperations(
       safeApi: SafeOpenApi
   ): List[(String, SchemaWithReassign)] =
     safeApi.paths.values
       .flatMap(_.operations.values)
-      .flatMap(_.parameters)
+      .flatMap(operation =>
+        collectOperationParameters(operation) ++
+          collectOperationRequestBodies(operation) ++
+          collectOperationResponses(operation)
+      )
+      .toList
+
+  private def collectOperationParameters(
+      operation: SafeOperation
+  ): List[(String, SchemaWithReassign)] =
+    operation.parameters
       .map(p =>
         p.name -> SchemaWithReassign(
           p.schema,
@@ -78,38 +86,28 @@ object OpenApiEnumFlattener {
       .toList
 
   private def collectOperationRequestBodies(
-      safeApi: SafeOpenApi
+      operation: SafeOperation
   ): List[(String, SchemaWithReassign)] =
-    safeApi.paths.values
-      .flatMap(_.operations.values)
-      .flatMap(o =>
-        o.requestBody.flatMap(
-          _.content
-            .get(MediaType.ApplicationJson.v)
-            .map(mt =>
-              o.operationId -> SchemaWithReassign(
-                mt.schema,
-                s => mt.unsafe.setSchema(s.unsafe)
-              )
-            )
+    operation.requestBody
+      .flatMap(_.content.get(MediaType.ApplicationJson.v))
+      .map(mt =>
+        operation.operationId -> SchemaWithReassign(
+          mt.schema,
+          s => mt.unsafe.setSchema(s.unsafe)
         )
       )
       .toList
 
   private def collectOperationResponses(
-      safeApi: SafeOpenApi
+      operation: SafeOperation
   ): List[(String, SchemaWithReassign)] =
-    safeApi.paths.values
-      .flatMap(_.operations.values)
-      .flatMap(o =>
-        o.responses.values
-          .flatMap(_.content.get(MediaType.ApplicationJson.v))
-          .map(mt =>
-            o.operationId -> SchemaWithReassign(
-              mt.schema,
-              s => mt.unsafe.setSchema(s.unsafe)
-            )
-          )
+    operation.responses.values
+      .flatMap(_.content.get(MediaType.ApplicationJson.v))
+      .map(mt =>
+        operation.operationId -> SchemaWithReassign(
+          mt.schema,
+          s => mt.unsafe.setSchema(s.unsafe)
+        )
       )
       .toList
 
