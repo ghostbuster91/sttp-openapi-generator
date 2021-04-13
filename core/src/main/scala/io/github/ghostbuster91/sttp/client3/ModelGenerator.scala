@@ -12,12 +12,13 @@ class ModelGenerator(
     jsonTypeProvider: JsonTypeProvider
 ) {
   def generate: Map[SchemaRef, Defn] = {
-    val childToParentRef = schemas
+    val childToParentRef: Map[SchemaRef, List[SchemaRef]] = schemas
       .collect { case (key, composed: SafeComposedSchema) =>
         composed.oneOf.map(c => c.ref -> key)
       }
       .flatten
-      .toMap
+      .groupBy(_._1)
+      .mapValues(e => e.map(_._2).toList)
     val parentToChilds = schemas.collect {
       case (key, composed: SafeComposedSchema) =>
         key -> composed.oneOf.map(_.ref)
@@ -27,7 +28,7 @@ class ModelGenerator(
       key -> schemaToClassDef(
         classNames(key),
         schema,
-        childToParentRef.get(key).map(classNames.apply)
+        childToParentRef.getOrElse(key, List.empty).map(classNames.apply)
       )
     }
     val traits = schemas.collect { case (key, composed: SafeComposedSchema) =>
@@ -49,7 +50,7 @@ class ModelGenerator(
   private def schemaToClassDef(
       name: String,
       schema: SchemaWithProperties,
-      parentClassName: Option[String]
+      parentClassName: List[String]
   ) = {
     val props = schema.properties.map { case (k, v) =>
       processParams(
@@ -66,11 +67,10 @@ class ModelGenerator(
       case _: SafeObjectSchema => props
     }
     parentClassName match {
-      case Some(value) =>
-        val parentTypeName = Type.Name(value)
-        val parentInit = init"$parentTypeName()"
-        q"case class $className(..$adjustedProps) extends $parentInit{}"
-      case None =>
+      case parents if parents.nonEmpty =>
+        val parentInits = parents.sorted.map(p => init"${Type.Name(p)}()")
+        q"case class $className(..$adjustedProps) extends ..$parentInits"
+      case Nil =>
         q"case class $className(..$adjustedProps)"
     }
   }

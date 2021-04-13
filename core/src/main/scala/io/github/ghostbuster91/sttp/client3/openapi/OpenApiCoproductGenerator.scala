@@ -15,7 +15,6 @@ object OpenApiCoproductGenerator {
     val childToParent = coproducts.values
       .flatMap(parent => parent.oneOf.map(child => child.ref -> parent))
       .toMap
-    println(childToParent)
     val errorResponses = openApi.paths.values.flatMap { path =>
       path.operations.values.flatMap { operation =>
         operation.responses.toList.collect {
