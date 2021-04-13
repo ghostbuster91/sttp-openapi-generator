@@ -94,6 +94,7 @@ object GeneratorTest extends TestSuite {
     }
     "errors" - {
       "product" - test(handleErrors = true)
+      "multiple_errors" - test(handleErrors = true)
     }
   }
 

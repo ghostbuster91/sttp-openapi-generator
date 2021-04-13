@@ -84,33 +84,42 @@ class ApiCallGenerator(
         applyHeadersToRequest(headerParameters) _
       ) ++ fReqBody.map(_.bodyApplication).toList
     )
-    val errorClassTypes = operation.responses.collect {
-      case (statusCode, response) if statusCode != "200" =>
-        response.content
-          .collectFirst { case (MediaType.ApplicationJson.v, jsonResponse) =>
-            ErrorResponseType(
-              modelGenerator
-                .schemaToType(
-                  jsonResponse.schema,
-                  isRequired = true
-                )
-                .tpe,
-              statusCode.toInt
-            )
-          }
+    val errorClassTypes = operation.responses
+      .collect {
+        case (statusCode, response) if statusCode != "200" =>
+          response.content
+            .collectFirst { case (MediaType.ApplicationJson.v, jsonResponse) =>
+              ErrorResponseType(
+                modelGenerator.schemaToType(jsonResponse.schema, true).tpe,
+                Lit.Int(statusCode.toInt)
+              )
+            }
+      }
+      .flatten
+      .toList
 
-    }.flatten
     (config.handleErrors, errorClassTypes) match {
       case (true, head :: Nil) =>
-        val statusCode = Lit.Int(head.statusCode)
         val body = //TODO handle multiple success responses?
           q"""$modifiedReq.response(fromMetadata(
             asJsonEither[${head.tpe}, $successClassTypes],
-            ConditionalResponseAs(_.code == $statusCode, asJsonEither[${head.tpe}, $successClassTypes]), 
+            ConditionalResponseAs(_.code == ${head.statusCode}, asJsonEither[${head.tpe}, $successClassTypes])
             )
           )"""
         q"def $functionName(..$parameters): Request[Either[ResponseException[${head.tpe}, io.circe.Error], Unit], Any] = $body"
-      case (true, head :: tail) => ??? //TODo
+      case (true, errorResponses) if errorResponses.nonEmpty =>
+        val commonAncestor =
+          Type.Name(s"${operation.operationId.capitalize}GenericError")
+        val responseAsCases = errorResponses.map(er =>
+          q"ConditionalResponseAs(_.code == ${er.statusCode}, asJsonEither[${er.tpe}, $successClassTypes])"
+        )
+        val body =
+          q"""$modifiedReq.response(fromMetadata(
+            asJsonEither[$commonAncestor, $successClassTypes],
+            ..$responseAsCases
+            )
+          )"""
+        q"def $functionName(..$parameters): Request[Either[ResponseException[$commonAncestor, io.circe.Error], Unit], Any] = $body"
       case _ =>
         val body = q"$modifiedReq.response(asJson[$successClassTypes].getRight)"
         q"def $functionName(..$parameters): Request[$successClassTypes, Any] = $body"
@@ -317,4 +326,4 @@ object PathElement {
 
 case class BodySpec(paramDecl: Term.Param, bodyApplication: Term => Term)
 
-case class ErrorResponseType(tpe: Type, statusCode: Int)
+case class ErrorResponseType(tpe: Type, statusCode: Lit.Int)

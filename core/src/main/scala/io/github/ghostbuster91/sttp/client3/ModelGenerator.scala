@@ -8,17 +8,11 @@ import scala.meta._
 class ModelGenerator(
     schemas: Map[SchemaRef, SafeSchema],
     classNames: Map[SchemaRef, String],
+    childToParentRef: Map[SchemaRef, List[SchemaRef]],
     ir: ImportRegistry,
     jsonTypeProvider: JsonTypeProvider
 ) {
   def generate: Map[SchemaRef, Defn] = {
-    val childToParentRef: Map[SchemaRef, List[SchemaRef]] = schemas
-      .collect { case (key, composed: SafeComposedSchema) =>
-        composed.oneOf.map(c => c.ref -> key)
-      }
-      .flatten
-      .groupBy(_._1)
-      .mapValues(e => e.map(_._2).toList)
     val parentToChilds = schemas.collect {
       case (key, composed: SafeComposedSchema) =>
         key -> composed.oneOf.map(_.ref)
@@ -161,12 +155,21 @@ object ModelGenerator {
     } ++ requestBodies.map { case (key, _) =>
       SchemaRef.requestBody(key) -> snakeToCamelCase(key)
     }
+    val refToSchema = schemas.map { case (k, v) =>
+      SchemaRef.schema(k) -> v
+    } ++ requestBodies
+      .map { case (k, v) => SchemaRef.requestBody(k) -> v }
+    val childToParentRef: Map[SchemaRef, List[SchemaRef]] = refToSchema
+      .collect { case (key, composed: SafeComposedSchema) =>
+        composed.oneOf.map(c => c.ref -> key)
+      }
+      .flatten
+      .groupBy(_._1)
+      .mapValues(e => e.map(_._2).toList)
     new ModelGenerator(
-      schemas.map { case (k, v) =>
-        SchemaRef.schema(k) -> v
-      } ++ requestBodies
-        .map { case (k, v) => SchemaRef.requestBody(k) -> v },
+      refToSchema,
       modelClassNames,
+      childToParentRef,
       ir,
       jsonTypeProvider
     )
