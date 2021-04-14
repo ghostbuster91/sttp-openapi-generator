@@ -1,0 +1,59 @@
+pull_request_rules:
+  - name: delete head branch after merge
+    conditions: []
+    actions:
+      delete_head_branch: {}
+  - name: automatic merge for scala-steward pull requests affecting build.sbt and build.sc
+    conditions:
+      - author=scala-steward
+      - check-success=build
+      - "#files=2"
+      - files=build.sbt
+      - files=build.sc
+    actions:
+      merge:
+        method: merge
+  - name: automatic merge for scala-steward pull requests affecting project plugins.sbt
+    conditions:
+      - author=scala-steward
+      - check-success=build
+      - "#files=1"
+      - files=project/plugins.sbt
+    actions:
+      merge:
+        method: merge
+  - name: semi-automatic merge for scala-steward pull requests
+    conditions:
+      - author=scala-steward
+      - check-success=build
+      - "#approved-reviews-by>=1"
+    actions:
+      merge:
+        method: merge
+  - name: automatic merge for scala-steward pull requests affecting project build.properties
+    conditions:
+      - author=scala-steward
+      - check-success=build
+      - "#files=1"
+      - files=project/build.properties
+    actions:
+      merge:
+        method: merge
+  - name: automatic merge for scala-steward pull requests affecting .scalafmt.conf
+    conditions:
+      - author=scala-steward
+      - check-success=build
+      - "#files=1"
+      - files=.scalafmt.conf
+    actions:
+      merge:
+        method: merge
+  - name: automatic merge for scala-steward pull requests affecting project Versions.scala
+    conditions:
+      - author=scala-steward
+      - check-success=ci
+      - "#files=1"
+      - files=project/Versions.scala
+    actions:
+      merge:
+        method: merge
