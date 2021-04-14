@@ -11,10 +11,10 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def getSomething(
       petId: Int,
-      additionalMetadata: Option[String],
+      additionalMetadata: Option[String]
   ): Request[Unit, Any] = basicRequest
     .get(
-      uri"$baseUrl/pet/$petId/uploadImage?additionalMetadata=$additionalMetadata",
+      uri"$baseUrl/pet/$petId/uploadImage?additionalMetadata=$additionalMetadata"
     )
     .response(asJson[Unit].getRight)
 }
