@@ -29,14 +29,14 @@ lazy val rootProject = (project in file("."))
 
 lazy val testDependencies = Seq(
   "com.lihaoyi" %% "utest" % "0.7.7",
-  "com.softwaremill.diffx" %% "diffx-utest" % "0.4.4",
-  "com.softwaremill.diffx" %% "diffx-cats" % "0.4.4",
-  "com.softwaremill.sttp.client3" %% "core" % "3.2.3",
-  "com.softwaremill.sttp.client3" %% "circe" % "3.2.3",
+  "com.softwaremill.diffx" %% "diffx-utest" % "0.4.5",
+  "com.softwaremill.diffx" %% "diffx-cats" % "0.4.5",
+  "com.softwaremill.sttp.client3" %% "core" % "3.1.9",
+  "com.softwaremill.sttp.client3" %% "circe" % "3.1.9",
   "io.circe" %% "circe-core" % "0.13.0",
   "io.circe" %% "circe-generic" % "0.13.0",
   "io.circe" %% "circe-parser" % "0.13.0",
-  "io.circe" %% "circe-yaml" % "0.12.0"
+  "io.circe" %% "circe-yaml" % "0.13.1"
 ).map(_ % Test)
 
 lazy val core: Project = (project in file("core"))
@@ -45,7 +45,7 @@ lazy val core: Project = (project in file("core"))
     name := "codegen-core",
     scalaVersion := Scala212,
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "scalameta" % "4.3.21",
+      "org.scalameta" %% "scalameta" % "4.3.24",
       "io.swagger.parser.v3" % "swagger-parser" % "2.0.24"
     ) ++ testDependencies
   )
