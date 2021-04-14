@@ -28,7 +28,7 @@ lazy val rootProject = (project in file("."))
   .aggregate(core, codegenSbtPlugin)
 
 lazy val testDependencies = Seq(
-  "com.lihaoyi" %% "utest" % "0.7.7",
+  "com.lihaoyi" %% "utest" % "0.7.8",
   "com.softwaremill.diffx" %% "diffx-utest" % "0.4.5",
   "com.softwaremill.diffx" %% "diffx-cats" % "0.4.5",
   "com.softwaremill.sttp.client3" %% "core" % "3.1.9",
@@ -45,8 +45,8 @@ lazy val core: Project = (project in file("core"))
     name := "codegen-core",
     scalaVersion := Scala212,
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "scalameta" % "4.4.13",
-      "io.swagger.parser.v3" % "swagger-parser" % "2.0.24"
+      "org.scalameta" %% "scalameta" % "4.3.24",
+      "io.swagger.parser.v3" % "swagger-parser" % "2.0.25"
     ) ++ testDependencies
   )
 
