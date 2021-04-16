@@ -11,14 +11,14 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi
 
 case class Category(
     id: Int,
-    name: String,
+    name: String
 )
 
 case class Pet(
     id: Int,
     name: String,
     categories: List[Category],
-    status: String,
+    status: String
 )
 
 class DefaultApi(baseUrl: String) extends CirceCodecs {

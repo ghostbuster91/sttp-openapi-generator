@@ -14,7 +14,7 @@ case class Person(name: String, age: Int)
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def getPersonByIdAndName(
       personId: Int,
-      personName: Option[String],
+      personName: Option[String]
   ): Request[Person, Any] = basicRequest
     .get(uri"$baseUrl/person/asd/$personId/$personName")
     .response(asJson[Person].getRight)
