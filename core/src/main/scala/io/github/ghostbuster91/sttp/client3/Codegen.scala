@@ -3,9 +3,10 @@ package io.github.ghostbuster91.sttp.client3
 import io.github.ghostbuster91.sttp.client3.json.circe._
 import io.github.ghostbuster91.sttp.client3.openapi._
 
-import io.github.ghostbuster91.sttp.client3.http._
 import io.github.ghostbuster91.sttp.client3.model._
 import scala.meta._
+import sttp.model.MediaType
+import sttp.model.Method
 
 class Codegen(logger: LogAdapter, config: CodegenConfig) {
   def generateUnsafe(openApiYaml: String): Source = {
@@ -82,7 +83,7 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       .getOrElse(Map.empty)
       .flatMap { case (k, rb) =>
         rb.content
-          .get(MediaType.ApplicationJson.v)
+          .get(MediaType.ApplicationJson.toString)
           .map(mt => k -> mt.schema)
       }
       .toMap

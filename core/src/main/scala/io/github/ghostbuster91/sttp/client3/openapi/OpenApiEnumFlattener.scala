@@ -1,7 +1,7 @@
 package io.github.ghostbuster91.sttp.client3.openapi
 
 import io.swagger.v3.oas.models.media.Schema
-import io.github.ghostbuster91.sttp.client3.http.MediaType
+import sttp.model.MediaType
 
 object OpenApiEnumFlattener {
   def flatten(safeApi: SafeOpenApi): SafeOpenApi = {
@@ -51,7 +51,7 @@ object OpenApiEnumFlattener {
       .getOrElse(Map.empty)
     requestBodies.toList.flatMap { case (k, rb) =>
       rb.content
-        .get(MediaType.ApplicationJson.v)
+        .get(MediaType.ApplicationJson.toString)
         .map(mt =>
           k -> SchemaWithReassign(
             mt.schema,
@@ -89,7 +89,7 @@ object OpenApiEnumFlattener {
       operation: SafeOperation
   ): List[(String, SchemaWithReassign)] =
     operation.requestBody
-      .flatMap(_.content.get(MediaType.ApplicationJson.v))
+      .flatMap(_.content.get(MediaType.ApplicationJson.toString))
       .map(mt =>
         operation.operationId -> SchemaWithReassign(
           mt.schema,
@@ -102,7 +102,7 @@ object OpenApiEnumFlattener {
       operation: SafeOperation
   ): List[(String, SchemaWithReassign)] =
     operation.responses.values
-      .flatMap(_.content.get(MediaType.ApplicationJson.v))
+      .flatMap(_.content.get(MediaType.ApplicationJson.toString))
       .map(mt =>
         operation.operationId -> SchemaWithReassign(
           mt.schema,

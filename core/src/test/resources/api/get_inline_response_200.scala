@@ -14,5 +14,13 @@ case class InlineResponse200(status: Int)
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def getPersonById(): Request[InlineResponse200, Any] = basicRequest
     .get(uri"$baseUrl/person")
-    .response(asJson[InlineResponse200].getRight)
+    .response(
+      fromMetadata(
+        asJson[InlineResponse200].getRight,
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(200),
+          asJson[InlineResponse200].getRight
+        )
+      )
+    )
 }

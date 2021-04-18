@@ -21,5 +21,13 @@ class DefaultApi(baseUrl: String) extends CirceCodecs {
         body.age.map(age => "age" -> age.toString)
       ).flatten
     )
-    .response(asJson[Person].getRight)
+    .response(
+      fromMetadata(
+        asJson[Person].getRight,
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(200),
+          asJson[Person].getRight
+        )
+      )
+    )
 }

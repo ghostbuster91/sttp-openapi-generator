@@ -16,5 +16,13 @@ case class Pet(id: Int, name: String, category: Category, status: String)
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def getRoot(): Request[Pet, Any] = basicRequest
     .get(uri"$baseUrl")
-    .response(asJson[Pet].getRight)
+    .response(
+      fromMetadata(
+        asJson[Pet].getRight,
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(200),
+          asJson[Pet].getRight
+        )
+      )
+    )
 }

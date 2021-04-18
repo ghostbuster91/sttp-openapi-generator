@@ -13,5 +13,7 @@ class DefaultApi(baseUrl: String) extends CirceCodecs {
   def getRoot(key: Int): Request[Unit, Any] = basicRequest
     .get(uri"$baseUrl")
     .header("key", key.toString())
-    .response(asJson[Unit].getRight)
+    .response(
+      fromMetadata(asJson[Unit].getRight)
+    )
 }

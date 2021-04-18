@@ -16,5 +16,7 @@ class DefaultApi(baseUrl: String) extends CirceCodecs {
     .get(
       uri"$baseUrl/pet/$petId/uploadImage?additionalMetadata=$additionalMetadata"
     )
-    .response(asJson[Unit].getRight)
+    .response(
+      fromMetadata(asJson[Unit].getRight)
+    )
 }

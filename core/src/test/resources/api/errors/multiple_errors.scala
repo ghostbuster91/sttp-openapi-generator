@@ -22,8 +22,14 @@ class DefaultApi(baseUrl: String) extends CirceCodecs {
     .response(
       fromMetadata(
         asJsonEither[UpdatePersonGenericError, Unit],
-        ConditionalResponseAs(_.code == 400, asJsonEither[ErrorModel, Unit]),
-        ConditionalResponseAs(_.code == 401, asJsonEither[ErrorModel2, Unit])
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(400),
+          asJsonEither[ErrorModel, Unit]
+        ),
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(401),
+          asJsonEither[ErrorModel2, Unit]
+        )
       )
     )
 }

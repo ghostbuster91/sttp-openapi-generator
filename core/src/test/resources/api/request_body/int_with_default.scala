@@ -13,5 +13,13 @@ class DefaultApi(baseUrl: String) extends CirceCodecs {
   def updatePerson(int: Int = 1): Request[Int, Any] = basicRequest
     .put(uri"$baseUrl/person")
     .body(int)
-    .response(asJson[Int].getRight)
+    .response(
+      fromMetadata(
+        asJson[Int].getRight,
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(200),
+          asJson[Int].getRight
+        )
+      )
+    )
 }

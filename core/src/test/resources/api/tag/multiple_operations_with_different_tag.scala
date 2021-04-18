@@ -13,11 +13,27 @@ case class Person(name: String, age: Int)
 class OtherApi(baseUrl: String) extends CirceCodecs {
   def putPerson(): Request[Person, Any] = basicRequest
     .put(uri"$baseUrl")
-    .response(asJson[Person].getRight)
+    .response(
+      fromMetadata(
+        asJson[Person].getRight,
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(200),
+          asJson[Person].getRight
+        )
+      )
+    )
 }
 
 class PersonApi(baseUrl: String) extends CirceCodecs {
   def getPerson(): Request[Person, Any] = basicRequest
     .get(uri"$baseUrl")
-    .response(asJson[Person].getRight)
+    .response(
+      fromMetadata(
+        asJson[Person].getRight,
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(200),
+          asJson[Person].getRight
+        )
+      )
+    )
 }

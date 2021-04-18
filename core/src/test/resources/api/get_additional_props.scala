@@ -46,5 +46,15 @@ case class Person(
 
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def getRoot(): Request[Person, Any] =
-    basicRequest.get(uri"$baseUrl").response(asJson[Person].getRight)
+    basicRequest
+      .get(uri"$baseUrl")
+      .response(
+        fromMetadata(
+          asJson[Person].getRight,
+          ConditionalResponseAs(
+            _.code == StatusCode.unsafeApply(200),
+            asJson[Person].getRight
+          )
+        )
+      )
 }

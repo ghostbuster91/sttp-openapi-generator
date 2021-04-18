@@ -14,5 +14,13 @@ case class Person(name: String, age: Int)
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def getRoot(id: Option[String]): Request[Person, Any] = basicRequest
     .get(uri"$baseUrl?id=$id")
-    .response(asJson[Person].getRight)
+    .response(
+      fromMetadata(
+        asJson[Person].getRight,
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(200),
+          asJson[Person].getRight
+        )
+      )
+    )
 }

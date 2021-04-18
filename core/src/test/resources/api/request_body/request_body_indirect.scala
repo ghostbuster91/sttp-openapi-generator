@@ -16,5 +16,13 @@ class DefaultApi(baseUrl: String) extends CirceCodecs {
   def addPet(petRequest: PetRequest): Request[PetResponse, Any] = basicRequest
     .post(uri"$baseUrl/pet")
     .body(petRequest)
-    .response(asJson[PetResponse].getRight)
+    .response(
+      fromMetadata(
+        asJson[PetResponse].getRight,
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(200),
+          asJson[PetResponse].getRight
+        )
+      )
+    )
 }

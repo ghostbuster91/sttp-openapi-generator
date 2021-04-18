@@ -41,7 +41,7 @@ class ModelGenerator(
   )
   def schemaFor(schemaRef: SchemaRef): SafeSchema = schemas(schemaRef)
 
-  def commonAncestor(childs: List[SchemaRef]): List[SchemaRef] =
+  def commonAncestor(childs: List[SchemaRef]): List[SchemaRef] = //TODO use NEL
     childs
       .map(childToParentRef.apply)
       .map(_.toSet)

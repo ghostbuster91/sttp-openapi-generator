@@ -9,16 +9,25 @@ import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends AutoDerivation with SttpCirceApi
 
+sealed trait GetRootGenericSuccess
+
+case class Person(name: String, age: Int) extends GetRootGenericSuccess()
+
+case class Organization(name: String) extends GetRootGenericSuccess()
+
 class DefaultApi(baseUrl: String) extends CirceCodecs {
-  def updatePerson(string: String): Request[String, Any] = basicRequest
-    .put(uri"$baseUrl/person")
-    .body(string)
+  def getRoot(): Request[GetRootGenericSuccess, Any] = basicRequest
+    .get(uri"$baseUrl")
     .response(
       fromMetadata(
-        asJson[String].getRight,
+        asJson[GetRootGenericSuccess].getRight,
         ConditionalResponseAs(
           _.code == StatusCode.unsafeApply(200),
-          asJson[String].getRight
+          asJson[Person].getRight
+        ),
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(201),
+          asJson[Organization].getRight
         )
       )
     )

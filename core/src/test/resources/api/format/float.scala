@@ -12,5 +12,13 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def getRoot(): Request[Float, Any] = basicRequest
     .get(uri"$baseUrl")
-    .response(asJson[Float].getRight)
+    .response(
+      fromMetadata(
+        asJson[Float].getRight,
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(200),
+          asJson[Float].getRight
+        )
+      )
+    )
 }

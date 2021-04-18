@@ -14,5 +14,13 @@ class DefaultApi(baseUrl: String) extends CirceCodecs {
     basicRequest
       .put(uri"$baseUrl/person")
       .body(boolean)
-      .response(asJson[Boolean].getRight)
+      .response(
+        fromMetadata(
+          asJson[Boolean].getRight,
+          ConditionalResponseAs(
+            _.code == StatusCode.unsafeApply(200),
+            asJson[Boolean].getRight
+          )
+        )
+      )
 }

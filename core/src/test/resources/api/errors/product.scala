@@ -20,7 +20,10 @@ class DefaultApi(baseUrl: String) extends CirceCodecs {
     .response(
       fromMetadata(
         asJsonEither[ErrorModel, Unit],
-        ConditionalResponseAs(_.code == 400, asJsonEither[ErrorModel, Unit])
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(400),
+          asJsonEither[ErrorModel, Unit]
+        )
       )
     )
 }

@@ -5,6 +5,9 @@ import scala.meta._
 import scala.tools.reflect.ToolBox
 
 object GeneratorTest extends TestSuite {
+
+  private val tb = mkToolbox()
+
   val tests = Tests {
 
     "simple" - {
@@ -97,6 +100,10 @@ object GeneratorTest extends TestSuite {
       "multiple_errors" - test(handleErrors = true)
       "multiple_errors_with_parent" - test(handleErrors = true)
     }
+    "multiple_success" - {
+      "separate_products" - test()
+      "common_ancestor" - test()
+    }
   }
 
   def testNoCompile(
@@ -130,7 +137,6 @@ object GeneratorTest extends TestSuite {
   }
 
   def compile(code: String): Unit = {
-    val tb = mkToolbox()
     val tree = tb.parse(code)
     tb.compile(tree)
     ()

@@ -4,10 +4,21 @@ import scala.meta.Import
 import scala.collection.immutable.ListSet
 
 class ImportRegistry {
-  private var imports = ListSet[Import]()
+  private var imports = ListSet[StringBasedCompareImport]()
 
   def registerImport(imp: Import): Unit =
-    imports = imports + imp
+    imports = imports + new StringBasedCompareImport(imp)
 
-  def getImports: List[Import] = imports.toList
+  def getImports: List[Import] = imports.toList.map(_.`import`)
+}
+
+private class StringBasedCompareImport(val `import`: Import) {
+  override def hashCode(): Int = `import`.toString.hashCode
+
+  override def equals(obj: Any): Boolean =
+    obj.isInstanceOf[StringBasedCompareImport] && obj
+      .asInstanceOf[StringBasedCompareImport]
+      .`import`
+      .toString == `import`
+      .toString()
 }

@@ -14,16 +14,21 @@ case class ErrorModel(msg: String) extends Entity()
 case class ErrorModel2(msg: String) extends Entity()
 
 class DefaultApi(baseUrl: String) extends CirceCodecs {
-  def updatePerson(): Request[
-    Either[ResponseException[Entity, io.circe.Error], Unit],
-    Any
-  ] = basicRequest
-    .put(uri"$baseUrl/person")
-    .response(
-      fromMetadata(
-        asJsonEither[Entity, Unit],
-        ConditionalResponseAs(_.code == 400, asJsonEither[ErrorModel, Unit]),
-        ConditionalResponseAs(_.code == 401, asJsonEither[ErrorModel2, Unit])
+  def updatePerson()
+      : Request[Either[ResponseException[Entity, io.circe.Error], Unit], Any] =
+    basicRequest
+      .put(uri"$baseUrl/person")
+      .response(
+        fromMetadata(
+          asJsonEither[Entity, Unit],
+          ConditionalResponseAs(
+            _.code == StatusCode.unsafeApply(400),
+            asJsonEither[ErrorModel, Unit]
+          ),
+          ConditionalResponseAs(
+            _.code == StatusCode.unsafeApply(401),
+            asJsonEither[ErrorModel2, Unit]
+          )
+        )
       )
-    )
 }

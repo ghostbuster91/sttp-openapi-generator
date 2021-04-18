@@ -1,6 +1,5 @@
 package io.github.ghostbuster91.sttp.client3.openapi
 
-import io.github.ghostbuster91.sttp.client3.http.Method
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.Components
 
@@ -8,17 +7,14 @@ import scala.collection.JavaConverters._
 import io.swagger.v3.oas.models.media.Schema
 import io.swagger.v3.oas.models.PathItem
 import io.swagger.v3.oas.models.Operation
-import io.swagger.v3.oas.models.parameters.Parameter
 import io.swagger.v3.oas.models.responses.ApiResponse
-import io.swagger.v3.oas.models.parameters.PathParameter
-import io.swagger.v3.oas.models.parameters.QueryParameter
-import io.swagger.v3.oas.models.parameters.CookieParameter
-import io.swagger.v3.oas.models.parameters.HeaderParameter
-import io.swagger.v3.oas.models.parameters.RequestBody
-import io.swagger.v3.oas.models.media.MediaType
-import io.swagger.v3.oas.models.media.ObjectSchema
-import io.swagger.v3.oas.models.media.ArraySchema
+import io.swagger.v3.oas.models.parameters._
 import io.swagger.v3.oas.models.media._
+import sttp.model.{
+  MediaType => SttpMediaType,
+  Method => SttpMethod,
+  StatusCode => SttpStatusCode
+}
 
 class SafeOpenApi(openApi: OpenAPI) {
   def components: Option[SafeComponents] =
@@ -56,12 +52,16 @@ class SafeRequestBody(rb: RequestBody) {
 }
 
 class SafePathItem(p: PathItem) {
-  def operations: Map[Method, SafeOperation] =
+  def operations: Map[SttpMethod, SafeOperation] =
     List(
-      Option(p.getGet).map(op => (Method.Get: Method) -> new SafeOperation(op)),
-      Option(p.getPut).map(op => (Method.Put: Method) -> new SafeOperation(op)),
+      Option(p.getGet).map(op =>
+        (SttpMethod.GET: SttpMethod) -> new SafeOperation(op)
+      ),
+      Option(p.getPut).map(op =>
+        (SttpMethod.PUT: SttpMethod) -> new SafeOperation(op)
+      ),
       Option(p.getPost).map(op =>
-        (Method.Post: Method) -> new SafeOperation(op)
+        (SttpMethod.POST: SttpMethod) -> new SafeOperation(op)
       )
     ).flatten.toMap
   override def toString: String = p.toString
@@ -90,6 +90,24 @@ class SafeOperation(op: Operation) {
 
   def requestBody: Option[SafeRequestBody] =
     Option(op.getRequestBody).map(new SafeRequestBody(_))
+
+  def collectResponses(
+      statusCodePredicate: SttpStatusCode => Boolean
+  ): Map[Int, SafeSchema] = {
+    val jsonMediaType = SttpMediaType.ApplicationJson.toString()
+    responses
+      .collect {
+        case (statusCode, response)
+            if statusCodePredicate(
+              SttpStatusCode.unsafeApply(statusCode.toInt)
+            ) =>
+          response.content
+            .get(jsonMediaType)
+            .map(mt => statusCode.toInt -> mt.schema)
+      }
+      .flatten
+      .toMap
+  }
 
   override def toString: String = op.toString
 }
@@ -243,3 +261,4 @@ object SchemaRef {
       throw new IllegalArgumentException(ref)
     }
 }
+case class StatusCodeResponse(schema: SafeSchema, statusCode: Int)
