@@ -1,11 +1,13 @@
 package io.github.ghostbuster91.sttp.client3.openapi
 
+import io.github.ghostbuster91.sttp.client3.LogAdapter
 import io.swagger.parser.OpenAPIParser
 import io.swagger.v3.parser.core.models.ParseOptions
+
 import scala.collection.JavaConverters._
 import io.swagger.v3.parser.core.models.AuthorizationValue
 
-object OpenApiLoader {
+class OpenApiLoader(log: LogAdapter) {
   def load(yaml: String): SafeOpenApi = {
     val parser = new OpenAPIParser
     val opts = new ParseOptions()
@@ -17,7 +19,7 @@ object OpenApiLoader {
       opts
     )
     Option(parserResult.getMessages).foreach { messages =>
-      messages.asScala.foreach(println)
+      messages.asScala.foreach(log.warn)
     }
     Option(parserResult.getOpenAPI) match {
       case Some(spec) =>
