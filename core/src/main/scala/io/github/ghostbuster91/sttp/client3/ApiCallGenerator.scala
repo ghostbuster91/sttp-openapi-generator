@@ -352,21 +352,19 @@ class ApiCallGenerator(
   }
 }
 
-sealed trait PathElement
-object PathElement {
+private sealed trait PathElement
+private object PathElement {
   case class FixedPath(v: String) extends PathElement
   case object VarPath extends PathElement
   case class QuerySegment(v: String) extends PathElement
   case object QueryParam extends PathElement
 }
 
-case class RequestBodySpec(
+private case class RequestBodySpec(
     paramDecl: Term.Param,
     bodyApplication: Term => Term
 )
-case class ResponseSpec(
+private case class ResponseSpec(
     returnType: Type,
     responseAs: Term
 )
-
-case class Success(responses: List[StatusCodeResponse]) {}
