@@ -84,12 +84,12 @@ class ApiCallGenerator(
         .getOrElse(t"Unit")
     val errorAncestorType = getCommonAncestor(errorResponseSpecs.values.toList)
 
-    val successCodesWithTypes = successResponseSpecs.mapValues { sc =>
-      modelGenerator.schemaToType(sc, isRequired = true).tpe
+    val successCodesWithTypes = successResponseSpecs.mapValues { schema =>
+      modelGenerator.schemaToType(schema, isRequired = true).tpe
     }
 
-    val errorCodesWithTypes = errorResponseSpecs.mapValues { sc =>
-      modelGenerator.schemaToType(sc, isRequired = true).tpe
+    val errorCodesWithTypes = errorResponseSpecs.mapValues { schema =>
+      modelGenerator.schemaToType(schema, isRequired = true).tpe
     }
 
     val asJsonWrapper =

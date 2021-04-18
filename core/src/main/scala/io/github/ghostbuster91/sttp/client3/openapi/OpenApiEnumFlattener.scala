@@ -3,11 +3,12 @@ package io.github.ghostbuster91.sttp.client3.openapi
 import io.swagger.v3.oas.models.media.Schema
 import sttp.model.MediaType
 
+import scala.annotation.tailrec
+
 object OpenApiEnumFlattener {
   def flatten(safeApi: SafeOpenApi): SafeOpenApi = {
     val schemas = collectComponentsSchemas(safeApi)
     val rbSchemas = collectRequestBodiesSchemas(safeApi)
-    //TODO below 3 could be refactored
     val operationSchemas = collectFromOperations(safeApi)
     val enums = collectEnums(
       schemas ++ rbSchemas ++ operationSchemas
@@ -83,7 +84,6 @@ object OpenApiEnumFlattener {
           s => p.unsafe.setSchema(s.unsafe)
         )
       )
-      .toList
 
   private def collectOperationRequestBodies(
       operation: SafeOperation
@@ -111,6 +111,7 @@ object OpenApiEnumFlattener {
       )
       .toList
 
+  @tailrec
   private def generateUniqueName(
       progress: NameGeneratorProgress,
       input: List[Enum]
@@ -156,12 +157,12 @@ object OpenApiEnumFlattener {
       case _ => Nil
     }
 
-  case class NameGeneratorProgress(
+  private case class NameGeneratorProgress(
       nameMap: Map[String, Enum] = Map.empty,
       nameCounter: Map[String, Int] = Map.empty
   )
-  case class Enum(propertyName: String, swr: SchemaWithReassign)
-  case class SchemaWithReassign(
+  private case class Enum(propertyName: String, swr: SchemaWithReassign)
+  private case class SchemaWithReassign(
       schema: SafeSchema,
       reassign: SafeSchema => Unit
   )

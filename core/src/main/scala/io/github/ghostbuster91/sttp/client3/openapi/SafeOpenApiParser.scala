@@ -7,8 +7,8 @@ import io.swagger.v3.parser.core.models.ParseOptions
 import scala.collection.JavaConverters._
 import io.swagger.v3.parser.core.models.AuthorizationValue
 
-class OpenApiLoader(log: LogAdapter) {
-  def load(yaml: String): SafeOpenApi = {
+class SafeOpenApiParser(log: LogAdapter) {
+  def parse(yaml: String): SafeOpenApi = {
     val parser = new OpenAPIParser
     val opts = new ParseOptions()
     opts.setResolve(true)
@@ -28,7 +28,7 @@ class OpenApiLoader(log: LogAdapter) {
           OpenApiCoproductGenerator.generate(_)
         ).foldLeft(new SafeOpenApi(spec))((acc, item) => item(acc))
       case None =>
-        throw new RuntimeException(s"Failed to parse k8s swagger specs")
+        throw new RuntimeException(s"Failed to parse open api specification")
     }
   }
 }

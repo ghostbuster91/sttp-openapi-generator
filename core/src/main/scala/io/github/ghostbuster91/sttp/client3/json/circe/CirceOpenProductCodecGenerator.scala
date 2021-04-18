@@ -5,7 +5,7 @@ import io.github.ghostbuster91.sttp.client3.model._
 
 import scala.meta._
 
-class CirceOpenProductCodecGenerator(ir: ImportRegistry) {
+private[circe] class CirceOpenProductCodecGenerator(ir: ImportRegistry) {
 
   def generate(openProduct: OpenProduct): List[Stat] =
     q"""
@@ -14,11 +14,9 @@ class CirceOpenProductCodecGenerator(ir: ImportRegistry) {
     """.stats
 
   private def encoderForSchema(openProduct: OpenProduct) = {
-    val resultClassName = openProduct.name.v
     val resultClassType = openProduct.name.typeName
-    val resultUncapitalized = uncapitalized(resultClassName)
     val encoderName = openProduct.name.asPrefix("Encoder")
-    val encodedVarName = Term.Name(resultUncapitalized)
+    val encodedVarName = openProduct.name.toVar
     q"""
     implicit val $encoderName: Encoder[$resultClassType] = 
       new Encoder[$resultClassType] {
@@ -55,7 +53,7 @@ class CirceOpenProductCodecGenerator(ir: ImportRegistry) {
     """
   }
 
-  def decoderBody(openProduct: OpenProduct) = {
+  private def decoderBody(openProduct: OpenProduct) = {
     ir.registerImport(q"import _root_.io.circe.JsonObject")
     val knownProps = openProduct.properties.map { case (k, v) =>
       decodeProperty(k, v)
@@ -83,10 +81,6 @@ class CirceOpenProductCodecGenerator(ir: ImportRegistry) {
       enumerator"${name.patVar} <- c.downField(${name.v}).as[$pType]",
       name.term
     )
-
-  def uncapitalized(name: String): String =
-    name.take(1).toLowerCase() + name.drop(1) //package level rich function?
-  //or modelGenerator returns richer object with such method
 }
 
 case class ForCompStatement(forStat: Enumerator.Generator, bind: Term)

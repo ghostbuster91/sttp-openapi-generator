@@ -1,6 +1,8 @@
 package io.github.ghostbuster91.sttp.client3.openapi
 
 import io.swagger.v3.oas.models.media.ComposedSchema
+import sttp.model.StatusCode
+
 import scala.collection.JavaConverters._
 
 object OpenApiCoproductGenerator {
@@ -58,18 +60,18 @@ object OpenApiCoproductGenerator {
       }
 
   private def collectSuccessResponses(path: SafePathItem) =
-    path.operations.values
-      .flatMap(op =>
-        op.collectResponses(statusCode => statusCode.isSuccess)
-          .values
-          .collect { case sr: SafeRefSchema => op.operationId -> sr }
-      )
-      .toList
+    collectResponses(path, _.isSuccess)
 
   private def collectErrorResponses(path: SafePathItem) =
+    collectResponses(path, _.isClientError)
+
+  private def collectResponses(
+      path: SafePathItem,
+      statusCodePredicate: StatusCode => Boolean
+  ) =
     path.operations.values
       .flatMap(op =>
-        op.collectResponses(statusCode => statusCode.isClientError)
+        op.collectResponses(statusCodePredicate)
           .values
           .collect { case sr: SafeRefSchema => op.operationId -> sr }
       )

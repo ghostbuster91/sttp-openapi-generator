@@ -4,7 +4,7 @@ import io.github.ghostbuster91.sttp.client3.model._
 import io.github.ghostbuster91.sttp.client3.ImportRegistry
 import scala.meta._
 
-class CirceCoproductCodecGenerator(ir: ImportRegistry) {
+private[circe] class CirceCoproductCodecGenerator(ir: ImportRegistry) {
 
   def generate(coproduct: Coproduct): List[Stat] =
     q"""

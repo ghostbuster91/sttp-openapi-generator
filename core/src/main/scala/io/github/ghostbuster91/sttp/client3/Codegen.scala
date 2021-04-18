@@ -10,7 +10,7 @@ import sttp.model.Method
 
 class Codegen(logger: LogAdapter, config: CodegenConfig) {
   def generateUnsafe(openApiYaml: String): Source = {
-    val openApi = new OpenApiLoader(logger).load(openApiYaml)
+    val openApi = new SafeOpenApiParser(logger).parse(openApiYaml)
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
     val requestBodies = collectRequestBodies(openApi)
     val enums = EnumCollector.collectEnums(schemas)

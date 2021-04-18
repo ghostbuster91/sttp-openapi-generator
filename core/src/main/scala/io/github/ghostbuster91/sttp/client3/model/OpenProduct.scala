@@ -8,9 +8,9 @@ case class OpenProduct(
 )
 
 case class ClassName(v: String) {
-  def asPrefix(postfix: String) =
+  def asPrefix(postfix: String): Pat.Var =
     Pat.Var(Term.Name(s"${uncapitalized(v)}$postfix"))
-  def term = Term.Name(v)
+  def term: Term.Name = Term.Name(v)
   def toVar: Term.Name = Term.Name(uncapitalized(v))
   def toFqnType(coproduct: Coproduct): Type =
     t"${coproduct.name.term}.$typeName"

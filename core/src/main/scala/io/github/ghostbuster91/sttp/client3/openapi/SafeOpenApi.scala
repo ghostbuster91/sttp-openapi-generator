@@ -22,7 +22,6 @@ class SafeOpenApi(openApi: OpenAPI) {
   def paths: Map[String, SafePathItem] =
     openApi.getPaths.asScala.toMap
       .mapValues(item => new SafePathItem(item))
-      .toMap
 
   override def toString: String = openApi.toString
   private[openapi] def unsafe: OpenAPI = openApi
@@ -157,7 +156,7 @@ class SafeArraySchema(s: ArraySchema) extends SafeSchema(s) {
 }
 class SafeBinarySchema(s: BinarySchema) extends SafeSchema(s)
 class SafeBooleanSchema(s: BooleanSchema) extends SafeSchema(s) {
-  def default: Option[Boolean] = Option(s.getDefault()).map(_.booleanValue())
+  def default: Option[Boolean] = Option(s.getDefault).map(_.booleanValue())
 }
 class SafeByteArraySchema(s: ByteArraySchema) extends SafeSchema(s)
 class SafeDateSchema(s: DateSchema) extends SafeSchema(s)
@@ -165,14 +164,14 @@ class SafeDateTimeSchema(s: DateTimeSchema) extends SafeSchema(s)
 class SafeEmailSchema(s: EmailSchema) extends SafeSchema(s)
 class SafeFileSchema(s: FileSchema) extends SafeSchema(s)
 class SafeIntegerSchema(s: IntegerSchema) extends SafeSchema(s) {
-  def default: Option[Int] = Option(s.getDefault()).map(_.intValue())
+  def default: Option[Int] = Option(s.getDefault).map(_.intValue())
 }
 class SafeLongSchema(s: IntegerSchema) extends SafeSchema(s) {
-  def default: Option[Long] = Option(s.getDefault()).map(_.longValue())
+  def default: Option[Long] = Option(s.getDefault).map(_.longValue())
 }
 class SafeMapSchema(s: MapSchema) extends SchemaWithProperties(s) {
   def additionalProperties: Either[Boolean, SafeSchema] =
-    Option(s.getAdditionalProperties())
+    Option(s.getAdditionalProperties)
       .map {
         case v: SafeSchema => Right(v)
         case v             => Left(v.asInstanceOf[Boolean])
@@ -180,15 +179,15 @@ class SafeMapSchema(s: MapSchema) extends SchemaWithProperties(s) {
       .getOrElse(Left(false))
 }
 class SafeDoubleSchema(s: NumberSchema) extends SafeSchema(s) {
-  def default: Option[Double] = Option(s.getDefault()).map(_.doubleValue())
+  def default: Option[Double] = Option(s.getDefault).map(_.doubleValue())
 }
 class SafeFloatSchema(s: NumberSchema) extends SafeSchema(s) {
-  def default: Option[Float] = Option(s.getDefault()).map(_.floatValue())
+  def default: Option[Float] = Option(s.getDefault).map(_.floatValue())
 }
 class SafeObjectSchema(s: ObjectSchema) extends SchemaWithProperties(s)
 class SafePasswordSchema(s: PasswordSchema) extends SafeSchema(s)
 class SafeStringSchema(s: StringSchema) extends SafeSchema(s) {
-  def default: Option[String] = Option(s.getDefault())
+  def default: Option[String] = Option(s.getDefault)
 }
 class SafeUUIDSchema(s: UUIDSchema) extends SafeSchema(s)
 class SafeRefSchema(s: Schema[_]) extends SafeSchema(s) {
@@ -220,7 +219,7 @@ object SafeSchema {
       case dts: DateTimeSchema  => new SafeDateTimeSchema(dts)
       case es: EmailSchema      => new SafeEmailSchema(es)
       case fs: FileSchema       => new SafeFileSchema(fs)
-      case is: IntegerSchema if Option(is.getFormat()).contains("int64") =>
+      case is: IntegerSchema if Option(is.getFormat).contains("int64") =>
         new SafeLongSchema(is)
       case is: IntegerSchema => new SafeIntegerSchema(is)
       case ms: MapSchema     => new SafeMapSchema(ms)
