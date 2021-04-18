@@ -43,7 +43,7 @@ class ModelGenerator(
 
   def commonAncestor(childs: List[SchemaRef]): List[SchemaRef] = //TODO use NEL
     childs
-      .map(childToParentRef.apply)
+      .map(c => childToParentRef.getOrElse(c, List(c)))
       .map(_.toSet)
       .reduce(_ intersect _)
       .toList

@@ -103,6 +103,7 @@ object GeneratorTest extends TestSuite {
     "multiple_success" - {
       "separate_products" - test()
       "common_ancestor" - test()
+      "common_ancestor_semi" - test()
     }
   }
 
@@ -136,18 +137,18 @@ object GeneratorTest extends TestSuite {
     m.mkToolBox(options = compileOptions)
   }
 
-  def compile(code: String): Unit = {
-    val tree = tb.parse(code)
-    tb.compile(tree)
-    ()
-  }
-
-  def compileWithoutHeader(code: String): Unit =
-    compile(
-      code.linesIterator.filter(!_.trim.startsWith("package")).mkString("\n")
-    )
-
   implicit class StringShouldCompileHelper(code: String) {
     def shouldCompile(): Unit = compileWithoutHeader(code)
+
+    private def compile(code: String): Unit = {
+      val tree = tb.parse(code)
+      tb.compile(tree)
+      ()
+    }
+
+    private def compileWithoutHeader(code: String): Unit =
+      compile(
+        code.linesIterator.filter(!_.trim.startsWith("package")).mkString("\n")
+      )
   }
 }
