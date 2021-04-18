@@ -148,7 +148,7 @@ class ApiCallGenerator(
       case ::(head, tl) =>
         val errorAncestor = model
           .commonAncestor(
-            (head :: tl).map(
+            NonEmptyList(head, tl).map(
               _.asInstanceOf[SafeRefSchema].ref
             ) //primitives can't be inherited
           )

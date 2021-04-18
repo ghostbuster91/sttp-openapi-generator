@@ -1,5 +1,6 @@
 package io.github.ghostbuster91.sttp.client3
 
+import cats.data.NonEmptyList
 import io.github.ghostbuster91.sttp.client3.model.{ClassName, TypeRef}
 import io.github.ghostbuster91.sttp.client3.openapi._
 
@@ -57,11 +58,11 @@ case class Model(
         TypeRef(t"UUID", "uuid", None)
     }
 
-  def commonAncestor(childs: List[SchemaRef]): List[SchemaRef] = //TODO use NEL
+  def commonAncestor(childs: NonEmptyList[SchemaRef]): List[SchemaRef] =
     childs
       .map(c => childToParentRef.getOrElse(c, List(c)))
       .map(_.toSet)
-      .reduce(_ intersect _)
+      .reduce[Set[SchemaRef]](_ intersect _)
       .toList
 }
 
