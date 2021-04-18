@@ -19,17 +19,18 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
     ir.registerImport(q"import _root_.sttp.model._")
 
     val jsonTypeProvider = new CirceTypeProvider(ir)
+    val model = Model(schemas, requestBodies)
     val modelGenerator =
-      ModelGenerator(schemas, requestBodies, ir, jsonTypeProvider)
-    val model = modelGenerator.generate
+      ModelGenerator(model, ir, jsonTypeProvider)
+    val classes = modelGenerator.generate
     val operations = collectOperations(openApi)
     val processedOps =
-      new ApiCallGenerator(modelGenerator, ir, config, jsonTypeProvider)
+      new ApiCallGenerator(model, ir, config)
         .generate(operations)
 
-    val coproducts = new CoproductCollector(modelGenerator, enums)
+    val coproducts = new CoproductCollector(model, enums)
       .collect(schemas)
-    val openProducts = new OpenProductCollector(modelGenerator).collect(schemas)
+    val openProducts = new OpenProductCollector(model, ir).collect(schemas)
     val codecs = new CirceCodecGenerator(ir)
       .generate(enums, coproducts, openProducts)
       .stats
@@ -39,7 +40,7 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       enums,
       ir.getImports,
       codecs,
-      model.values.toList
+      classes.values.toList
     )
   }
 

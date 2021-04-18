@@ -23,6 +23,12 @@ case class TypeRef(tpe: Type, paramName: String, defaultValue: Option[Term]) {
     case Some(value) => param"${Term.Name(paramName)} : $tpe = $value"
     case None        => param"${Term.Name(paramName)} : $tpe"
   }
+
+  def asOption: TypeRef =
+    copy(
+      tpe = t"Option[$tpe]",
+      defaultValue = defaultValue.map(d => q"Some($d)")
+    )
 }
 
 object TypeRef {

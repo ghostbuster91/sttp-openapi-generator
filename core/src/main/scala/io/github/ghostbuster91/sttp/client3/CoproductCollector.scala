@@ -3,7 +3,7 @@ package io.github.ghostbuster91.sttp.client3
 import io.github.ghostbuster91.sttp.client3.model._
 import io.github.ghostbuster91.sttp.client3.openapi._
 
-class CoproductCollector(model: ModelGenerator, enums: List[Enum]) {
+class CoproductCollector(model: Model, enums: List[Enum]) {
   def collect(
       schemas: Map[String, SafeSchema]
   ): List[Coproduct] =

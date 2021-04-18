@@ -6,47 +6,37 @@ import io.github.ghostbuster91.sttp.client3.openapi._
 import scala.meta._
 
 class ModelGenerator(
-    schemas: Map[SchemaRef, SafeSchema],
-    classNames: Map[SchemaRef, String],
-    childToParentRef: Map[SchemaRef, List[SchemaRef]],
+    model: Model,
     ir: ImportRegistry,
     jsonTypeProvider: JsonTypeProvider
 ) {
   def generate: Map[SchemaRef, Defn] = {
-    val parentToChilds = schemas.collect {
+    val parentToChilds = model.schemas.collect {
       case (key, composed: SafeComposedSchema) =>
         key -> composed.oneOf.map(_.ref)
-    }.toMap
-
-    val classes = schemas.collect { case (key, schema: SchemaWithProperties) =>
-      key -> schemaToClassDef(
-        classNames(key),
-        schema,
-        childToParentRef.getOrElse(key, List.empty).map(classNames.apply)
-      )
     }
-    val traits = schemas.collect { case (key, composed: SafeComposedSchema) =>
-      key -> schemaToSealedTrait(
-        classNames(key),
-        composed.discriminator,
-        parentToChilds(key)
-          .map(c => schemas(c).asInstanceOf[SafeObjectSchema])
-      )
+
+    val classes = model.schemas.collect {
+      case (key, schema: SchemaWithProperties) =>
+        key -> schemaToClassDef(
+          model.classNames(key),
+          schema,
+          model.childToParentRef
+            .getOrElse(key, List.empty)
+            .map(model.classNames.apply)
+        )
+    }
+    val traits = model.schemas.collect {
+      case (key, composed: SafeComposedSchema) =>
+        key -> schemaToSealedTrait(
+          model.classNames(key),
+          composed.discriminator,
+          parentToChilds(key)
+            .map(c => model.schemas(c).asInstanceOf[SafeObjectSchema])
+        )
     }
     traits ++ classes
   }
-
-  def classNameFor(schemaRef: SchemaRef): ClassName = ClassName(
-    classNames(schemaRef)
-  )
-  def schemaFor(schemaRef: SchemaRef): SafeSchema = schemas(schemaRef)
-
-  def commonAncestor(childs: List[SchemaRef]): List[SchemaRef] = //TODO use NEL
-    childs
-      .map(c => childToParentRef.getOrElse(c, List(c)))
-      .map(_.toSet)
-      .reduce(_ intersect _)
-      .toList
 
   private def schemaToClassDef(
       name: String,
@@ -86,9 +76,10 @@ class ModelGenerator(
       case Some(d) =>
         val child = childs.head
         val discriminatorProperty = child.properties(d.propertyName)
-        val discriminatorType = schemaToType(
+        val discriminatorType = model.schemaToType(
           discriminatorProperty,
-          child.requiredFields.contains(d.propertyName)
+          child.requiredFields.contains(d.propertyName),
+          ir
         )
         val propName = Term.Name(d.propertyName)
         q"""sealed trait $traitName {
@@ -106,96 +97,25 @@ class ModelGenerator(
       schema: SafeSchema,
       isRequired: Boolean
   ): Term.Param = {
-    val declType = schemaToType(
+    val declType = model.schemaToType(
       schema,
-      isRequired
+      isRequired,
+      ir
     )
     declType.copy(paramName = name).asParam
   }
 
-  def schemaToType(
-      schema: SafeSchema,
-      isRequired: Boolean
-  ): TypeRef = {
-    val declType = schemaToType(schema)
-    ModelGenerator.optionApplication(declType, isRequired, schema.isArray)
-  }
-
-  private def schemaToType(schema: SafeSchema): TypeRef =
-    schema match {
-      case ss: SafeStringSchema =>
-        TypeRef("String", ss.default.map(Lit.String(_)))
-      case si: SafeIntegerSchema =>
-        TypeRef("Int", si.default.map(Lit.Int(_)))
-      case sl: SafeLongSchema =>
-        TypeRef("Long", sl.default.map(Lit.Long(_)))
-      case sf: SafeFloatSchema =>
-        TypeRef("Float", sf.default.map(Lit.Float(_)))
-      case sd: SafeDoubleSchema =>
-        TypeRef("Double", sd.default.map(Lit.Double(_)))
-      case sb: SafeBooleanSchema =>
-        TypeRef("Boolean", sb.default.map(Lit.Boolean(_)))
-      case s: SafeArraySchema =>
-        val itemTypeRef = schemaToType(s.items)
-        TypeRef(
-          t"List[${itemTypeRef.tpe}]",
-          itemTypeRef.paramName + "List",
-          None
-        )
-      case ref: SafeRefSchema =>
-        TypeRef(classNames(ref.ref), None)
-      case _: SafeUUIDSchema =>
-        ir.registerImport(q"import _root_.java.util.UUID")
-        TypeRef(t"UUID", "uuid", None)
-    }
 }
 
 object ModelGenerator {
   def apply(
-      schemas: Map[String, SafeSchema],
-      requestBodies: Map[String, SafeSchema],
+      model: Model,
       ir: ImportRegistry,
       jsonTypeProvider: JsonTypeProvider
-  ): ModelGenerator = {
-    val modelClassNames = schemas.map { case (key, _) =>
-      SchemaRef.schema(key) -> snakeToCamelCase(key)
-    } ++ requestBodies.map { case (key, _) =>
-      SchemaRef.requestBody(key) -> snakeToCamelCase(key)
-    }
-    val refToSchema = schemas.map { case (k, v) =>
-      SchemaRef.schema(k) -> v
-    } ++ requestBodies
-      .map { case (k, v) => SchemaRef.requestBody(k) -> v }
-    val childToParentRef: Map[SchemaRef, List[SchemaRef]] = refToSchema
-      .collect { case (key, composed: SafeComposedSchema) =>
-        composed.oneOf.map(c => c.ref -> key)
-      }
-      .flatten
-      .groupBy(_._1)
-      .mapValues(e => e.map(_._2).toList)
+  ): ModelGenerator =
     new ModelGenerator(
-      refToSchema,
-      modelClassNames,
-      childToParentRef,
+      model,
       ir,
       jsonTypeProvider
     )
-  }
-
-  private def snakeToCamelCase(snake: String) =
-    snake.split('_').toList.map(_.capitalize).mkString
-
-  def optionApplication(
-      declType: TypeRef,
-      isRequired: Boolean,
-      isCollection: Boolean
-  ): TypeRef =
-    if (isRequired || isCollection) {
-      declType
-    } else {
-      declType.copy(
-        tpe = t"Option[${declType.tpe}]",
-        defaultValue = declType.defaultValue.map(d => q"Some($d)")
-      )
-    }
 }

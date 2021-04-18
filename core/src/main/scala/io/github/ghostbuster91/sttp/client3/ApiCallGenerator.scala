@@ -9,10 +9,9 @@ import scala.meta._
 import cats.data.NonEmptyList
 
 class ApiCallGenerator(
-    modelGenerator: ModelGenerator,
+    model: Model,
     ir: ImportRegistry,
-    config: CodegenConfig,
-    jsonTypeProvider: JsonTypeProvider
+    config: CodegenConfig
 ) {
 
   def generate(
@@ -85,11 +84,11 @@ class ApiCallGenerator(
     val errorAncestorType = getCommonAncestor(errorResponseSpecs.values.toList)
 
     val successCodesWithTypes = successResponseSpecs.mapValues { schema =>
-      modelGenerator.schemaToType(schema, isRequired = true).tpe
+      model.schemaToType(schema, isRequired = true, ir).tpe
     }
 
     val errorCodesWithTypes = errorResponseSpecs.mapValues { schema =>
-      modelGenerator.schemaToType(schema, isRequired = true).tpe
+      model.schemaToType(schema, isRequired = true, ir).tpe
     }
 
     val asJsonWrapper =
@@ -142,19 +141,19 @@ class ApiCallGenerator(
     errorResponseSpecs match {
       case ::(head, Nil) =>
         Some(
-          modelGenerator
-            .schemaToType(head, isRequired = true)
+          model
+            .schemaToType(head, isRequired = true, ir)
             .tpe
         )
       case ::(head, tl) =>
-        val errorAncestor = modelGenerator
+        val errorAncestor = model
           .commonAncestor(
             (head :: tl).map(
               _.asInstanceOf[SafeRefSchema].ref
             ) //primitives can't be inherited
           )
           .head
-        Some(modelGenerator.classNameFor(errorAncestor).typeName)
+        Some(model.classNameFor(errorAncestor).typeName)
       case Nil => None
     }
 
@@ -175,9 +174,10 @@ class ApiCallGenerator(
     }
 
   private def headerAsFuncParam(headerParam: SafeHeaderParameter) = {
-    val paramType = modelGenerator.schemaToType(
+    val paramType = model.schemaToType(
       headerParam.schema,
-      headerParam.required
+      headerParam.required,
+      ir
     )
     paramType.copy(paramName = headerParam.name).asParam
   }
@@ -254,9 +254,10 @@ class ApiCallGenerator(
   ): List[Term.Param] =
     operation.parameters
       .collect { case pathParam: SafePathParameter =>
-        val paramType = modelGenerator.schemaToType(
+        val paramType = model.schemaToType(
           pathParam.schema,
-          pathParam.required
+          pathParam.required,
+          ir
         )
         paramType.copy(paramName = pathParam.name).asParam
       }
@@ -266,9 +267,10 @@ class ApiCallGenerator(
   ): List[Term.Param] =
     operation.parameters
       .collect { case queryParam: SafeQueryParameter =>
-        val paramType = modelGenerator.schemaToType(
+        val paramType = model.schemaToType(
           queryParam.schema,
-          queryParam.required
+          queryParam.required,
+          ir
         )
         paramType.copy(paramName = queryParam.name).asParam
       }
@@ -285,9 +287,10 @@ class ApiCallGenerator(
         requestBody.content
           .collectFirst {
             case (`jsonMediaType`, jsonRequest) =>
-              val tRef = modelGenerator.schemaToType(
+              val tRef = model.schemaToType(
                 jsonRequest.schema,
-                requestBody.required
+                requestBody.required,
+                ir
               )
               RequestBodySpec(
                 tRef.asParam,
@@ -297,11 +300,9 @@ class ApiCallGenerator(
               formUrlEncodedRequestBody(requestBody, formReq)
             case (`octetStreamMediaType`, _) =>
               ir.registerImport(q"import _root_.java.io.File")
-              val tRef = ModelGenerator.optionApplication(
-                TypeRef("File", None),
-                requestBody.required,
-                false
-              )
+              val tRef =
+                if (requestBody.required) TypeRef("File", None)
+                else TypeRef("File", None).asOption
               RequestBodySpec(
                 tRef.asParam,
                 req => q"$req.body(${Term.Name(tRef.paramName)})"
@@ -313,14 +314,15 @@ class ApiCallGenerator(
       requestBody: SafeRequestBody,
       formReq: SafeMediaType
   ) = {
-    val tRef = modelGenerator.schemaToType(
+    val tRef = model.schemaToType(
       formReq.schema,
-      requestBody.required
+      requestBody.required,
+      ir
     )
     val schemaRef = formReq.schema match {
       case so: SafeRefSchema => so.ref
     }
-    val schema = modelGenerator.schemaFor(schemaRef) match {
+    val schema = model.schemaFor(schemaRef) match {
       case so: SafeObjectSchema => so
       case other =>
         throw new IllegalArgumentException(
