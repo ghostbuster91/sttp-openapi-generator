@@ -48,7 +48,7 @@ lazy val core: Project = (project in file("core"))
       "org.scalameta" %% "scalameta" % "4.4.13",
       "io.swagger.parser.v3" % "swagger-parser" % "2.0.25",
       "com.softwaremill.sttp.model" %% "core" % "1.4.3",
-      "org.typelevel" %% "cats-core" % "2.3.0"
+      "org.typelevel" %% "cats-core" % "2.3.1"
     ) ++ testDependencies
   )
 
