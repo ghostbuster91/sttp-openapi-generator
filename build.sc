@@ -13,7 +13,7 @@ object core extends BaseModule with SbtModule {
     ivy"org.scalameta::scalameta::4.4.13",
     ivy"io.swagger.parser.v3:swagger-parser:2.0.25",
     ivy"com.softwaremill.sttp.model::core:1.4.3",
-    ivy"org.typelevel::cats-core::2.5.0"
+    ivy"org.typelevel::cats-core::2.6.0"
   )
   object test extends Tests with CommonTestModule
 }
