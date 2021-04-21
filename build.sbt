@@ -45,7 +45,7 @@ lazy val core: Project = (project in file("core"))
     name := "codegen-core",
     scalaVersion := Scala212,
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "scalameta" % "4.4.13",
+      "org.scalameta" %% "scalameta" % "4.4.14",
       "io.swagger.parser.v3" % "swagger-parser" % "2.0.25",
       "com.softwaremill.sttp.model" %% "core" % "1.4.4",
       "org.typelevel" %% "cats-core" % "2.6.0"
