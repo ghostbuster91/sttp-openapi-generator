@@ -10,7 +10,7 @@ object core extends BaseModule with SbtModule {
   def scalaVersion = "2.12.13"
 
   def ivyDeps = Agg(
-    ivy"org.scalameta::scalameta::4.4.13",
+    ivy"org.scalameta::scalameta::4.4.14",
     ivy"io.swagger.parser.v3:swagger-parser:2.0.25",
     ivy"com.softwaremill.sttp.model::core:1.4.4",
     ivy"org.typelevel::cats-core::2.6.0"
