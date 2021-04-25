@@ -34,6 +34,8 @@ case class TypeRef(tpe: Type, paramName: String, defaultValue: Option[Term]) {
 object TypeRef {
   def apply(v: String, defaultValue: Option[Term]): TypeRef =
     new TypeRef(Type.Name(v), uncapitalized(v), defaultValue)
+  def apply(tpe: Type.Name): TypeRef =
+    new TypeRef(tpe, uncapitalized(tpe.value), None)
 }
 
 case class PropertyName(v: String) {

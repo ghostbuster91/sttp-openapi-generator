@@ -1,13 +1,16 @@
 package io.github.ghostbuster91.sttp.client3
 
-import scala.meta.Import
+import cats.data.State
+
+import scala.meta.{Import, Importee, Type}
 import scala.collection.immutable.ListSet
 
-class ImportRegistry {
-  private var imports = ListSet[StringBasedCompareImport]()
+class ImportRegistry(
+    imports: ListSet[StringBasedCompareImport]
+) {
 
-  def registerImport(imp: Import): Unit =
-    imports = imports + new StringBasedCompareImport(imp)
+  def registerImport(imp: Import): ImportRegistry =
+    new ImportRegistry(imports + new StringBasedCompareImport(imp))
 
   def getImports: List[Import] = imports.toList.map(_.`import`)
 }
@@ -21,4 +24,32 @@ private class StringBasedCompareImport(val `import`: Import) {
       .`import`
       .toString == `import`
       .toString()
+}
+
+object ImportRegistry {
+  type IM[A] = State[ImportRegistry, A]
+
+  def registerExternalTpe(imp: Import): IM[Type.Name] =
+    imp.importers match {
+      case ::(importer, Nil) =>
+        importer.importees match {
+          case ::(head: Importee.Name, Nil) =>
+            State(prev =>
+              prev.registerImport(imp) -> Type.Name(head.name.value)
+            )
+          case _ =>
+            throw new IllegalArgumentException(
+              "Multiple imports are unsupported"
+            )
+        }
+      case _ =>
+        throw new IllegalArgumentException(
+          "Multiple imports are unsupported"
+        )
+    }
+
+  def pure[T](v: T): IM[T] = State.pure[ImportRegistry, T](v)
+
+  def apply(im: Import*): ImportRegistry =
+    new ImportRegistry(ListSet(im.map(new StringBasedCompareImport(_)): _*))
 }

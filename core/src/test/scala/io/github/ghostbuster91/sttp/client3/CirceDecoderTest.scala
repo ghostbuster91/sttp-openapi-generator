@@ -9,7 +9,7 @@ object CirceDecoderTest extends TestSuite {
   val tests = Tests {
     "string_enum" - {
       val expected = load(s"string_enum.scala").parse[Source].get
-      val actual = new CirceCodecGenerator(new ImportRegistry())
+      val actual = new CirceCodecGenerator()
         .generate(
           List(
             Enum.StringEnum(
@@ -20,6 +20,9 @@ object CirceDecoderTest extends TestSuite {
           Nil,
           Nil
         )
+        .run(ImportRegistry())
+        .value
+        ._2
       assert(actual.structure == expected.structure)
     }
   }

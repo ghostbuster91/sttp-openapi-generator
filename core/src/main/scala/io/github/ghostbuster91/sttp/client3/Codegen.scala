@@ -14,33 +14,41 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
     val requestBodies = collectRequestBodies(openApi)
     val enums = EnumCollector.collectEnums(schemas)
-    val ir = new ImportRegistry()
-    ir.registerImport(q"import _root_.sttp.client3._")
-    ir.registerImport(q"import _root_.sttp.model._")
+    val InitialImports = ImportRegistry(
+      q"import _root_.sttp.client3._",
+      q"import _root_.sttp.model._"
+    )
 
-    val jsonTypeProvider = new CirceTypeProvider(ir)
+    val jsonTypeProvider = CirceTypeProvider
     val model = Model(schemas, requestBodies)
-    val modelGenerator =
-      ModelGenerator(model, ir, jsonTypeProvider)
-    val classes = modelGenerator.generate
-    val operations = collectOperations(openApi)
-    val processedOps =
-      new ApiCallGenerator(model, ir, config)
-        .generate(operations)
-
     val coproducts = new CoproductCollector(model, enums)
       .collect(schemas)
-    val openProducts = new OpenProductCollector(model, ir).collect(schemas)
-    val codecs = new CirceCodecGenerator(ir)
-      .generate(enums, coproducts, openProducts)
-      .stats
+    val modelGenerator =
+      ModelGenerator(model, jsonTypeProvider)
+    val operations = collectOperations(openApi)
+    val (imports, output) = (for {
+      classes <- modelGenerator.generate
+      apiCalls <- new ApiCallGenerator(model, config).generate(operations)
+      openProducts <- new OpenProductCollector(model).collect(schemas)
+      codecs <- new CirceCodecGenerator().generate(
+        enums,
+        coproducts,
+        openProducts
+      )
+    } yield CodegenOutput(
+      apiCalls,
+      enums,
+      InitialImports.getImports,
+      codecs.stats,
+      classes.values.toList
+    )).run(InitialImports).value
 
     createSource(
-      processedOps,
-      enums,
-      ir.getImports,
-      codecs,
-      classes.values.toList
+      output.processedOps,
+      output.enums,
+      imports.getImports,
+      output.codecs,
+      output.classes
     )
   }
 
@@ -50,7 +58,7 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       imports: List[Import],
       codecs: List[Stat],
       classes: List[Defn]
-  ) = {
+  ): Source = {
     val apiDefs = createApiDefs(processedOps)
 
     val enumDefs = enums.flatMap(EnumGenerator.enumToSealedTraitDef)
@@ -104,3 +112,10 @@ case class CollectedOperation(
 )
 
 case class CodegenConfig(handleErrors: Boolean)
+case class CodegenOutput(
+    processedOps: Map[Option[String], List[Defn.Def]],
+    enums: List[Enum],
+    imports: List[Import],
+    codecs: List[Stat],
+    classes: List[Defn]
+)

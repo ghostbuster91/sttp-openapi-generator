@@ -1,63 +1,72 @@
 package io.github.ghostbuster91.sttp.client3
 
-import io.github.ghostbuster91.sttp.client3.model._
+import io.github.ghostbuster91.sttp.client3.ImportRegistry._
+import cats.syntax.all._
 import io.github.ghostbuster91.sttp.client3.json._
 import io.github.ghostbuster91.sttp.client3.openapi._
 import scala.meta._
 
 class ModelGenerator(
     model: Model,
-    ir: ImportRegistry,
     jsonTypeProvider: JsonTypeProvider
 ) {
-  def generate: Map[SchemaRef, Defn] = {
+  def generate: IM[Map[SchemaRef, Defn]] = {
     val parentToChilds = model.schemas.collect {
       case (key, composed: SafeComposedSchema) =>
         key -> composed.oneOf.map(_.ref)
     }
-
-    val classes = model.schemas.collect {
-      case (key, schema: SchemaWithProperties) =>
-        key -> schemaToClassDef(
-          model.classNames(key),
-          schema,
-          model.childToParentRef
-            .getOrElse(key, List.empty)
-            .map(model.classNames.apply)
-        )
-    }
-    val traits = model.schemas.collect {
-      case (key, composed: SafeComposedSchema) =>
-        key -> schemaToSealedTrait(
-          model.classNames(key),
-          composed.discriminator,
-          parentToChilds(key)
-            .map(c => model.schemas(c).asInstanceOf[SafeObjectSchema])
-        )
-    }
-    traits ++ classes
+    for {
+      classes <- model.schemas
+        .collect { case (key, schema: SchemaWithProperties) =>
+          schemaToClassDef(
+            model.classNames(key),
+            schema,
+            model.childToParentRef
+              .getOrElse(key, List.empty)
+              .map(model.classNames.apply)
+          ).map(classDef => key -> classDef)
+        }
+        .toList
+        .sequence
+        .map(_.toMap)
+      traits <- model.schemas
+        .collect { case (key, composed: SafeComposedSchema) =>
+          schemaToSealedTrait(
+            model.classNames(key),
+            composed.discriminator,
+            parentToChilds(key)
+              .map(c => model.schemas(c).asInstanceOf[SafeObjectSchema])
+          ).map(traitDef => key -> traitDef)
+        }
+        .toList
+        .sequence
+        .map(_.toMap)
+    } yield traits ++ classes
   }
 
   private def schemaToClassDef(
       name: String,
       schema: SchemaWithProperties,
       parentClassName: List[String]
-  ) = {
-    val props = schema.properties.map { case (k, v) =>
-      processParams(
-        k,
-        v,
-        schema.requiredFields.contains(k)
-      )
-    }.toList
+  ): IM[Defn] = {
     val className = Type.Name(name)
-    val adjustedProps = schema match {
-      case _: SafeMapSchema =>
-        val anyType = jsonTypeProvider.anyType
-        props :+ param"_additionalProperties: Map[String, $anyType]"
-      case _: SafeObjectSchema => props
-    }
-    parentClassName match {
+    for {
+      props <- schema.properties.toList
+        .traverse { case (k, v) =>
+          processParams(
+            k,
+            v,
+            schema.requiredFields.contains(k)
+          )
+        }
+      adjustedProps <- schema match {
+        case _: SafeMapSchema =>
+          jsonTypeProvider.anyType.map(anyType =>
+            props :+ param"_additionalProperties: Map[String, $anyType]"
+          )
+        case _: SafeObjectSchema => props.pure[IM]
+      }
+    } yield parentClassName match {
       case parents if parents.nonEmpty =>
         val parentInits = parents.sorted.map(p => init"${Type.Name(p)}()")
         q"case class $className(..$adjustedProps) extends ..$parentInits"
@@ -70,24 +79,27 @@ class ModelGenerator(
       name: String,
       discriminator: Option[SafeDiscriminator],
       childs: List[SafeObjectSchema]
-  ): Defn.Trait = {
+  ): IM[Defn.Trait] = {
     val traitName = Type.Name(name)
     discriminator match {
       case Some(d) =>
         val child = childs.head
         val discriminatorProperty = child.properties(d.propertyName)
-        val discriminatorType = model.schemaToType(
-          discriminatorProperty,
-          child.requiredFields.contains(d.propertyName),
-          ir
-        )
-        val propName = Term.Name(d.propertyName)
-        q"""sealed trait $traitName {
+        model
+          .schemaToType(
+            discriminatorProperty,
+            child.requiredFields.contains(d.propertyName)
+          )
+          .map { discriminatorType =>
+            val propName = Term.Name(d.propertyName)
+            q"""sealed trait $traitName {
           def $propName: ${discriminatorType.tpe}
         }
         """
+          }
+
       case None =>
-        q"sealed trait $traitName"
+        q"sealed trait $traitName".pure[IM]
 
     }
   }
@@ -96,26 +108,23 @@ class ModelGenerator(
       name: String,
       schema: SafeSchema,
       isRequired: Boolean
-  ): Term.Param = {
-    val declType = model.schemaToType(
-      schema,
-      isRequired,
-      ir
-    )
-    declType.copy(paramName = name).asParam
-  }
+  ): IM[Term.Param] =
+    model
+      .schemaToType(
+        schema,
+        isRequired
+      )
+      .map(_.copy(paramName = name).asParam)
 
 }
 
 object ModelGenerator {
   def apply(
       model: Model,
-      ir: ImportRegistry,
       jsonTypeProvider: JsonTypeProvider
   ): ModelGenerator =
     new ModelGenerator(
       model,
-      ir,
       jsonTypeProvider
     )
 }
