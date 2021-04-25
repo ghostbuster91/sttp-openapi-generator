@@ -63,7 +63,11 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
     val apiDefs = createApiDefs(processedOps)
 
     val enumDefs = enums.flatMap(EnumGenerator.enumToSealedTraitDef)
-    source"""package io.github.ghostbuster91.sttp.client3.example {
+    val pkgName = config.packageName
+      .parse[Term]
+      .get
+      .asInstanceOf[Term.Ref]
+    source"""package $pkgName {
 
           ..$imports
 
@@ -112,7 +116,7 @@ case class CollectedOperation(
     operation: SafeOperation
 )
 
-case class CodegenConfig(handleErrors: Boolean)
+case class CodegenConfig(handleErrors: Boolean, packageName: String)
 case class CodegenOutput(
     processedOps: Map[Option[String], List[Defn.Def]],
     enums: List[Enum],
