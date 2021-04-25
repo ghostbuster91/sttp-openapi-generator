@@ -51,11 +51,9 @@ private[circe] class CirceOpenProductCodecGenerator {
   private def decoderForSchema(openProduct: OpenProduct): IM[Defn.Val] =
     for {
       decoderTpe <- CirceTypeProvider.DecoderTpe
-      hCursor <- registerExternalTpe(q"import _root_.io.circe.HCursor")
-      decoderRes <- registerExternalTpe(
-        q"import _root_.io.circe.Decoder.Result"
-      )
-      jsonObjectTpe <- registerExternalTpe(q"import _root_.io.circe.JsonObject")
+      hCursor <- CirceTypeProvider.HCursoerTpe
+      decoderRes <- CirceTypeProvider.DecodingResultTpe
+      jsonObjectTpe <- CirceTypeProvider.JsonObjectTpe
     } yield {
       val resultClassType = openProduct.name.typeName
       val decoderInit = init"${t"$decoderTpe[$resultClassType]"}()"

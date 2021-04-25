@@ -20,8 +20,8 @@ private[circe] class CirceCoproductCodecGenerator() {
       .filter(_.mapping.nonEmpty)
       .traverse { discriminator =>
         for {
-          jsonTpe <- registerExternalTpe(q"import _root_.io.circe.Json")
-          encoderTpe <- registerExternalTpe(q"import _root_.io.circe.Encoder")
+          jsonTpe <- CirceTypeProvider.AnyType
+          encoderTpe <- CirceTypeProvider.EncoderTpe
         } yield {
           val coproductType = coproduct.typeName
           val encoderName = coproduct.asPrefix("Encoder")
@@ -42,14 +42,10 @@ private[circe] class CirceCoproductCodecGenerator() {
       .filter(_.mapping.nonEmpty)
       .traverse { discriminator =>
         for {
-          hCursorTpe <- registerExternalTpe(q"import _root_.io.circe.HCursor")
+          hCursorTpe <- CirceTypeProvider.HCursoerTpe
           decoderTpe <- CirceTypeProvider.DecoderTpe
-          failureTpe <- registerExternalTpe(
-            q"import _root_.io.circe.DecodingFailure"
-          )
-          resultTpe <- registerExternalTpe(
-            q"import _root_.io.circe.Decoder.Result"
-          )
+          failureTpe <- CirceTypeProvider.DecodingFailureTpe
+          resultTpe <- CirceTypeProvider.DecodingResultTpe
         } yield {
           val cases = decoderCases(discriminator, failureTpe)
           val coproductType = coproduct.typeName
