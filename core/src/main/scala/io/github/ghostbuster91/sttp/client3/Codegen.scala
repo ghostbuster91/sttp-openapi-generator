@@ -28,7 +28,8 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
     val operations = collectOperations(openApi)
     val (imports, output) = (for {
       classes <- modelGenerator.generate
-      apiCalls <- new ApiCallGenerator(model, config).generate(operations)
+      apiCalls <- new ApiCallGenerator(model, config, jsonTypeProvider)
+        .generate(operations)
       openProducts <- new OpenProductCollector(model).collect(schemas)
       codecs <- new CirceCodecGenerator().generate(
         enums,

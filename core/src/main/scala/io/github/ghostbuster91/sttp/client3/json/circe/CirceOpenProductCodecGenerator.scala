@@ -19,7 +19,7 @@ private[circe] class CirceOpenProductCodecGenerator {
   private def encoderForSchema(openProduct: OpenProduct): IM[Defn.Val] =
     for {
       encoderTpe <- CirceTypeProvider.EncoderTpe
-      jsonTpe <- CirceTypeProvider.anyType
+      jsonTpe <- CirceTypeProvider.AnyType
     } yield {
       val resultClassType = openProduct.name.typeName
       val encoderName = openProduct.name.asPrefix("Encoder")

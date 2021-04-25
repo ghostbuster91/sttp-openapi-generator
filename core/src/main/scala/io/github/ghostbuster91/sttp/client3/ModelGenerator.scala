@@ -61,7 +61,7 @@ class ModelGenerator(
         }
       adjustedProps <- schema match {
         case _: SafeMapSchema =>
-          jsonTypeProvider.anyType.map(anyType =>
+          jsonTypeProvider.AnyType.map(anyType =>
             props :+ param"_additionalProperties: Map[String, $anyType]"
           )
         case _: SafeObjectSchema => props.pure[IM]

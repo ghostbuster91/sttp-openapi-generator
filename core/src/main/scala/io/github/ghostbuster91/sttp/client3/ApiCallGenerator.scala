@@ -9,10 +9,12 @@ import cats.data.NonEmptyList
 import cats.syntax.all._
 
 import scala.meta._
+import _root_.io.github.ghostbuster91.sttp.client3.json.JsonTypeProvider
 
 class ApiCallGenerator(
     model: Model,
-    config: CodegenConfig
+    config: CodegenConfig,
+    jsonTypeProvider: JsonTypeProvider
 ) {
 
   def generate(
@@ -114,6 +116,19 @@ class ApiCallGenerator(
           model.schemaToType(schema, isRequired = true).map(t => k -> t.tpe)
         }
         .map(_.toMap)
+      returnTpe <-
+        if (config.handleErrors) {
+          jsonTypeProvider.ErrorType.map { deserializationErrorTpe =>
+            errorAncestorType match {
+              case Some(value) =>
+                t"Either[ResponseException[$value, $deserializationErrorTpe], $successAncestorType]"
+              case None =>
+                t"Either[ResponseException[String, $deserializationErrorTpe], $successAncestorType]"
+            }
+          }
+        } else {
+          successAncestorType.pure[IM]
+        }
     } yield {
       val responseAsCases = (successCodesWithTypes.mapValues(tpe =>
         flattenErrors(asJsonWrapper(errorAncestorType, tpe))
@@ -122,17 +137,6 @@ class ApiCallGenerator(
       )).map { case (statusCode, asJson) =>
         q"ConditionalResponseAs(_.code == StatusCode.unsafeApply($statusCode), $asJson)"
       }.toList
-
-      val returnTpe = if (config.handleErrors) {
-        errorAncestorType match {
-          case Some(value) =>
-            t"Either[ResponseException[$value, io.circe.Error], $successAncestorType]"
-          case None =>
-            t"Either[ResponseException[String, io.circe.Error], $successAncestorType]"
-        }
-      } else {
-        successAncestorType
-      }
 
       val topAsJson = flattenErrors(
         asJsonWrapper(errorAncestorType, successAncestorType)

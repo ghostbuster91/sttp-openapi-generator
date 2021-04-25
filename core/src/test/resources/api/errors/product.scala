@@ -2,6 +2,7 @@ package io.github.ghostbuster91.sttp.client3.example
 
 import _root_.sttp.client3._
 import _root_.sttp.model._
+import _root_.io.circe.{Error => CirceError}
 import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
@@ -11,7 +12,7 @@ case class ErrorModel(msg: String)
 
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def updatePerson(): Request[
-    Either[ResponseException[ErrorModel, io.circe.Error], Unit],
+    Either[ResponseException[ErrorModel, CirceError], Unit],
     Any
   ] = basicRequest
     .put(uri"$baseUrl/person")

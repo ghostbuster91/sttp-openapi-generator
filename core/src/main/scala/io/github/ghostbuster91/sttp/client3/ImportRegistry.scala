@@ -33,10 +33,22 @@ object ImportRegistry {
     imp.importers match {
       case ::(importer, Nil) =>
         importer.importees match {
-          case ::(head: Importee.Name, Nil) =>
-            State(prev =>
-              prev.registerImport(imp) -> Type.Name(head.name.value)
-            )
+          case ::(head, Nil) =>
+            head match {
+              case regular: Importee.Name =>
+                State(prev =>
+                  prev.registerImport(imp) -> Type.Name(regular.name.value)
+                )
+              case rename: Importee.Rename =>
+                State(prev =>
+                  prev.registerImport(imp) -> Type.Name(rename.rename.value)
+                )
+              case other =>
+                throw new IllegalArgumentException(
+                  s"Unsupported import type $other"
+                )
+            }
+
           case _ =>
             throw new IllegalArgumentException(
               "Multiple imports are unsupported"
