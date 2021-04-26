@@ -52,11 +52,11 @@ lazy val core: Project = (project in file("core"))
     ) ++ testDependencies
   )
 
-lazy val codegenSbtPlugin: Project = (project in file("codegen-sbt-plugin"))
+lazy val codegenSbtPlugin: Project = (project in file("sbt-codegen-plugin"))
   .enablePlugins(SbtPlugin)
   .settings(commonSettings)
   .settings(
-    name := "sbt-codegen-plugin-circe",
+    name := "sbt-codegen-plugin",
     sbtPlugin := true,
     scriptedLaunchOpts := {
       scriptedLaunchOpts.value ++

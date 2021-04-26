@@ -57,6 +57,7 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
         .toList ++ these.filter(_.isDirectory).flatMap(collectInputFiles)
     }
   }
+
   import autoImport._
 
   private lazy val coreDeps = List(
@@ -76,6 +77,8 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
       sttpOpenApiInputPath := (Compile / resourceDirectory).value,
       sttpOpenApiJsonLibrary := JsonLibrary.Circe,
       Compile / sourceGenerators += generateSources.taskValue,
-      libraryDependencies ++= coreDeps ++ circeDeps
+      libraryDependencies ++= coreDeps ++ (sttpOpenApiJsonLibrary.value match {
+        case JsonLibrary.Circe => circeDeps
+      })
     )
 }
