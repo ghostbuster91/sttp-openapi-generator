@@ -116,11 +116,10 @@ object GeneratorTest extends TestSuite {
       LogAdapter.StdOut,
       CodegenConfig(
         handleErrors,
-        "io.github.ghostbuster91.sttp.client3.example",
         JsonLibrary.Circe
       )
     )
-      .generateUnsafe(yaml)
+      .generateUnsafe(yaml, "io.github.ghostbuster91.sttp.client3.example")
     val expected = load(s"$testName.scala")
     assert(result.structure == expected.parse[Source].get.structure)
   }

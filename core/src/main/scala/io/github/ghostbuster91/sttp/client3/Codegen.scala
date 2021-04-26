@@ -10,7 +10,7 @@ import sttp.model.MediaType
 import sttp.model.Method
 
 class Codegen(logger: LogAdapter, config: CodegenConfig) {
-  def generateUnsafe(openApiYaml: String): Source = {
+  def generateUnsafe(openApiYaml: String, packageName: String): Source = {
     val openApi = new SafeOpenApiParser(logger).parse(openApiYaml)
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
     val requestBodies = collectRequestBodies(openApi)
@@ -43,17 +43,18 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       classes.values.toList
     )).run(InitialImports).value
 
-    createSource(imports.getImports, output)
+    createSource(imports.getImports, output, packageName)
   }
 
   private def createSource(
       imports: List[Import],
-      codegenOutput: CodegenOutput
+      codegenOutput: CodegenOutput,
+      rawPkgName: String
   ): Source = {
     val apiDefs = createApiDefs(codegenOutput.processedOps)
     val enumDefs = codegenOutput.enums
       .flatMap(EnumGenerator.enumToSealedTraitDef)
-    val pkgName = config.packageName
+    val pkgName = rawPkgName
       .parse[Term]
       .get
       .asInstanceOf[Term.Ref]
@@ -108,7 +109,6 @@ case class CollectedOperation(
 
 case class CodegenConfig(
     handleErrors: Boolean,
-    packageName: String,
     jsonLibrary: JsonLibrary
 )
 case class CodegenOutput(

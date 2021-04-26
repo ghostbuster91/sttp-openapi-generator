@@ -5,8 +5,6 @@ import sbt.Keys._
 import sbt._
 import org.scalafmt.interfaces.Scalafmt
 
-import java.nio.file.Paths
-
 object SttpOpenApiCodegenPlugin extends AutoPlugin {
 
   val sttpOpenApiOutputPath =
@@ -16,54 +14,49 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
   val sttpOpenApiInputPath =
     settingKey[File]("Input resources for sttp-openapi generator")
 
-  val sttpOpenApiPackageName = settingKey[String](
-    "Package name of generated code by sttp-openapi generator"
-  )
   val sttpOpenApiJsonLibrary =
     settingKey[JsonLibrary]("Json library for sttp-openapi generator to use")
 
   object autoImport {
+
     lazy val generateSources =
       Def.task {
         val log = streams.value.log
-        val codegen = new Codegen(
-          new SbtLogAdapter(log),
-          CodegenConfig(
-            handleErrors = false,
-            sttpOpenApiPackageName.value,
-            sttpOpenApiJsonLibrary.value
-          )
+        val targetDirectory = sttpOpenApiOutputPath.value
+        val topLevelInputPath = sttpOpenApiInputPath.value
+        val scalafmt = Scalafmt.create(this.getClass.getClassLoader)
+        val config = CodegenConfig(
+          handleErrors = false,
+          sttpOpenApiJsonLibrary.value
+        )
+        val codegen = new SbtCodegenAdapter(
+          config,
+          targetDirectory,
+          topLevelInputPath,
+          log,
+          scalafmt
         )
 
-        val targetDirectory = sttpOpenApiOutputPath.value
         val scalaVer = scalaVersion.value
-        val swaggerDir = sttpOpenApiInputPath.value / "openapi.yaml"
-        val scalafmt = Scalafmt.create(this.getClass.getClassLoader)
+        val inputFiles = collectInputFiles(topLevelInputPath).toSet
         val cachedFun = FileFunction.cached(
           streams.value.cacheDirectory / s"sttp-openapi-src-$scalaVer",
           FileInfo.hash
         ) { input: Set[File] =>
-          input.foldLeft(Set.empty[File]) { (result, swaggerPath) =>
-            val swaggerYaml = IO.read(swaggerPath)
-            val code = codegen.generateUnsafe(swaggerYaml)
-            val targetFile = targetDirectory / "SttpOpenApi.scala"
-            IO.write(targetFile, format(scalafmt, code.toString(), targetFile))
-            result + targetFile
+          input.foldLeft(Set.empty[File]) { (result, inputFile) =>
+            result + codegen.processSingleFile(inputFile)
           }
         }
-        cachedFun(Set(swaggerDir)).toSeq
+        cachedFun(inputFiles).toSeq
       }
-  }
 
-  private def format(scalafmt: Scalafmt, code: String, futureFile: File) = {
-    val scalafmtConfig = Paths.get(".scalafmt.conf")
-    if (scalafmtConfig.toFile.exists()) {
-      scalafmt.format(scalafmtConfig, futureFile.toPath, code)
-    } else {
-      code
+    private def collectInputFiles(f: File): List[File] = {
+      val these = f.listFiles
+      these
+        .filter(_.isFile)
+        .toList ++ these.filter(_.isDirectory).flatMap(collectInputFiles)
     }
   }
-
   import autoImport._
 
   private lazy val coreDeps = List(
