@@ -19,6 +19,8 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
   val sttpOpenApiPackageName = settingKey[String](
     "Package name of generated code by sttp-openapi generator"
   )
+  val sttpOpenApiJsonLibrary =
+    settingKey[JsonLibrary]("Json library for sttp-openapi generator to use")
 
   object autoImport {
     lazy val generateSources =
@@ -26,7 +28,11 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
         val log = streams.value.log
         val codegen = new Codegen(
           new SbtLogAdapter(log),
-          CodegenConfig(handleErrors = false, sttpOpenApiPackageName.value)
+          CodegenConfig(
+            handleErrors = false,
+            sttpOpenApiPackageName.value,
+            sttpOpenApiJsonLibrary.value
+          )
         )
 
         val targetDirectory = sttpOpenApiOutputPath.value
@@ -75,6 +81,7 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
     Seq(
       sttpOpenApiOutputPath := (Compile / sourceManaged).value,
       sttpOpenApiInputPath := (Compile / resourceDirectory).value,
+      sttpOpenApiJsonLibrary := JsonLibrary.Circe,
       Compile / sourceGenerators += generateSources.taskValue,
       libraryDependencies ++= coreDeps ++ circeDeps
     )

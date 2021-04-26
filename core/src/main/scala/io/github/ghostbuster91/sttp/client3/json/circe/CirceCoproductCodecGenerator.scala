@@ -42,7 +42,7 @@ private[circe] class CirceCoproductCodecGenerator() {
       .filter(_.mapping.nonEmpty)
       .traverse { discriminator =>
         for {
-          hCursorTpe <- CirceTypeProvider.HCursoerTpe
+          hCursorTpe <- CirceTypeProvider.HCursorTpe
           decoderTpe <- CirceTypeProvider.DecoderTpe
           failureTpe <- CirceTypeProvider.DecodingFailureTpe
           resultTpe <- CirceTypeProvider.DecodingResultTpe

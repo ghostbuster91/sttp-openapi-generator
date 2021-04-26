@@ -13,7 +13,7 @@ object CirceTypeProvider extends JsonTypeProvider {
   )
   val EncoderTpe = registerExternalTpe(q"import _root_.io.circe.Encoder")
   val DecoderTpe = registerExternalTpe(q"import _root_.io.circe.Decoder")
-  val HCursoerTpe = registerExternalTpe(q"import _root_.io.circe.HCursor")
+  val HCursorTpe = registerExternalTpe(q"import _root_.io.circe.HCursor")
   val DecodingFailureTpe = registerExternalTpe(
     q"import _root_.io.circe.DecodingFailure"
   )

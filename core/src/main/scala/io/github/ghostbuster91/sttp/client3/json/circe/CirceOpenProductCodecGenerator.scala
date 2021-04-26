@@ -51,7 +51,7 @@ private[circe] class CirceOpenProductCodecGenerator {
   private def decoderForSchema(openProduct: OpenProduct): IM[Defn.Val] =
     for {
       decoderTpe <- CirceTypeProvider.DecoderTpe
-      hCursor <- CirceTypeProvider.HCursoerTpe
+      hCursor <- CirceTypeProvider.HCursorTpe
       decoderRes <- CirceTypeProvider.DecodingResultTpe
       jsonObjectTpe <- CirceTypeProvider.JsonObjectTpe
     } yield {

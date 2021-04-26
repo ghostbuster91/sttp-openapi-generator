@@ -116,7 +116,8 @@ object GeneratorTest extends TestSuite {
       LogAdapter.StdOut,
       CodegenConfig(
         handleErrors,
-        "io.github.ghostbuster91.sttp.client3.example"
+        "io.github.ghostbuster91.sttp.client3.example",
+        JsonLibrary.Circe
       )
     )
       .generateUnsafe(yaml)

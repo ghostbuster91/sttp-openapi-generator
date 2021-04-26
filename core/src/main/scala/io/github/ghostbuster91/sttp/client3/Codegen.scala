@@ -2,8 +2,9 @@ package io.github.ghostbuster91.sttp.client3
 
 import io.github.ghostbuster91.sttp.client3.json.circe._
 import io.github.ghostbuster91.sttp.client3.openapi._
-
 import io.github.ghostbuster91.sttp.client3.model._
+import io.github.ghostbuster91.sttp.client3.api._
+
 import scala.meta._
 import sttp.model.MediaType
 import sttp.model.Method
@@ -21,10 +22,8 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
 
     val jsonTypeProvider = CirceTypeProvider
     val model = Model(schemas, requestBodies)
-    val coproducts = new CoproductCollector(model, enums)
-      .collect(schemas)
-    val modelGenerator =
-      ModelGenerator(model, jsonTypeProvider)
+    val coproducts = new CoproductCollector(model, enums).collect(schemas)
+    val modelGenerator = ModelGenerator(model, jsonTypeProvider)
     val operations = collectOperations(openApi)
     val (imports, output) = (for {
       classes <- modelGenerator.generate
@@ -44,25 +43,16 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       classes.values.toList
     )).run(InitialImports).value
 
-    createSource(
-      output.processedOps,
-      output.enums,
-      imports.getImports,
-      output.codecs,
-      output.classes
-    )
+    createSource(imports.getImports, output)
   }
 
   private def createSource(
-      processedOps: Map[Option[String], List[Defn.Def]],
-      enums: List[Enum],
       imports: List[Import],
-      codecs: List[Stat],
-      classes: List[Defn]
+      codegenOutput: CodegenOutput
   ): Source = {
-    val apiDefs = createApiDefs(processedOps)
-
-    val enumDefs = enums.flatMap(EnumGenerator.enumToSealedTraitDef)
+    val apiDefs = createApiDefs(codegenOutput.processedOps)
+    val enumDefs = codegenOutput.enums
+      .flatMap(EnumGenerator.enumToSealedTraitDef)
     val pkgName = config.packageName
       .parse[Term]
       .get
@@ -71,10 +61,10 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
 
           ..$imports
 
-          ..$codecs
+          ..${codegenOutput.codecs}
 
           ..$enumDefs
-          ..$classes
+          ..${codegenOutput.classes}
 
           ..$apiDefs
         }
@@ -116,7 +106,11 @@ case class CollectedOperation(
     operation: SafeOperation
 )
 
-case class CodegenConfig(handleErrors: Boolean, packageName: String)
+case class CodegenConfig(
+    handleErrors: Boolean,
+    packageName: String,
+    jsonLibrary: JsonLibrary
+)
 case class CodegenOutput(
     processedOps: Map[Option[String], List[Defn.Def]],
     enums: List[Enum],
@@ -124,3 +118,8 @@ case class CodegenOutput(
     codecs: List[Stat],
     classes: List[Defn]
 )
+
+sealed trait JsonLibrary
+object JsonLibrary {
+  object Circe extends JsonLibrary
+}
