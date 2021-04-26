@@ -10,38 +10,46 @@ class ModelGenerator(
     model: Model,
     jsonTypeProvider: JsonTypeProvider
 ) {
-  def generate: IM[Map[SchemaRef, Defn]] = {
+  def generate: IM[Map[SchemaRef, Defn]] =
+    for {
+      classes <- collectClasses(model.schemas)
+      traits <- collectTraits(model.schemas)
+    } yield traits ++ classes
+
+  private def collectClasses(schemas: Map[SchemaRef, SafeSchema]) =
+    schemas
+      .collect { case (key, schema: SchemaWithProperties) =>
+        val parentClassName = model.childToParentRef
+          .getOrElse(key, List.empty)
+          .map(model.classNames.apply)
+        schemaToClassDef(
+          model.classNames(key),
+          schema,
+          parentClassName
+        ).map(classDef => key -> classDef)
+      }
+      .toList
+      .sequence
+      .map(_.toMap)
+
+  private def collectTraits(schemas: Map[SchemaRef, SafeSchema]) = {
     val parentToChilds = model.schemas.collect {
       case (key, composed: SafeComposedSchema) =>
         key -> composed.oneOf.map(_.ref)
     }
-    for {
-      classes <- model.schemas
-        .collect { case (key, schema: SchemaWithProperties) =>
-          schemaToClassDef(
-            model.classNames(key),
-            schema,
-            model.childToParentRef
-              .getOrElse(key, List.empty)
-              .map(model.classNames.apply)
-          ).map(classDef => key -> classDef)
-        }
-        .toList
-        .sequence
-        .map(_.toMap)
-      traits <- model.schemas
-        .collect { case (key, composed: SafeComposedSchema) =>
-          schemaToSealedTrait(
-            model.classNames(key),
-            composed.discriminator,
-            parentToChilds(key)
-              .map(c => model.schemas(c).asInstanceOf[SafeObjectSchema])
-          ).map(traitDef => key -> traitDef)
-        }
-        .toList
-        .sequence
-        .map(_.toMap)
-    } yield traits ++ classes
+    schemas
+      .collect { case (key, composed: SafeComposedSchema) =>
+        val childSchemas = parentToChilds(key)
+          .map(c => model.schemas(c).asInstanceOf[SafeObjectSchema])
+        schemaToSealedTrait(
+          model.classNames(key),
+          composed.discriminator,
+          childSchemas
+        ).map(traitDef => key -> traitDef)
+      }
+      .toList
+      .sequence
+      .map(_.toMap)
   }
 
   private def schemaToClassDef(
@@ -115,7 +123,6 @@ class ModelGenerator(
         isRequired
       )
       .map(_.copy(paramName = name).asParam)
-
 }
 
 object ModelGenerator {

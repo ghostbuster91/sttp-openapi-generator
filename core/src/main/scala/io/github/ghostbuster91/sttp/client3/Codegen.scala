@@ -2,14 +2,18 @@ package io.github.ghostbuster91.sttp.client3
 
 import io.github.ghostbuster91.sttp.client3.json.circe._
 import io.github.ghostbuster91.sttp.client3.openapi._
-
 import io.github.ghostbuster91.sttp.client3.model._
+import io.github.ghostbuster91.sttp.client3.api._
+
 import scala.meta._
 import sttp.model.MediaType
 import sttp.model.Method
 
 class Codegen(logger: LogAdapter, config: CodegenConfig) {
-  def generateUnsafe(openApiYaml: String): Source = {
+  def generateUnsafe(
+      openApiYaml: String,
+      packageName: Option[String]
+  ): Source = {
     val openApi = new SafeOpenApiParser(logger).parse(openApiYaml)
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
     val requestBodies = collectRequestBodies(openApi)
@@ -21,10 +25,8 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
 
     val jsonTypeProvider = CirceTypeProvider
     val model = Model(schemas, requestBodies)
-    val coproducts = new CoproductCollector(model, enums)
-      .collect(schemas)
-    val modelGenerator =
-      ModelGenerator(model, jsonTypeProvider)
+    val coproducts = new CoproductCollector(model, enums).collect(schemas)
+    val modelGenerator = ModelGenerator(model, jsonTypeProvider)
     val operations = collectOperations(openApi)
     val (imports, output) = (for {
       classes <- modelGenerator.generate
@@ -44,41 +46,42 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       classes.values.toList
     )).run(InitialImports).value
 
-    createSource(
-      output.processedOps,
-      output.enums,
-      imports.getImports,
-      output.codecs,
-      output.classes
-    )
+    createSource(imports.getImports, output, packageName)
   }
 
   private def createSource(
-      processedOps: Map[Option[String], List[Defn.Def]],
-      enums: List[Enum],
       imports: List[Import],
-      codecs: List[Stat],
-      classes: List[Defn]
+      codegenOutput: CodegenOutput,
+      rawPkgName: Option[String]
   ): Source = {
-    val apiDefs = createApiDefs(processedOps)
-
-    val enumDefs = enums.flatMap(EnumGenerator.enumToSealedTraitDef)
-    val pkgName = config.packageName
-      .parse[Term]
-      .get
-      .asInstanceOf[Term.Ref]
-    source"""package $pkgName {
-
+    val apiDefs = createApiDefs(codegenOutput.processedOps)
+    val enumDefs = codegenOutput.enums
+      .flatMap(EnumGenerator.enumToSealedTraitDef)
+    val pkgName = rawPkgName.map(
+      _.parse[Term].get
+        .asInstanceOf[Term.Ref]
+    )
+    val src = source"""
           ..$imports
 
-          ..$codecs
+          ..${codegenOutput.codecs}
 
           ..$enumDefs
-          ..$classes
+          ..${codegenOutput.classes}
 
           ..$apiDefs
-        }
       """
+    pkgName match {
+      case Some(value) =>
+        source"""package $value {
+                ..${src.stats}
+              }"""
+      case None =>
+        logger.warn(
+          "Generating code without package. Consider putting your openapi definition into a sub-directory."
+        )
+        src
+    }
   }
 
   private def createApiDefs(processedOps: Map[Option[String], List[Defn.Def]]) =
@@ -116,7 +119,10 @@ case class CollectedOperation(
     operation: SafeOperation
 )
 
-case class CodegenConfig(handleErrors: Boolean, packageName: String)
+case class CodegenConfig(
+    handleErrors: Boolean,
+    jsonLibrary: JsonLibrary
+)
 case class CodegenOutput(
     processedOps: Map[Option[String], List[Defn.Def]],
     enums: List[Enum],
@@ -124,3 +130,8 @@ case class CodegenOutput(
     codecs: List[Stat],
     classes: List[Defn]
 )
+
+sealed trait JsonLibrary
+object JsonLibrary {
+  object Circe extends JsonLibrary
+}

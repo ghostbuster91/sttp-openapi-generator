@@ -45,18 +45,18 @@ lazy val core: Project = (project in file("core"))
     name := "codegen-core",
     scalaVersion := Scala212,
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "scalameta" % "4.4.14",
+      "org.scalameta" %% "scalameta" % "4.4.15",
       "io.swagger.parser.v3" % "swagger-parser" % "2.0.25",
       "com.softwaremill.sttp.model" %% "core" % "1.4.4",
       "org.typelevel" %% "cats-core" % "2.6.0"
     ) ++ testDependencies
   )
 
-lazy val codegenSbtPlugin: Project = (project in file("codegen-sbt-plugin"))
+lazy val codegenSbtPlugin: Project = (project in file("sbt-codegen-plugin"))
   .enablePlugins(SbtPlugin)
   .settings(commonSettings)
   .settings(
-    name := "sbt-codegen-plugin-circe",
+    name := "sbt-codegen-plugin",
     sbtPlugin := true,
     scriptedLaunchOpts := {
       scriptedLaunchOpts.value ++
