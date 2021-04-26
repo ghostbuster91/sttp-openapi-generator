@@ -10,7 +10,10 @@ import sttp.model.MediaType
 import sttp.model.Method
 
 class Codegen(logger: LogAdapter, config: CodegenConfig) {
-  def generateUnsafe(openApiYaml: String, packageName: String): Source = {
+  def generateUnsafe(
+      openApiYaml: String,
+      packageName: Option[String]
+  ): Source = {
     val openApi = new SafeOpenApiParser(logger).parse(openApiYaml)
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
     val requestBodies = collectRequestBodies(openApi)
@@ -49,17 +52,16 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
   private def createSource(
       imports: List[Import],
       codegenOutput: CodegenOutput,
-      rawPkgName: String
+      rawPkgName: Option[String]
   ): Source = {
     val apiDefs = createApiDefs(codegenOutput.processedOps)
     val enumDefs = codegenOutput.enums
       .flatMap(EnumGenerator.enumToSealedTraitDef)
-    val pkgName = rawPkgName
-      .parse[Term]
-      .get
-      .asInstanceOf[Term.Ref]
-    source"""package $pkgName {
-
+    val pkgName = rawPkgName.map(
+      _.parse[Term].get
+        .asInstanceOf[Term.Ref]
+    )
+    val src = source"""
           ..$imports
 
           ..${codegenOutput.codecs}
@@ -68,8 +70,18 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
           ..${codegenOutput.classes}
 
           ..$apiDefs
-        }
       """
+    pkgName match {
+      case Some(value) =>
+        source"""package $value {
+                ..${src.stats}
+              }"""
+      case None =>
+        logger.warn(
+          "Generating code without package. Consider putting your openapi definition into a sub-directory."
+        )
+        src
+    }
   }
 
   private def createApiDefs(processedOps: Map[Option[String], List[Defn.Def]]) =

@@ -21,21 +21,24 @@ class SbtCodegenAdapter(
   ) = {
     log.info(s"Generating classes for ${inputFile.getAbsolutePath}...")
     val swaggerYaml = IO.read(inputFile)
-    val relativePath = IO
-      .relativizeFile(topLevelInputPath, inputFile)
-      .getOrElse(
-        throw new IllegalArgumentException(
-          s"Given $inputFile is not a descendant of $topLevelInputPath"
+    val relativePath = Option(
+      IO
+        .relativizeFile(topLevelInputPath, inputFile)
+        .getOrElse(
+          throw new IllegalArgumentException(
+            s"Given $inputFile is not a descendant of $topLevelInputPath"
+          )
         )
-      )
-      .getParent
+        .getParent
+    )
     val code = codegen.generateUnsafe(
       swaggerYaml,
-      relativePath
-        .replace("/", ".")
+      relativePath.map(_.replace("/", ".")).filterNot(_.isEmpty)
     )
     val targetFile =
-      targetDirectory / relativePath / s"${inputFile.base.capitalize}.scala"
+      targetDirectory / relativePath.getOrElse(
+        "."
+      ) / s"${inputFile.base.capitalize}.scala"
     IO.write(targetFile, format(scalafmt, code.toString(), targetFile))
     targetFile
   }
