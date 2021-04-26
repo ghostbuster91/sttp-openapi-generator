@@ -1,12 +1,14 @@
 package io.github.ghostbuster91.sttp.client3.model
 
+import scala.meta.{Pat, Term, Type}
+
 case class Coproduct(
     name: ClassName,
     discriminator: Option[Discriminator[_]]
 ) {
-  def typeName = name.typeName
-  def asPrefix(postfix: String) = name.asPrefix(postfix)
-  def toVar = name.toVar
+  def typeName: Type.Name = name.typeName
+  def asPrefix(postfix: String): Pat.Var = name.asPrefix(postfix)
+  def toVar: Term.Name = name.toVar
 }
 
 sealed trait Discriminator[T] {

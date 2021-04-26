@@ -5,6 +5,9 @@ import scala.meta._
 import scala.tools.reflect.ToolBox
 
 object GeneratorTest extends TestSuite {
+
+  private val tb = mkToolbox()
+
   val tests = Tests {
 
     "simple" - {
@@ -97,6 +100,11 @@ object GeneratorTest extends TestSuite {
       "multiple_errors" - test(handleErrors = true)
       "multiple_errors_with_parent" - test(handleErrors = true)
     }
+    "multiple_success" - {
+      "separate_products" - test()
+      "common_ancestor" - test()
+      "common_ancestor_semi" - test()
+    }
   }
 
   def testNoCompile(
@@ -104,7 +112,13 @@ object GeneratorTest extends TestSuite {
   )(implicit testPath: utest.framework.TestPath) = {
     val testName = testPath.value.mkString("/")
     val yaml = load(s"$testName.yaml")
-    val result = new Codegen(LogAdapter.StdOut, CodegenConfig(handleErrors))
+    val result = new Codegen(
+      LogAdapter.StdOut,
+      CodegenConfig(
+        handleErrors,
+        "io.github.ghostbuster91.sttp.client3.example"
+      )
+    )
       .generateUnsafe(yaml)
     val expected = load(s"$testName.scala")
     assert(result.structure == expected.parse[Source].get.structure)
@@ -129,19 +143,18 @@ object GeneratorTest extends TestSuite {
     m.mkToolBox(options = compileOptions)
   }
 
-  def compile(code: String): Unit = {
-    val tb = mkToolbox()
-    val tree = tb.parse(code)
-    tb.compile(tree)
-    ()
-  }
-
-  def compileWithoutHeader(code: String): Unit =
-    compile(
-      code.linesIterator.filter(!_.trim.startsWith("package")).mkString("\n")
-    )
-
   implicit class StringShouldCompileHelper(code: String) {
     def shouldCompile(): Unit = compileWithoutHeader(code)
+
+    private def compile(code: String): Unit = {
+      val tree = tb.parse(code)
+      tb.compile(tree)
+      ()
+    }
+
+    private def compileWithoutHeader(code: String): Unit =
+      compile(
+        code.linesIterator.filter(!_.trim.startsWith("package")).mkString("\n")
+      )
   }
 }

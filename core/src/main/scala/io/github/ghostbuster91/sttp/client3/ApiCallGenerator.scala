@@ -1,23 +1,25 @@
 package io.github.ghostbuster91.sttp.client3
 
-import io.github.ghostbuster91.sttp.client3.http.Method
 import io.github.ghostbuster91.sttp.client3.model._
 import io.github.ghostbuster91.sttp.client3.openapi._
-import io.github.ghostbuster91.sttp.client3.http.MediaType
+import io.github.ghostbuster91.sttp.client3.ImportRegistry._
 import scala.collection.immutable.ListMap
-import io.github.ghostbuster91.sttp.client3.json.JsonTypeProvider
+import sttp.model._
+import cats.data.NonEmptyList
+import cats.syntax.all._
+
 import scala.meta._
+import _root_.io.github.ghostbuster91.sttp.client3.json.JsonTypeProvider
 
 class ApiCallGenerator(
-    modelGenerator: ModelGenerator,
-    ir: ImportRegistry,
+    model: Model,
     config: CodegenConfig,
     jsonTypeProvider: JsonTypeProvider
 ) {
 
   def generate(
       operations: List[CollectedOperation]
-  ): Map[Option[String], List[Defn.Def]] = {
+  ): IM[Map[Option[String], List[Defn.Def]]] = {
     val taggedOperations: List[(Option[String], CollectedOperation)] =
       operations.flatMap { op =>
         op.operation.tags match {
@@ -26,19 +28,22 @@ class ApiCallGenerator(
           case None => List(None -> op)
         }
       }
-    val apiCallByTag =
-      taggedOperations
-        .map { case (tag, op) => tag -> createApiCall(op) }
+
+    for {
+      taggedCalls <- taggedOperations
+        .traverse { case (tag, op) =>
+          createApiCall(op).map(apiCall => tag -> apiCall)
+        }
+      apiCallByTag = taggedCalls
         .groupBy(_._1)
         .mapValues(_.map(_._2))
-        .toMap
+    } yield ListMap(apiCallByTag.toSeq.sortBy(_._1): _*)
 
-    ListMap(apiCallByTag.toSeq.sortBy(_._1): _*)
   }
 
   private def createApiCall(
       co: CollectedOperation
-  ): Defn.Def = {
+  ): IM[Defn.Def] = {
     val CollectedOperation(path, method, operation) = co
     val uri = constructUrl(
       path,
@@ -51,84 +56,121 @@ class ApiCallGenerator(
   private def createApiCall(
       operation: SafeOperation,
       basicRequestWithMethod: Term
-  ): Defn.Def = {
-    val successClassTypes =
-      operation.responses //todo handle multiple success responses
-        .collectFirst { case ("200", response) =>
-          response.content
-            .collectFirst { case (MediaType.ApplicationJson.v, jsonResponse) =>
-              modelGenerator
-                .schemaToType(
-                  jsonResponse.schema,
-                  isRequired = true
-                )
-                .tpe
-            }
-
-        }
-        .flatten
-        .getOrElse(t"Unit")
+  ): IM[Defn.Def] = {
     val functionName = Term.Name(operation.operationId)
-    val fQueries = queryAsFuncParam(operation)
-    val fPaths = pathAsFuncParam(operation)
-    val fReqBody = reqBodyAsFuncParam(operation)
     val headerParameters = operation.parameters.collect {
       case p: SafeHeaderParameter => p
     }
-    val fHeaders = headerParameters.map(headerAsFuncParam)
-    val parameters =
-      fPaths ++ fQueries ++ fHeaders ++ fReqBody.map(_.paramDecl)
-    val modifiedReq = applyOnRequest(
-      basicRequestWithMethod,
-      List(
-        applyHeadersToRequest(headerParameters) _
-      ) ++ fReqBody.map(_.bodyApplication).toList
-    )
-    val errorResponses = operation.responses
-      .collect {
-        case (statusCode, response) if statusCode != "200" =>
-          response.content
-            .collectFirst { case (MediaType.ApplicationJson.v, jsonResponse) =>
-              ErrorResponse(
-                jsonResponse.schema,
-                Lit.Int(statusCode.toInt)
-              )
-            }
-      }
-      .flatten
-      .toList
+    for {
+      fQueries <- queryAsFuncParam(operation)
+      fPaths <- pathAsFuncParam(operation)
+      fReqBody <- reqBodyAsFuncParam(operation)
+      fHeaders <- headerParameters.traverse(headerAsFuncParam)
+      response <- responseSpec(operation)
+    } yield {
+      val parameters =
+        fPaths ++ fQueries ++ fHeaders ++ fReqBody.map(_.paramDecl)
+      val modifiedReq = applyOnRequest(
+        basicRequestWithMethod,
+        List(
+          applyHeadersToRequest(headerParameters) _
+        ) ++ fReqBody.map(_.bodyApplication).toList
+      )
 
-    (config.handleErrors, errorResponses) match {
-      case (true, errorResponses) if errorResponses.nonEmpty =>
-        val commonAncestor = if (errorResponses.size == 1) {
-          errorResponses.head.schema.asInstanceOf[SafeRefSchema].ref
-        } else {
-          modelGenerator
-            .commonAncestor(
-              errorResponses.map(_.schema.asInstanceOf[SafeRefSchema].ref)
-            )
-            .head
-        }
-        val commonAncestorType =
-          modelGenerator.classNameFor(commonAncestor).typeName
-
-        val responseAsCases = errorResponses.map { er =>
-          val errorTpe =
-            modelGenerator.schemaToType(er.schema, isRequired = true).tpe
-          q"ConditionalResponseAs(_.code == ${er.statusCode}, asJsonEither[$errorTpe, $successClassTypes])"
-        }
-        val body =
-          q"""$modifiedReq.response(fromMetadata(
-            asJsonEither[$commonAncestorType, $successClassTypes],
-            ..$responseAsCases
-            )
-          )"""
-        q"def $functionName(..$parameters): Request[Either[ResponseException[$commonAncestorType, io.circe.Error], Unit], Any] = $body"
-      case _ =>
-        val body = q"$modifiedReq.response(asJson[$successClassTypes].getRight)"
-        q"def $functionName(..$parameters): Request[$successClassTypes, Any] = $body"
+      q"def $functionName(..$parameters): Request[${response.returnType}, Any] = $modifiedReq.response(${response.responseAs})"
     }
   }
+
+  private def responseSpec(operation: SafeOperation): IM[ResponseSpec] = {
+    val successResponseSpecs =
+      operation.collectResponses(statusCode => statusCode.isSuccess)
+    val errorResponseSpecs =
+      operation.collectResponses(statusCode => statusCode.isClientError)
+
+    val asJsonWrapper =
+      (errorType: Option[Type], successType: Type) =>
+        errorType match {
+          case Some(value) => q"asJsonEither[$value, $successType]"
+          case None        => q"asJson[$successType]"
+        }
+
+    val flattenErrors = (term: Term) =>
+      if (config.handleErrors) {
+        term
+      } else {
+        q"$term.getRight"
+      }
+
+    for {
+      successAncestorType <- getCommonAncestor(
+        successResponseSpecs.values.toList
+      ).map(_.getOrElse(t"Unit"))
+      errorAncestorType <- getCommonAncestor(errorResponseSpecs.values.toList)
+      successCodesWithTypes <- successResponseSpecs.toList
+        .traverse { case (k, schema) =>
+          model.schemaToType(schema, isRequired = true).map(t => k -> t.tpe)
+        }
+        .map(_.toMap)
+      errorCodesWithTypes <- errorResponseSpecs.toList
+        .traverse { case (k, schema) =>
+          model.schemaToType(schema, isRequired = true).map(t => k -> t.tpe)
+        }
+        .map(_.toMap)
+      returnTpe <-
+        if (config.handleErrors) {
+          jsonTypeProvider.ErrorType.map { deserializationErrorTpe =>
+            errorAncestorType match {
+              case Some(value) =>
+                t"Either[ResponseException[$value, $deserializationErrorTpe], $successAncestorType]"
+              case None =>
+                t"Either[ResponseException[String, $deserializationErrorTpe], $successAncestorType]"
+            }
+          }
+        } else {
+          successAncestorType.pure[IM]
+        }
+    } yield {
+      val responseAsCases = (successCodesWithTypes.mapValues(tpe =>
+        flattenErrors(asJsonWrapper(errorAncestorType, tpe))
+      ) ++ errorCodesWithTypes.mapValues(tpe =>
+        flattenErrors(asJsonWrapper(Some(tpe), successAncestorType))
+      )).map { case (statusCode, asJson) =>
+        q"ConditionalResponseAs(_.code == StatusCode.unsafeApply($statusCode), $asJson)"
+      }.toList
+
+      val topAsJson = flattenErrors(
+        asJsonWrapper(errorAncestorType, successAncestorType)
+      )
+
+      ResponseSpec(
+        returnTpe,
+        q"""fromMetadata(
+                $topAsJson,
+                ..$responseAsCases
+                )"""
+      )
+    }
+  }
+
+  private def getCommonAncestor(
+      errorResponseSpecs: List[SafeSchema]
+  ): IM[Option[Type]] =
+    errorResponseSpecs match {
+      case ::(head, Nil) =>
+        model
+          .schemaToType(head, isRequired = true)
+          .map(t => Some(t.tpe))
+      case ::(head, tl) =>
+        val errorAncestor = model
+          .commonAncestor(
+            NonEmptyList(head, tl).map(
+              _.asInstanceOf[SafeRefSchema].ref
+            ) //primitives can't be inherited
+          )
+          .head
+        Option(model.classNameFor(errorAncestor).typeName: Type).pure[IM]
+      case Nil => Option.empty[Type].pure[IM]
+    }
 
   private def applyOnRequest(request: Term, mods: List[Term => Term]) =
     mods
@@ -146,22 +188,24 @@ class ApiCallGenerator(
       }
     }
 
-  private def headerAsFuncParam(headerParam: SafeHeaderParameter) = {
-    val paramType = modelGenerator.schemaToType(
-      headerParam.schema,
-      headerParam.required
-    )
-    paramType.copy(paramName = headerParam.name).asParam
-  }
+  private def headerAsFuncParam(
+      headerParam: SafeHeaderParameter
+  ): IM[Term.Param] =
+    model
+      .schemaToType(
+        headerParam.schema,
+        headerParam.required
+      )
+      .map(paramType => paramType.copy(paramName = headerParam.name).asParam)
 
   private def createRequestCall(method: Method, uri: Term) =
     method match {
-      case Method.Put    => q"basicRequest.put($uri)"
-      case Method.Get    => q"basicRequest.get($uri)"
-      case Method.Post   => q"basicRequest.post($uri)"
-      case Method.Delete => q"basicRequest.delete($uri)"
-      case Method.Head   => q"basicRequest.head($uri)"
-      case Method.Patch  => q"basicRequest.patch($uri)"
+      case Method.PUT    => q"basicRequest.put($uri)"
+      case Method.GET    => q"basicRequest.get($uri)"
+      case Method.POST   => q"basicRequest.post($uri)"
+      case Method.DELETE => q"basicRequest.delete($uri)"
+      case Method.HEAD   => q"basicRequest.head($uri)"
+      case Method.PATCH  => q"basicRequest.patch($uri)"
     }
 
   private def constructUrl(path: String, params: List[SafeParameter]) = {
@@ -223,111 +267,128 @@ class ApiCallGenerator(
 
   private def pathAsFuncParam(
       operation: SafeOperation
-  ): List[Term.Param] =
-    operation.parameters
-      .collect { case pathParam: SafePathParameter =>
-        val paramType = modelGenerator.schemaToType(
+  ): IM[List[Term.Param]] =
+    operation.parameters.collect { case pathParam: SafePathParameter =>
+      model
+        .schemaToType(
           pathParam.schema,
           pathParam.required
         )
-        paramType.copy(paramName = pathParam.name).asParam
-      }
+        .map(paramType => paramType.copy(paramName = pathParam.name).asParam)
+    }.sequence
 
   private def queryAsFuncParam(
       operation: SafeOperation
-  ): List[Term.Param] =
-    operation.parameters
-      .collect { case queryParam: SafeQueryParameter =>
-        val paramType = modelGenerator.schemaToType(
+  ): IM[List[Term.Param]] =
+    operation.parameters.collect { case queryParam: SafeQueryParameter =>
+      model
+        .schemaToType(
           queryParam.schema,
           queryParam.required
         )
-        paramType.copy(paramName = queryParam.name).asParam
-      }
+        .map { paramType =>
+          paramType.copy(paramName = queryParam.name).asParam
+        }
+    }.sequence
 
   private def reqBodyAsFuncParam(
       operation: SafeOperation
-  ): Option[BodySpec] =
-    operation.requestBody
-      .flatMap { requestBody =>
-        requestBody.content
-          .collectFirst {
-            case (MediaType.ApplicationJson.v, jsonRequest) =>
-              val tRef = modelGenerator.schemaToType(
+  ): IM[Option[RequestBodySpec]] = {
+    val jsonMediaType = MediaType.ApplicationJson.toString
+    val formUrlEncodedMediaType =
+      MediaType.ApplicationXWwwFormUrlencoded.toString
+    val octetStreamMediaType = MediaType.ApplicationOctetStream.toString
+    operation.requestBody.flatMap { requestBody =>
+      requestBody.content
+        .collectFirst {
+          case (`jsonMediaType`, jsonRequest) =>
+            model
+              .schemaToType(
                 jsonRequest.schema,
                 requestBody.required
               )
-              BodySpec(
-                tRef.asParam,
-                req => q"$req.body(${Term.Name(tRef.paramName)})"
-              )
-            case (MediaType.FormUrlEncoded.v, formReq) =>
-              formUrlEncodedRequestBody(requestBody, formReq)
+              .map { tRef =>
+                RequestBodySpec(
+                  tRef.asParam,
+                  req => q"$req.body(${Term.Name(tRef.paramName)})"
+                )
+              }
 
-            case (MediaType.ApplicationOctetStream.v, _) =>
-              ir.registerImport(q"import _root_.java.io.File")
-              val tRef = ModelGenerator.optionApplication(
-                TypeRef("File", None),
-                requestBody.required,
-                false
-              )
-              BodySpec(
-                tRef.asParam,
-                req => q"$req.body(${Term.Name(tRef.paramName)})"
-              )
-          }
-      }
+          case (`formUrlEncodedMediaType`, formReq) =>
+            formUrlEncodedRequestBody(requestBody, formReq)
+          case (`octetStreamMediaType`, _) =>
+            ImportRegistry
+              .registerExternalTpe(q"import _root_.java.io.File")
+              .map { tFile =>
+                val tRef =
+                  if (requestBody.required) TypeRef(tFile)
+                  else TypeRef(tFile).asOption
+                RequestBodySpec(
+                  tRef.asParam,
+                  req => q"$req.body(${Term.Name(tRef.paramName)})"
+                )
+              }
+        }
+    }.sequence
+  }
   private def formUrlEncodedRequestBody(
       requestBody: SafeRequestBody,
       formReq: SafeMediaType
-  ) = {
-    val tRef = modelGenerator.schemaToType(
-      formReq.schema,
-      requestBody.required
-    )
+  ): IM[RequestBodySpec] = {
     val schemaRef = formReq.schema match {
       case so: SafeRefSchema => so.ref
     }
-    val schema = modelGenerator.schemaFor(schemaRef) match {
+    val schema = model.schemaFor(schemaRef) match {
       case so: SafeObjectSchema => so
       case other =>
         throw new IllegalArgumentException(
           s"form url encoded parameter should be object but was: $other"
         )
     }
-
-    val topParamName = Term.Name(tRef.paramName)
-    val extractors =
-      schema.properties.map { case (p, pSchema) =>
-        val isRequired = schema.requiredFields.contains(p)
-        val stringify: Term => Term = value =>
-          pSchema match {
-            case _: SafeStringSchema => value
-            case _                   => q"$value.toString"
-          }
-        val paramName = Term.Name(p)
-        if (isRequired) {
-          q"List($p -> $topParamName.$paramName)"
-        } else {
-          val paramParamName = param"$paramName"
-          q"$topParamName.$paramName.map($paramParamName=> $p -> ${stringify(paramName)})"
-        }
-      }.toList
-    BodySpec(
-      tRef.asParam,
-      req => q"$req.body(List(..$extractors).flatten)"
-    )
+    model
+      .schemaToType(
+        formReq.schema,
+        requestBody.required
+      )
+      .map { tRef =>
+        val topParamName = Term.Name(tRef.paramName)
+        val extractors =
+          schema.properties.map { case (p, pSchema) =>
+            val isRequired = schema.requiredFields.contains(p)
+            val stringify: Term => Term = value =>
+              pSchema match {
+                case _: SafeStringSchema => value
+                case _                   => q"$value.toString"
+              }
+            val paramName = Term.Name(p)
+            if (isRequired) {
+              q"List($p -> $topParamName.$paramName)"
+            } else {
+              val paramParamName = param"$paramName"
+              q"$topParamName.$paramName.map($paramParamName=> $p -> ${stringify(paramName)})"
+            }
+          }.toList
+        RequestBodySpec(
+          tRef.asParam,
+          req => q"$req.body(List(..$extractors).flatten)"
+        )
+      }
   }
 }
 
-sealed trait PathElement
-object PathElement {
+private sealed trait PathElement
+private object PathElement {
   case class FixedPath(v: String) extends PathElement
   case object VarPath extends PathElement
   case class QuerySegment(v: String) extends PathElement
   case object QueryParam extends PathElement
 }
 
-case class BodySpec(paramDecl: Term.Param, bodyApplication: Term => Term)
-
-case class ErrorResponse(schema: SafeSchema, statusCode: Lit.Int)
+private case class RequestBodySpec(
+    paramDecl: Term.Param,
+    bodyApplication: Term => Term
+)
+private case class ResponseSpec(
+    returnType: Type,
+    responseAs: Term
+)

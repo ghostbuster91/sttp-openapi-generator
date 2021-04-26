@@ -1,34 +1,46 @@
 package io.github.ghostbuster91.sttp.client3.json.circe
 
 import io.github.ghostbuster91.sttp.client3.model._
+import io.github.ghostbuster91.sttp.client3.ImportRegistry._
 import scala.meta._
 
-object CirceEnumCodecGenerator {
-  def generate(enum: Enum): List[Stat] =
-    q"""
-    ${decoder(enum)}
-    ${encoder(enum)}
+private[circe] object CirceEnumCodecGenerator {
+  def generate(enum: Enum): IM[List[Stat]] =
+    for {
+      d <- decoder(enum)
+      e <- encoder(enum)
+    } yield q"""
+    $d
+    $e
     """.stats
 
-  private def encoder(enum: Enum) = {
-    val encoderName = enum.asPrefix("Encoder")
-    val cases = encoderCases(enum)
-    q"""
-    implicit val $encoderName: Encoder[${enum.typeName}]  = ${baseEncoder(enum)}.contramap {
-        ..case $cases
-    }
-    """
-  }
+  private def encoder(enum: Enum): IM[Defn.Val] =
+    CirceTypeProvider.EncoderTpe
+      .map { encoderTpe =>
+        val encoderName = enum.asPrefix("Encoder")
+        val cases = encoderCases(enum)
+        q"""
+          implicit val $encoderName: $encoderTpe[${enum.typeName}]  = ${baseEncoder(
+          enum
+        )}.contramap {
+              ..case $cases
+          }
+          """
+      }
 
-  private def decoder(enum: Enum) = {
-    val cases = decoderCases(enum)
-    val decoderName = enum.asPrefix("Decoder")
-    q"""
-    implicit val $decoderName: Decoder[${enum.typeName}]  = ${baseDecoder(enum)}.emap {
-        ..case $cases
-    }
-    """
-  }
+  private def decoder(enum: Enum): IM[Defn.Val] =
+    CirceTypeProvider.DecoderTpe
+      .map { decoderTpe =>
+        val cases = decoderCases(enum)
+        val decoderName = enum.asPrefix("Decoder")
+        q"""
+          implicit val $decoderName: $decoderTpe[${enum.typeName}]  = ${baseDecoder(
+          enum
+        )}.emap {
+              ..case $cases
+          }
+          """
+      }
 
   private def encoderCases(enum: Enum): List[Case] =
     enum.values.map { ev =>

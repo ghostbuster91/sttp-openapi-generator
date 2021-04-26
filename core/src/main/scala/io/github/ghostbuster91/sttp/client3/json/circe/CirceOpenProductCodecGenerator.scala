@@ -1,36 +1,42 @@
 package io.github.ghostbuster91.sttp.client3.json.circe
 
-import io.github.ghostbuster91.sttp.client3.ImportRegistry
+import io.github.ghostbuster91.sttp.client3.ImportRegistry._
 import io.github.ghostbuster91.sttp.client3.model._
 
 import scala.meta._
 
-class CirceOpenProductCodecGenerator(ir: ImportRegistry) {
+private[circe] class CirceOpenProductCodecGenerator {
 
-  def generate(openProduct: OpenProduct): List[Stat] =
-    q"""
-    ${decoderForSchema(openProduct)}
-    ${encoderForSchema(openProduct)}
+  def generate(openProduct: OpenProduct): IM[List[Stat]] =
+    for {
+      decoder <- decoderForSchema(openProduct)
+      encoder <- encoderForSchema(openProduct)
+    } yield q"""
+    $decoder
+    $encoder
     """.stats
 
-  private def encoderForSchema(openProduct: OpenProduct) = {
-    val resultClassName = openProduct.name.v
-    val resultClassType = openProduct.name.typeName
-    val resultUncapitalized = uncapitalized(resultClassName)
-    val encoderName = openProduct.name.asPrefix("Encoder")
-    val encodedVarName = Term.Name(resultUncapitalized)
-    q"""
-    implicit val $encoderName: Encoder[$resultClassType] = 
-      new Encoder[$resultClassType] {
-        override def apply($encodedVarName: $resultClassType): Json =
+  private def encoderForSchema(openProduct: OpenProduct): IM[Defn.Val] =
+    for {
+      encoderTpe <- CirceTypeProvider.EncoderTpe
+      jsonTpe <- CirceTypeProvider.AnyType
+    } yield {
+      val resultClassType = openProduct.name.typeName
+      val encoderName = openProduct.name.asPrefix("Encoder")
+      val encodedVarName = openProduct.name.toVar
+      val encoderInit = init"${t"$encoderTpe[$resultClassType]"}()"
+      q"""
+    implicit val $encoderName: $encoderTpe[$resultClassType] = 
+      new $encoderInit {
+        override def apply($encodedVarName: $resultClassType): $jsonTpe =
          ${baseEncoderApplication(openProduct)}
             .apply($encodedVarName)
             .deepMerge(
-              Encoder.encodeMap[String, Json].apply($encodedVarName._additionalProperties)
+              Encoder.encodeMap[String, $jsonTpe].apply($encodedVarName._additionalProperties)
             )
       }
     """
-  }
+    }
 
   private def baseEncoderApplication(openProduct: OpenProduct) = {
     val productEncoder = Term.Name(s"forProduct${openProduct.properties.size}")
@@ -42,26 +48,33 @@ class CirceOpenProductCodecGenerator(ir: ImportRegistry) {
     q"Encoder.$productEncoder[..$encoderTypes](..$prodKeys)(p => (..$extractors))"
   }
 
-  private def decoderForSchema(openProduct: OpenProduct) = {
-    ir.registerImport(q"import _root_.io.circe.HCursor")
-    ir.registerImport(q"import _root_.io.circe.Decoder.Result")
-    val resultClassType = openProduct.name.typeName
-    val decoderName = p"${openProduct.name.asPrefix("Decoder")}"
-    q"""implicit val $decoderName: Decoder[$resultClassType] = 
-          new Decoder[$resultClassType] {
-            override def apply(c: HCursor): Result[$resultClassType] = 
-              ${decoderBody(openProduct)}
+  private def decoderForSchema(openProduct: OpenProduct): IM[Defn.Val] =
+    for {
+      decoderTpe <- CirceTypeProvider.DecoderTpe
+      hCursor <- CirceTypeProvider.HCursoerTpe
+      decoderRes <- CirceTypeProvider.DecodingResultTpe
+      jsonObjectTpe <- CirceTypeProvider.JsonObjectTpe
+    } yield {
+      val resultClassType = openProduct.name.typeName
+      val decoderInit = init"${t"$decoderTpe[$resultClassType]"}()"
+      val decoderName = p"${openProduct.name.asPrefix("Decoder")}"
+      q"""implicit val $decoderName: $decoderTpe[$resultClassType] = 
+          new $decoderInit {
+            override def apply(c: $hCursor): $decoderRes[$resultClassType] = 
+              ${decoderBody(openProduct, jsonObjectTpe)}
           }
     """
-  }
+    }
 
-  def decoderBody(openProduct: OpenProduct) = {
-    ir.registerImport(q"import _root_.io.circe.JsonObject")
+  private def decoderBody(
+      openProduct: OpenProduct,
+      jsonObjectTpe: Type.Name
+  ): Term = {
     val knownProps = openProduct.properties.map { case (k, v) =>
       decodeProperty(k, v)
     }.toList
     val allProps = knownProps :+ ForCompStatement(
-      enumerator"additionalProperties <- c.as[JsonObject]",
+      enumerator"additionalProperties <- c.as[$jsonObjectTpe]",
       openProduct.properties.keys.toList
         .foldLeft(q"additionalProperties.toMap": Term)((acc, item) =>
           filterOutProperty(acc, item)
@@ -83,10 +96,6 @@ class CirceOpenProductCodecGenerator(ir: ImportRegistry) {
       enumerator"${name.patVar} <- c.downField(${name.v}).as[$pType]",
       name.term
     )
-
-  def uncapitalized(name: String): String =
-    name.take(1).toLowerCase() + name.drop(1) //package level rich function?
-  //or modelGenerator returns richer object with such method
 }
 
 case class ForCompStatement(forStat: Enumerator.Generator, bind: Term)

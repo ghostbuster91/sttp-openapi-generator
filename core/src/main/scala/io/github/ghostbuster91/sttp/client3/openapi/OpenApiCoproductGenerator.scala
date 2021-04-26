@@ -1,7 +1,8 @@
 package io.github.ghostbuster91.sttp.client3.openapi
 
-import io.github.ghostbuster91.sttp.client3.http.MediaType
 import io.swagger.v3.oas.models.media.ComposedSchema
+import sttp.model.StatusCode
+
 import scala.collection.JavaConverters._
 
 object OpenApiCoproductGenerator {
@@ -10,24 +11,44 @@ object OpenApiCoproductGenerator {
     val childToParent = coproducts.values
       .flatMap(parent => parent.oneOf.map(child => child.ref -> parent))
       .toMap
-    val errorResponses = openApi.paths.values.flatMap(collectErrorResponses)
-    val errorsPerOperation = errorResponses
+    val errorsWithoutCommonParent =
+      collectCandidates(openApi, childToParent, collectErrorResponses)
+    val successesWithoutCommonParent =
+      collectCandidates(openApi, childToParent, collectSuccessResponses)
+    val newCoproducts = errorsWithoutCommonParent
+      .map(kv =>
+        createCoproduct(kv._1, kv._2, "GenericError")
+      ) ++ successesWithoutCommonParent
+      .map(kv => createCoproduct(kv._1, kv._2, "GenericSuccess"))
+
+    registerNewSchemas(openApi, newCoproducts)
+  }
+
+  private def collectCandidates(
+      openApi: SafeOpenApi,
+      childToParent: Map[SchemaRef, SafeComposedSchema],
+      collector: SafePathItem => List[(String, SafeRefSchema)]
+  ) = {
+    val responses = openApi.paths.values.flatMap(collector)
+    val responsePerOperation = responses
       .groupBy(_._1)
       .mapValues(_.map(_._2).toList)
-    val errorsWithoutCommonParent = errorsPerOperation
+    val responseWithoutCommonParent = responsePerOperation
       .filter(_._2.size >= 2)
       .filterNot { case (_, errors) =>
         errors.flatMap(e => childToParent.get(e.ref)).toSet.size == 1
       }
-    val newCoproducts = errorsWithoutCommonParent
-      .map(kv => createCoproduct(kv._1, kv._2))
-    registerNewSchemas(openApi, newCoproducts)
+    responseWithoutCommonParent
   }
 
-  private def createCoproduct(operationId: String, errors: List[SafeSchema]) = {
+  private def createCoproduct(
+      operationId: String,
+      errors: List[SafeSchema],
+      postfix: String
+  ) = {
     val unsafeNewSchema = new ComposedSchema
     unsafeNewSchema.setOneOf(errors.map(_.unsafe).asJava)
-    s"${operationId.capitalize}GenericError" -> unsafeNewSchema
+    s"${operationId.capitalize}$postfix" -> unsafeNewSchema
   }
 
   private def collectCoproducts(openApi: SafeOpenApi) =
@@ -38,16 +59,23 @@ object OpenApiCoproductGenerator {
         k -> v
       }
 
+  private def collectSuccessResponses(path: SafePathItem) =
+    collectResponses(path, _.isSuccess)
+
   private def collectErrorResponses(path: SafePathItem) =
-    path.operations.values.flatMap { operation =>
-      operation.responses.toList.collect {
-        case (statusCode, response) if statusCode.toInt >= 400 =>
-          operation.operationId -> response
-            .content(MediaType.ApplicationJson.v)
-            .schema
-            .asInstanceOf[SafeRefSchema]
-      }
-    }
+    collectResponses(path, _.isClientError)
+
+  private def collectResponses(
+      path: SafePathItem,
+      statusCodePredicate: StatusCode => Boolean
+  ) =
+    path.operations.values
+      .flatMap(op =>
+        op.collectResponses(statusCodePredicate)
+          .values
+          .collect { case sr: SafeRefSchema => op.operationId -> sr }
+      )
+      .toList
 
   private def registerNewSchemas(
       openApi: SafeOpenApi,

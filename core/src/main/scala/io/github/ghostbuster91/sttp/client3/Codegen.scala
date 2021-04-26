@@ -3,42 +3,53 @@ package io.github.ghostbuster91.sttp.client3
 import io.github.ghostbuster91.sttp.client3.json.circe._
 import io.github.ghostbuster91.sttp.client3.openapi._
 
-import io.github.ghostbuster91.sttp.client3.http._
 import io.github.ghostbuster91.sttp.client3.model._
 import scala.meta._
+import sttp.model.MediaType
+import sttp.model.Method
 
 class Codegen(logger: LogAdapter, config: CodegenConfig) {
   def generateUnsafe(openApiYaml: String): Source = {
-    val openApi = OpenApiLoader.load(openApiYaml)
+    val openApi = new SafeOpenApiParser(logger).parse(openApiYaml)
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
     val requestBodies = collectRequestBodies(openApi)
     val enums = EnumCollector.collectEnums(schemas)
-    val ir = new ImportRegistry()
-    ir.registerImport(q"import _root_.sttp.client3._")
-    ir.registerImport(q"import _root_.sttp.model._")
+    val InitialImports = ImportRegistry(
+      q"import _root_.sttp.client3._",
+      q"import _root_.sttp.model._"
+    )
 
-    val jsonTypeProvider = new CirceTypeProvider(ir)
-    val modelGenerator =
-      ModelGenerator(schemas, requestBodies, ir, jsonTypeProvider)
-    val model = modelGenerator.generate
-    val operations = collectOperations(openApi)
-    val processedOps =
-      new ApiCallGenerator(modelGenerator, ir, config, jsonTypeProvider)
-        .generate(operations)
-
-    val coproducts = new CoproductCollector(modelGenerator, enums)
+    val jsonTypeProvider = CirceTypeProvider
+    val model = Model(schemas, requestBodies)
+    val coproducts = new CoproductCollector(model, enums)
       .collect(schemas)
-    val openProducts = new OpenProductCollector(modelGenerator).collect(schemas)
-    val codecs = new CirceCodecGenerator(ir)
-      .generate(enums, coproducts, openProducts)
-      .stats
+    val modelGenerator =
+      ModelGenerator(model, jsonTypeProvider)
+    val operations = collectOperations(openApi)
+    val (imports, output) = (for {
+      classes <- modelGenerator.generate
+      apiCalls <- new ApiCallGenerator(model, config, jsonTypeProvider)
+        .generate(operations)
+      openProducts <- new OpenProductCollector(model).collect(schemas)
+      codecs <- new CirceCodecGenerator().generate(
+        enums,
+        coproducts,
+        openProducts
+      )
+    } yield CodegenOutput(
+      apiCalls,
+      enums,
+      InitialImports.getImports,
+      codecs.stats,
+      classes.values.toList
+    )).run(InitialImports).value
 
     createSource(
-      processedOps,
-      enums,
-      ir.getImports,
-      codecs,
-      model.values.toList
+      output.processedOps,
+      output.enums,
+      imports.getImports,
+      output.codecs,
+      output.classes
     )
   }
 
@@ -48,11 +59,15 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       imports: List[Import],
       codecs: List[Stat],
       classes: List[Defn]
-  ) = {
+  ): Source = {
     val apiDefs = createApiDefs(processedOps)
 
     val enumDefs = enums.flatMap(EnumGenerator.enumToSealedTraitDef)
-    source"""package io.github.ghostbuster91.sttp.client3.example {
+    val pkgName = config.packageName
+      .parse[Term]
+      .get
+      .asInstanceOf[Term.Ref]
+    source"""package $pkgName {
 
           ..$imports
 
@@ -82,7 +97,7 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       .getOrElse(Map.empty)
       .flatMap { case (k, rb) =>
         rb.content
-          .get(MediaType.ApplicationJson.v)
+          .get(MediaType.ApplicationJson.toString)
           .map(mt => k -> mt.schema)
       }
       .toMap
@@ -101,4 +116,11 @@ case class CollectedOperation(
     operation: SafeOperation
 )
 
-case class CodegenConfig(handleErrors: Boolean)
+case class CodegenConfig(handleErrors: Boolean, packageName: String)
+case class CodegenOutput(
+    processedOps: Map[Option[String], List[Defn.Def]],
+    enums: List[Enum],
+    imports: List[Import],
+    codecs: List[Stat],
+    classes: List[Defn]
+)

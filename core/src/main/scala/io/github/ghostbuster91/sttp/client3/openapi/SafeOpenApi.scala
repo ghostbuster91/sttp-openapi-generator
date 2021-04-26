@@ -1,6 +1,5 @@
 package io.github.ghostbuster91.sttp.client3.openapi
 
-import io.github.ghostbuster91.sttp.client3.http.Method
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.Components
 
@@ -8,17 +7,14 @@ import scala.collection.JavaConverters._
 import io.swagger.v3.oas.models.media.Schema
 import io.swagger.v3.oas.models.PathItem
 import io.swagger.v3.oas.models.Operation
-import io.swagger.v3.oas.models.parameters.Parameter
 import io.swagger.v3.oas.models.responses.ApiResponse
-import io.swagger.v3.oas.models.parameters.PathParameter
-import io.swagger.v3.oas.models.parameters.QueryParameter
-import io.swagger.v3.oas.models.parameters.CookieParameter
-import io.swagger.v3.oas.models.parameters.HeaderParameter
-import io.swagger.v3.oas.models.parameters.RequestBody
-import io.swagger.v3.oas.models.media.MediaType
-import io.swagger.v3.oas.models.media.ObjectSchema
-import io.swagger.v3.oas.models.media.ArraySchema
+import io.swagger.v3.oas.models.parameters._
 import io.swagger.v3.oas.models.media._
+import sttp.model.{
+  MediaType => SttpMediaType,
+  Method => SttpMethod,
+  StatusCode => SttpStatusCode
+}
 
 class SafeOpenApi(openApi: OpenAPI) {
   def components: Option[SafeComponents] =
@@ -26,7 +22,6 @@ class SafeOpenApi(openApi: OpenAPI) {
   def paths: Map[String, SafePathItem] =
     openApi.getPaths.asScala.toMap
       .mapValues(item => new SafePathItem(item))
-      .toMap
 
   override def toString: String = openApi.toString
   private[openapi] def unsafe: OpenAPI = openApi
@@ -56,12 +51,16 @@ class SafeRequestBody(rb: RequestBody) {
 }
 
 class SafePathItem(p: PathItem) {
-  def operations: Map[Method, SafeOperation] =
+  def operations: Map[SttpMethod, SafeOperation] =
     List(
-      Option(p.getGet).map(op => (Method.Get: Method) -> new SafeOperation(op)),
-      Option(p.getPut).map(op => (Method.Put: Method) -> new SafeOperation(op)),
+      Option(p.getGet).map(op =>
+        (SttpMethod.GET: SttpMethod) -> new SafeOperation(op)
+      ),
+      Option(p.getPut).map(op =>
+        (SttpMethod.PUT: SttpMethod) -> new SafeOperation(op)
+      ),
       Option(p.getPost).map(op =>
-        (Method.Post: Method) -> new SafeOperation(op)
+        (SttpMethod.POST: SttpMethod) -> new SafeOperation(op)
       )
     ).flatten.toMap
   override def toString: String = p.toString
@@ -90,6 +89,24 @@ class SafeOperation(op: Operation) {
 
   def requestBody: Option[SafeRequestBody] =
     Option(op.getRequestBody).map(new SafeRequestBody(_))
+
+  def collectResponses(
+      statusCodePredicate: SttpStatusCode => Boolean
+  ): Map[Int, SafeSchema] = {
+    val jsonMediaType = SttpMediaType.ApplicationJson.toString()
+    responses
+      .collect {
+        case (statusCode, response)
+            if statusCodePredicate(
+              SttpStatusCode.unsafeApply(statusCode.toInt)
+            ) =>
+          response.content
+            .get(jsonMediaType)
+            .map(mt => statusCode.toInt -> mt.schema)
+      }
+      .flatten
+      .toMap
+  }
 
   override def toString: String = op.toString
 }
@@ -139,7 +156,7 @@ class SafeArraySchema(s: ArraySchema) extends SafeSchema(s) {
 }
 class SafeBinarySchema(s: BinarySchema) extends SafeSchema(s)
 class SafeBooleanSchema(s: BooleanSchema) extends SafeSchema(s) {
-  def default: Option[Boolean] = Option(s.getDefault()).map(_.booleanValue())
+  def default: Option[Boolean] = Option(s.getDefault).map(_.booleanValue())
 }
 class SafeByteArraySchema(s: ByteArraySchema) extends SafeSchema(s)
 class SafeDateSchema(s: DateSchema) extends SafeSchema(s)
@@ -147,14 +164,14 @@ class SafeDateTimeSchema(s: DateTimeSchema) extends SafeSchema(s)
 class SafeEmailSchema(s: EmailSchema) extends SafeSchema(s)
 class SafeFileSchema(s: FileSchema) extends SafeSchema(s)
 class SafeIntegerSchema(s: IntegerSchema) extends SafeSchema(s) {
-  def default: Option[Int] = Option(s.getDefault()).map(_.intValue())
+  def default: Option[Int] = Option(s.getDefault).map(_.intValue())
 }
 class SafeLongSchema(s: IntegerSchema) extends SafeSchema(s) {
-  def default: Option[Long] = Option(s.getDefault()).map(_.longValue())
+  def default: Option[Long] = Option(s.getDefault).map(_.longValue())
 }
 class SafeMapSchema(s: MapSchema) extends SchemaWithProperties(s) {
   def additionalProperties: Either[Boolean, SafeSchema] =
-    Option(s.getAdditionalProperties())
+    Option(s.getAdditionalProperties)
       .map {
         case v: SafeSchema => Right(v)
         case v             => Left(v.asInstanceOf[Boolean])
@@ -162,15 +179,15 @@ class SafeMapSchema(s: MapSchema) extends SchemaWithProperties(s) {
       .getOrElse(Left(false))
 }
 class SafeDoubleSchema(s: NumberSchema) extends SafeSchema(s) {
-  def default: Option[Double] = Option(s.getDefault()).map(_.doubleValue())
+  def default: Option[Double] = Option(s.getDefault).map(_.doubleValue())
 }
 class SafeFloatSchema(s: NumberSchema) extends SafeSchema(s) {
-  def default: Option[Float] = Option(s.getDefault()).map(_.floatValue())
+  def default: Option[Float] = Option(s.getDefault).map(_.floatValue())
 }
 class SafeObjectSchema(s: ObjectSchema) extends SchemaWithProperties(s)
 class SafePasswordSchema(s: PasswordSchema) extends SafeSchema(s)
 class SafeStringSchema(s: StringSchema) extends SafeSchema(s) {
-  def default: Option[String] = Option(s.getDefault())
+  def default: Option[String] = Option(s.getDefault)
 }
 class SafeUUIDSchema(s: UUIDSchema) extends SafeSchema(s)
 class SafeRefSchema(s: Schema[_]) extends SafeSchema(s) {
@@ -202,7 +219,7 @@ object SafeSchema {
       case dts: DateTimeSchema  => new SafeDateTimeSchema(dts)
       case es: EmailSchema      => new SafeEmailSchema(es)
       case fs: FileSchema       => new SafeFileSchema(fs)
-      case is: IntegerSchema if Option(is.getFormat()).contains("int64") =>
+      case is: IntegerSchema if Option(is.getFormat).contains("int64") =>
         new SafeLongSchema(is)
       case is: IntegerSchema => new SafeIntegerSchema(is)
       case ms: MapSchema     => new SafeMapSchema(ms)
@@ -243,3 +260,4 @@ object SchemaRef {
       throw new IllegalArgumentException(ref)
     }
 }
+case class StatusCodeResponse(schema: SafeSchema, statusCode: Int)

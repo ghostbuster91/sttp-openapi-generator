@@ -1,5 +1,3 @@
-import _root_.io.circe.Decoder
-import _root_.io.circe.Encoder
 import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 

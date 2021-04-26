@@ -1,13 +1,67 @@
 package io.github.ghostbuster91.sttp.client3
 
-import scala.meta.Import
+import cats.data.State
+
+import scala.meta.{Import, Importee, Type}
 import scala.collection.immutable.ListSet
 
-class ImportRegistry {
-  private var imports = ListSet[Import]()
+class ImportRegistry(
+    imports: ListSet[StringBasedCompareImport]
+) {
 
-  def registerImport(imp: Import): Unit =
-    imports = imports + imp
+  def registerImport(imp: Import): ImportRegistry =
+    new ImportRegistry(imports + new StringBasedCompareImport(imp))
 
-  def getImports: List[Import] = imports.toList
+  def getImports: List[Import] = imports.toList.map(_.`import`)
+}
+
+private class StringBasedCompareImport(val `import`: Import) {
+  override def hashCode(): Int = `import`.toString.hashCode
+
+  override def equals(obj: Any): Boolean =
+    obj.isInstanceOf[StringBasedCompareImport] && obj
+      .asInstanceOf[StringBasedCompareImport]
+      .`import`
+      .toString == `import`
+      .toString()
+}
+
+object ImportRegistry {
+  type IM[A] = State[ImportRegistry, A]
+
+  def registerExternalTpe(imp: Import): IM[Type.Name] =
+    imp.importers match {
+      case ::(importer, Nil) =>
+        importer.importees match {
+          case ::(head, Nil) =>
+            head match {
+              case regular: Importee.Name =>
+                State(prev =>
+                  prev.registerImport(imp) -> Type.Name(regular.name.value)
+                )
+              case rename: Importee.Rename =>
+                State(prev =>
+                  prev.registerImport(imp) -> Type.Name(rename.rename.value)
+                )
+              case other =>
+                throw new IllegalArgumentException(
+                  s"Unsupported import type $other"
+                )
+            }
+
+          case _ =>
+            throw new IllegalArgumentException(
+              "Multiple imports are unsupported"
+            )
+        }
+      case _ =>
+        throw new IllegalArgumentException(
+          "Multiple imports are unsupported"
+        )
+    }
+
+  def pure[T](v: T): IM[T] = State.pure[ImportRegistry, T](v)
+
+  def apply(im: Import*): ImportRegistry =
+    new ImportRegistry(ListSet(im.map(new StringBasedCompareImport(_)): _*))
 }
