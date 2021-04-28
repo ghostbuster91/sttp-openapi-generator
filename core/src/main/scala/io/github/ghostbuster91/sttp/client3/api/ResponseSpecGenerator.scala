@@ -6,6 +6,7 @@ import io.github.ghostbuster91.sttp.client3.openapi._
 import io.github.ghostbuster91.sttp.client3.json.JsonTypeProvider
 import cats.syntax.all._
 import cats.data.NonEmptyList
+import sttp.model.StatusCode
 
 import scala.meta._
 
@@ -41,8 +42,8 @@ private class ResponseSpecGenerator(
   private def responseSpec(
       successAncestorType: Type,
       errorAncestorType: Option[Type],
-      successCodesWithTypes: Map[Int, Type],
-      errorCodesWithTypes: Map[Int, Type],
+      successCodesWithTypes: Map[StatusCode, Type],
+      errorCodesWithTypes: Map[StatusCode, Type],
       returnTpe: Type
   ) = {
     val asJsonWrapper =
@@ -57,7 +58,7 @@ private class ResponseSpecGenerator(
     ) ++ errorCodesWithTypes.mapValues(tpe =>
       flattenErrors(asJsonWrapper(Some(tpe), successAncestorType))
     )).map { case (statusCode, asJson) =>
-      q"ConditionalResponseAs(_.code == StatusCode.unsafeApply($statusCode), $asJson)"
+      q"ConditionalResponseAs(_.code == StatusCode.unsafeApply(${statusCode.code}), $asJson)"
     }.toList
 
     val topAsJson = flattenErrors(
@@ -97,7 +98,9 @@ private class ResponseSpecGenerator(
       successAncestorType.pure[IM]
     }
 
-  private def collectErrorWithTypes(errorResponseSpecs: Map[Int, SafeSchema]) =
+  private def collectErrorWithTypes(
+      errorResponseSpecs: Map[StatusCode, SafeSchema]
+  ) =
     errorResponseSpecs.toList
       .traverse { case (k, schema) =>
         model.schemaToType(schema, isRequired = true).map(t => k -> t.tpe)
@@ -105,7 +108,7 @@ private class ResponseSpecGenerator(
       .map(_.toMap)
 
   private def collectSuccessCodesWithTypes(
-      successResponseSpecs: Map[Int, SafeSchema]
+      successResponseSpecs: Map[StatusCode, SafeSchema]
   ) =
     successResponseSpecs.toList
       .traverse { case (k, schema) =>

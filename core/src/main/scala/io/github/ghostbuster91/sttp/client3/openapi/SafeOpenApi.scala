@@ -82,9 +82,11 @@ class SafeOperation(op: Operation) {
       })
       .getOrElse(List.empty)
 
-  def responses: Map[String, SafeApiResponse] =
+  def responses: Map[SttpStatusCode, SafeApiResponse] =
     Option(op.getResponses)
-      .map(_.asScala.mapValues(r => new SafeApiResponse(r)).toMap)
+      .map(_.asScala.map { case (code, r) =>
+        SttpStatusCode.unsafeApply(code.toInt) -> new SafeApiResponse(r)
+      }.toMap)
       .getOrElse(Map.empty)
 
   def requestBody: Option[SafeRequestBody] =
@@ -92,17 +94,14 @@ class SafeOperation(op: Operation) {
 
   def collectResponses(
       statusCodePredicate: SttpStatusCode => Boolean
-  ): Map[Int, SafeSchema] = {
+  ): Map[SttpStatusCode, SafeSchema] = {
     val jsonMediaType = SttpMediaType.ApplicationJson.toString()
     responses
       .collect {
-        case (statusCode, response)
-            if statusCodePredicate(
-              SttpStatusCode.unsafeApply(statusCode.toInt)
-            ) =>
+        case (statusCode, response) if statusCodePredicate(statusCode) =>
           response.content
             .get(jsonMediaType)
-            .map(mt => statusCode.toInt -> mt.schema)
+            .map(mt => statusCode -> mt.schema)
       }
       .flatten
       .toMap
