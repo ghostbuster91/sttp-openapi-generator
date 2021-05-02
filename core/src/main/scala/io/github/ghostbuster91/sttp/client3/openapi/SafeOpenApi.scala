@@ -40,7 +40,7 @@ class SafeComponents(c: Components) {
   private[openapi] def unsafe: Components = c
 }
 
-class SafeRequestBody(rb: RequestBody) {
+case class SafeRequestBody(rb: RequestBody) {
   def content: Map[String, SafeMediaType] =
     Option(rb.getContent)
       .map(_.asScala.mapValues(new SafeMediaType(_)).toMap)
@@ -50,23 +50,23 @@ class SafeRequestBody(rb: RequestBody) {
   override def toString: String = rb.toString
 }
 
-class SafePathItem(p: PathItem) {
+case class SafePathItem(unsafe: PathItem) {
   def operations: Map[SttpMethod, SafeOperation] =
     List(
-      Option(p.getGet).map(op =>
+      Option(unsafe.getGet).map(op =>
         (SttpMethod.GET: SttpMethod) -> new SafeOperation(op)
       ),
-      Option(p.getPut).map(op =>
+      Option(unsafe.getPut).map(op =>
         (SttpMethod.PUT: SttpMethod) -> new SafeOperation(op)
       ),
-      Option(p.getPost).map(op =>
+      Option(unsafe.getPost).map(op =>
         (SttpMethod.POST: SttpMethod) -> new SafeOperation(op)
       )
     ).flatten.toMap
-  override def toString: String = p.toString
+  override def toString: String = unsafe.toString
 }
 
-class SafeOperation(op: Operation) {
+case class SafeOperation(op: Operation) {
   def operationId: String =
     op.getOperationId //TODO introduce operationId value object
   def tags: Option[List[String]] =
@@ -110,17 +110,17 @@ class SafeOperation(op: Operation) {
   override def toString: String = op.toString
 }
 
-sealed abstract class SafeParameter(p: Parameter) {
-  def name: String = p.getName
-  def schema: SafeSchema = SafeSchema(p.getSchema)
-  def required: Boolean = p.getRequired()
-  override def toString: String = p.toString
-  private[openapi] def unsafe: Parameter = p
+sealed trait SafeParameter {
+  def unsafe: Parameter
+  def name: String = unsafe.getName
+  def schema: SafeSchema = SafeSchema(unsafe.getSchema)
+  def required: Boolean = unsafe.getRequired()
+  override def toString: String = unsafe.toString
 }
-class SafePathParameter(p: PathParameter) extends SafeParameter(p)
-class SafeHeaderParameter(p: HeaderParameter) extends SafeParameter(p)
-class SafeCookieParameter(p: CookieParameter) extends SafeParameter(p)
-class SafeQueryParameter(p: QueryParameter) extends SafeParameter(p)
+case class SafePathParameter(unsafe: PathParameter) extends SafeParameter
+case class SafeHeaderParameter(unsafe: HeaderParameter) extends SafeParameter
+case class SafeCookieParameter(unsafe: CookieParameter) extends SafeParameter
+case class SafeQueryParameter(unsafe: QueryParameter) extends SafeParameter
 class SafeApiResponse(r: ApiResponse) {
   def content: Map[String, SafeMediaType] =
     Option(r.getContent)
@@ -133,85 +133,85 @@ class SafeMediaType(m: MediaType) {
   private[openapi] def unsafe: MediaType = m
 }
 
-sealed abstract class SafeSchema(s: Schema[_]) {
+sealed trait SafeSchema {
+  def unsafe: Schema[_]
   def enum: List[Any] =
-    Option(s.getEnum).map(_.asScala.toList).getOrElse(List.empty)
+    Option(unsafe.getEnum).map(_.asScala.toList).getOrElse(List.empty)
   def isEnum: Boolean = enum.nonEmpty
   def isArray = false
-  override def toString: String = s.toString
-  private[openapi] def unsafe: Schema[_] = s
+  override def toString: String = unsafe.toString
 }
-sealed abstract class SchemaWithProperties(s: Schema[_]) extends SafeSchema(s) {
-  def properties: Map[String, SafeSchema] = Option(s.getProperties)
+sealed trait SchemaWithProperties extends SafeSchema {
+  def properties: Map[String, SafeSchema] = Option(unsafe.getProperties)
     .map(_.asScala.mapValues(SafeSchema.apply).toMap)
     .getOrElse(Map.empty)
   def requiredFields: List[String] =
-    Option(s.getRequired).map(_.asScala.toList).getOrElse(List.empty)
+    Option(unsafe.getRequired).map(_.asScala.toList).getOrElse(List.empty)
 }
-sealed abstract class SafePrimitiveSchema(s: Schema[_]) extends SafeSchema(s)
-class SafeArraySchema(s: ArraySchema) extends SafeSchema(s) {
-  def items: SafeSchema = SafeSchema(s.getItems)
+sealed trait SafePrimitiveSchema extends SafeSchema
+case class SafeArraySchema(unsafe: ArraySchema) extends SafeSchema {
+  def items: SafeSchema = SafeSchema(unsafe.getItems)
   override def isArray = true
 }
-class SafeBinarySchema(s: BinarySchema) extends SafeSchema(s)
-class SafeBooleanSchema(s: BooleanSchema) extends SafeSchema(s) {
-  def default: Option[Boolean] = Option(s.getDefault).map(_.booleanValue())
+case class SafeBinarySchema(unsafe: BinarySchema) extends SafeSchema
+case class SafeBooleanSchema(unsafe: BooleanSchema) extends SafeSchema {
+  def default: Option[Boolean] = Option(unsafe.getDefault).map(_.booleanValue())
 }
-class SafeByteArraySchema(s: ByteArraySchema) extends SafeSchema(s)
-class SafeDateSchema(s: DateSchema) extends SafeSchema(s)
-class SafeDateTimeSchema(s: DateTimeSchema) extends SafeSchema(s)
-class SafeEmailSchema(s: EmailSchema) extends SafeSchema(s)
-class SafeFileSchema(s: FileSchema) extends SafeSchema(s)
-class SafeIntegerSchema(s: IntegerSchema) extends SafeSchema(s) {
-  def default: Option[Int] = Option(s.getDefault).map(_.intValue())
+case class SafeByteArraySchema(unsafe: ByteArraySchema) extends SafeSchema
+case class SafeDateSchema(unsafe: DateSchema) extends SafeSchema
+case class SafeDateTimeSchema(unsafe: DateTimeSchema) extends SafeSchema
+case class SafeEmailSchema(unsafe: EmailSchema) extends SafeSchema
+case class SafeFileSchema(unsafe: FileSchema) extends SafeSchema
+case class SafeIntegerSchema(unsafe: IntegerSchema) extends SafeSchema {
+  def default: Option[Int] = Option(unsafe.getDefault).map(_.intValue())
 }
-class SafeLongSchema(s: IntegerSchema) extends SafeSchema(s) {
-  def default: Option[Long] = Option(s.getDefault).map(_.longValue())
+case class SafeLongSchema(unsafe: IntegerSchema) extends SafeSchema {
+  def default: Option[Long] = Option(unsafe.getDefault).map(_.longValue())
 }
-class SafeMapSchema(s: MapSchema) extends SchemaWithProperties(s) {
+case class SafeMapSchema(unsafe: MapSchema) extends SchemaWithProperties {
   def additionalProperties: Either[Boolean, SafeSchema] =
-    Option(s.getAdditionalProperties)
+    Option(unsafe.getAdditionalProperties)
       .map {
         case v: SafeSchema => Right(v)
         case v             => Left(v.asInstanceOf[Boolean])
       }
       .getOrElse(Left(false))
 }
-class SafeDoubleSchema(s: NumberSchema) extends SafeSchema(s) {
-  def default: Option[Double] = Option(s.getDefault).map(_.doubleValue())
+case class SafeDoubleSchema(unsafe: NumberSchema) extends SafeSchema {
+  def default: Option[Double] = Option(unsafe.getDefault).map(_.doubleValue())
 }
-class SafeFloatSchema(s: NumberSchema) extends SafeSchema(s) {
-  def default: Option[Float] = Option(s.getDefault).map(_.floatValue())
+case class SafeFloatSchema(unsafe: NumberSchema) extends SafeSchema {
+  def default: Option[Float] = Option(unsafe.getDefault).map(_.floatValue())
 }
-class SafeObjectSchema(s: ObjectSchema) extends SchemaWithProperties(s) {
+case class SafeObjectSchema(unsafe: ObjectSchema) extends SchemaWithProperties {
   def discriminator: Option[SafeDiscriminator] =
-    Option(s.getDiscriminator).map(new SafeDiscriminator(_))
+    Option(unsafe.getDiscriminator).map(new SafeDiscriminator(_))
 }
-class SafePasswordSchema(s: PasswordSchema) extends SafeSchema(s)
-class SafeStringSchema(s: StringSchema) extends SafeSchema(s) {
-  def default: Option[String] = Option(s.getDefault)
+case class SafePasswordSchema(unsafe: PasswordSchema) extends SafeSchema
+case class SafeStringSchema(unsafe: StringSchema) extends SafeSchema {
+  def default: Option[String] = Option(unsafe.getDefault)
 }
-class SafeUUIDSchema(s: UUIDSchema) extends SafeSchema(s)
-class SafeRefSchema(s: Schema[_]) extends SafeSchema(s) {
-  def ref: SchemaRef = SchemaRef.parse(s.get$ref)
+case class SafeUUIDSchema(unsafe: UUIDSchema) extends SafeSchema
+case class SafeRefSchema(unsafe: Schema[_]) extends SafeSchema {
+  def ref: SchemaRef = SchemaRef.parse(unsafe.get$ref)
 }
-class SafeComposedSchema(s: ComposedSchema) extends SafeSchema(s) {
+case class SafeComposedSchema(unsafe: ComposedSchema) extends SafeSchema {
   def oneOf: List[SafeRefSchema] =
-    Option(s.getOneOf)
+    Option(unsafe.getOneOf)
       .map(_.asScala.map(new SafeRefSchema(_)).toList)
       .getOrElse(List.empty)
 
   def allOf: List[SafeSchema] =
-    Option(s.getAllOf)
+    Option(unsafe.getAllOf)
       .map(_.asScala.map(SafeSchema(_)).toList)
       .getOrElse(List.empty)
 
   def discriminator: Option[SafeDiscriminator] =
-    Option(s.getDiscriminator).map(new SafeDiscriminator(_))
-  override def toString: String = s.toString
+    Option(unsafe.getDiscriminator).map(new SafeDiscriminator(_))
+  override def toString: String = unsafe.toString
 }
 
-class SafeDiscriminator(d: Discriminator) {
+case class SafeDiscriminator(d: Discriminator) {
   def propertyName: String = d.getPropertyName
   def mapping: Map[String, SchemaRef] = Option(d.getMapping)
     .map(_.asScala.mapValues(SchemaRef.parse).toMap)
@@ -221,26 +221,26 @@ class SafeDiscriminator(d: Discriminator) {
 object SafeSchema {
   def apply(s: Schema[_]): SafeSchema =
     s match {
-      case as: ArraySchema      => new SafeArraySchema(as)
-      case bs: BooleanSchema    => new SafeBooleanSchema(bs)
-      case bas: ByteArraySchema => new SafeByteArraySchema(bas)
-      case ds: DateSchema       => new SafeDateSchema(ds)
-      case dts: DateTimeSchema  => new SafeDateTimeSchema(dts)
-      case es: EmailSchema      => new SafeEmailSchema(es)
-      case fs: FileSchema       => new SafeFileSchema(fs)
+      case as: ArraySchema      => SafeArraySchema(as)
+      case bs: BooleanSchema    => SafeBooleanSchema(bs)
+      case bas: ByteArraySchema => SafeByteArraySchema(bas)
+      case ds: DateSchema       => SafeDateSchema(ds)
+      case dts: DateTimeSchema  => SafeDateTimeSchema(dts)
+      case es: EmailSchema      => SafeEmailSchema(es)
+      case fs: FileSchema       => SafeFileSchema(fs)
       case is: IntegerSchema if Option(is.getFormat).contains("int64") =>
-        new SafeLongSchema(is)
-      case is: IntegerSchema => new SafeIntegerSchema(is)
-      case ms: MapSchema     => new SafeMapSchema(ms)
+        SafeLongSchema(is)
+      case is: IntegerSchema => SafeIntegerSchema(is)
+      case ms: MapSchema     => SafeMapSchema(ms)
       case ns: NumberSchema if Option(ns.getFormat).contains("float") =>
-        new SafeFloatSchema(ns)
-      case ns: NumberSchema               => new SafeDoubleSchema(ns)
-      case os: ObjectSchema               => new SafeObjectSchema(os)
-      case ps: PasswordSchema             => new SafePasswordSchema(ps)
-      case ss: StringSchema               => new SafeStringSchema(ss)
-      case us: UUIDSchema                 => new SafeUUIDSchema(us)
-      case other if other.get$ref != null => new SafeRefSchema(other)
-      case composed: ComposedSchema       => new SafeComposedSchema(composed)
+        SafeFloatSchema(ns)
+      case ns: NumberSchema               => SafeDoubleSchema(ns)
+      case os: ObjectSchema               => SafeObjectSchema(os)
+      case ps: PasswordSchema             => SafePasswordSchema(ps)
+      case ss: StringSchema               => SafeStringSchema(ss)
+      case us: UUIDSchema                 => SafeUUIDSchema(us)
+      case other if other.get$ref != null => SafeRefSchema(other)
+      case composed: ComposedSchema       => SafeComposedSchema(composed)
     }
 }
 

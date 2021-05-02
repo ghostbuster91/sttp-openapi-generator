@@ -69,6 +69,8 @@ object GeneratorTest extends TestSuite {
     "coproduct" - {
       "all_of" - {
         "simple" - test()
+        "multiple_parents" - test()
+        "multiple_siblings" - test()
       }
       "one_of" - {
         "simple" - test()

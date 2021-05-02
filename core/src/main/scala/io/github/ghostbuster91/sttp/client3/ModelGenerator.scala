@@ -78,7 +78,7 @@ class ModelGenerator(
     }.toList
 
   private def collectTraits(schemas: Map[SchemaRef, SafeSchema]) = {
-    val parentToChilds: List[Coproduct] = model.schemas
+    val coproducts = model.schemas
       .collect {
         case (key, composed: SafeComposedSchema) if composed.oneOf.nonEmpty =>
           val dsc = composed.discriminator
@@ -104,10 +104,10 @@ class ModelGenerator(
               )
             }
       }
-      .toList
       .flatten
+      .toSet
 
-    parentToChilds.traverse(schemaToSealedTrait)
+    coproducts.toList.traverse(schemaToSealedTrait)
   }
 
   private def oneOfDiscriminator(
