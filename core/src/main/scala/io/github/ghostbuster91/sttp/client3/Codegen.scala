@@ -43,7 +43,7 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       enums,
       InitialImports.getImports,
       codecs.stats,
-      classes.values.toList
+      classes
     )).run(InitialImports).value
 
     createSource(imports.getImports, output, packageName)

@@ -67,15 +67,20 @@ object GeneratorTest extends TestSuite {
     }
 
     "coproduct" - {
-      "simple" - test()
-      "multiple_parents" - test()
-      "string_discriminator" - test()
-      "int_discriminator" - test()
-      "discriminator_with_mapping" - test()
-      // Following case is actually invalid because there is no way to create discriminator mapping using empty value as a key
-      //"optional_discriminator" - test()
-      "discriminator_enum" - testNoCompile()
-      "discriminator_with_enum_mapping" - testNoCompile()
+      "all_of" - {
+        "simple" - test()
+      }
+      "one_of" - {
+        "simple" - test()
+        "multiple_parents" - test()
+        "string_discriminator" - test()
+        "int_discriminator" - test()
+        "discriminator_with_mapping" - test()
+        // Following case is actually invalid because there is no way to create discriminator mapping using empty value as a key
+        //"optional_discriminator" - test()
+        "discriminator_enum" - testNoCompile()
+        "discriminator_with_enum_mapping" - testNoCompile()
+      }
     }
 
     "get_inline_response_200" - test()

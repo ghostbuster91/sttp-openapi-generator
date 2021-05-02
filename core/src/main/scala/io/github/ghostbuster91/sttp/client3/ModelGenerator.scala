@@ -4,125 +4,167 @@ import io.github.ghostbuster91.sttp.client3.ImportRegistry._
 import cats.syntax.all._
 import io.github.ghostbuster91.sttp.client3.json._
 import io.github.ghostbuster91.sttp.client3.openapi._
+import io.github.ghostbuster91.sttp.client3.ModelGenerator._
+import _root_.io.github.ghostbuster91.sttp.client3.model.{
+  Coproduct => _,
+  Discriminator => _,
+  _
+}
+import cats.Eval
+import cats.data.IndexedStateT
+
+import scala.annotation.tailrec
 import scala.meta._
 
 class ModelGenerator(
     model: Model,
     jsonTypeProvider: JsonTypeProvider
 ) {
-  def generate: IM[Map[SchemaRef, Defn]] =
+  def generate: IM[List[Defn]] =
     for {
       classes <- collectClasses(model.schemas)
       traits <- collectTraits(model.schemas)
     } yield traits ++ classes
 
-  private def collectClasses(schemas: Map[SchemaRef, SafeSchema]) =
+  private def collectClasses(schemas: Map[SchemaRef, SafeSchema]) = {
+    val allOfParents = schemas
+      .collect { case (_, schema: SafeComposedSchema) =>
+        schema.allOf.collect { case ref: SafeRefSchema => ref.ref }
+      }
+      .flatten
+      .toSet
     schemas
-      .collect { case (key, schema: SchemaWithProperties) =>
-        val parentClassName = model.childToParentRef
-          .getOrElse(key, List.empty)
-          .map(model.classNames.apply)
-        schemaToClassDef(
-          model.classNames(key),
-          schema,
-          parentClassName
-        ).map(classDef => key -> classDef)
+      .filterKeys(!allOfParents.contains(_))
+      .collect {
+        case (key, schema: SchemaWithProperties) =>
+          val parentClassName = model.childToParentRef
+            .getOrElse(key, List.empty)
+            .map(model.classNameFor)
+
+          Product(
+            model.classNameFor(key),
+            schema.properties.map { case (k, v) =>
+              Property(k, v, schema.requiredFields.contains(k))
+            }.toList,
+            parentClassName,
+            schema.isInstanceOf[SafeMapSchema]
+          )
+        case (key, schema: SafeComposedSchema) if schema.allOf.nonEmpty =>
+          Product(
+            model.classNameFor(key),
+            schema.allOf.flatMap(extractProperties),
+            schema.allOf.collect { case ref: SafeRefSchema =>
+              model.classNameFor(ref.ref)
+            },
+            isOpen = false
+          )
       }
       .toList
-      .sequence
-      .map(_.toMap)
+      .traverse(schemaToClassDef)
+  }
+
+  @tailrec
+  private def extractProperties(schema: SafeSchema): List[Property] =
+    schema match {
+      case s: SafeRefSchema    => extractProperties(model.schemaFor(s.ref))
+      case s: SafeObjectSchema => extractObjectProperties(s)
+    }
+
+  private def extractObjectProperties(
+      schema: SchemaWithProperties
+  ): List[Property] =
+    schema.properties.map { case (k, v) =>
+      Property(k, v, schema.requiredFields.contains(k))
+    }.toList
 
   private def collectTraits(schemas: Map[SchemaRef, SafeSchema]) = {
-    val parentToChilds = model.schemas.collect {
-      case (key, composed: SafeComposedSchema) =>
-        key -> composed.oneOf.map(_.ref)
-    }
-    schemas
-      .collect { case (key, composed: SafeComposedSchema) =>
-        val childSchemas = parentToChilds(key)
-          .map(c => model.schemas(c).asInstanceOf[SafeObjectSchema])
-        schemaToSealedTrait(
-          model.classNames(key),
-          composed.discriminator,
-          childSchemas
-        ).map(traitDef => key -> traitDef)
+    val parentToChilds: List[Coproduct] = model.schemas
+      .collect {
+        case (key, composed: SafeComposedSchema) if composed.oneOf.nonEmpty =>
+          val dsc = composed.discriminator
+            .map { discriminator =>
+              oneOfDiscriminator(composed, discriminator)
+            }
+          List(
+            Coproduct(
+              model.classNameFor(key),
+              dsc
+                .map(d => Property(d.name, d.schema, isRequired = true))
+                .toList,
+              dsc
+            )
+          )
+        case (key, composed: SafeComposedSchema) if composed.allOf.nonEmpty =>
+          composed.allOf
+            .collect { case parent: SafeRefSchema =>
+              Coproduct(
+                model.classNameFor(parent.ref),
+                extractProperties(parent),
+                None
+              )
+            }
       }
       .toList
-      .sequence
-      .map(_.toMap)
+      .flatten
+
+    parentToChilds.traverse(schemaToSealedTrait)
+  }
+
+  private def oneOfDiscriminator(
+      composed: SafeComposedSchema,
+      discriminator: SafeDiscriminator
+  ): Discriminator = {
+    val childSchema =
+      model.schemas(composed.oneOf.head.ref).asInstanceOf[SafeObjectSchema]
+    val discriminatorProperty =
+      childSchema.properties(discriminator.propertyName)
+    Discriminator(discriminator.propertyName, discriminatorProperty)
   }
 
   private def schemaToClassDef(
-      name: String,
-      schema: SchemaWithProperties,
-      parentClassName: List[String]
-  ): IM[Defn] = {
-    val className = Type.Name(name)
+      product: Product
+  ): IM[Defn] =
     for {
-      props <- schema.properties.toList
-        .traverse { case (k, v) =>
-          processParams(
-            k,
-            v,
-            schema.requiredFields.contains(k)
-          )
-        }
-      adjustedProps <- schema match {
-        case _: SafeMapSchema =>
+      props <- product.properties
+        .traverse(processParams)
+      adjustedProps <- product.isOpen match {
+        case true =>
           jsonTypeProvider.AnyType.map(anyType =>
-            props :+ param"_additionalProperties: Map[String, $anyType]"
+            props.map(
+              _.asParam
+            ) :+ param"_additionalProperties: Map[String, $anyType]"
           )
-        case _: SafeObjectSchema => props.pure[IM]
+        case false => props.map(_.asParam).pure[IM]
       }
-    } yield parentClassName match {
+    } yield product.parents match {
       case parents if parents.nonEmpty =>
-        val parentInits = parents.sorted.map(p => init"${Type.Name(p)}()")
-        q"case class $className(..$adjustedProps) extends ..$parentInits"
+        val parentInits = parents.sortBy(_.v).map(p => init"${p.typeName}()")
+        q"case class ${product.name.typeName}(..$adjustedProps) extends ..$parentInits"
       case Nil =>
-        q"case class $className(..$adjustedProps)"
+        q"case class ${product.name.typeName}(..$adjustedProps)"
     }
-  }
 
   private def schemaToSealedTrait(
-      name: String,
-      discriminator: Option[SafeDiscriminator],
-      childs: List[SafeObjectSchema]
-  ): IM[Defn.Trait] = {
-    val traitName = Type.Name(name)
-    discriminator match {
-      case Some(d) =>
-        val child = childs.head
-        val discriminatorProperty = child.properties(d.propertyName)
-        model
-          .schemaToType(
-            discriminatorProperty,
-            child.requiredFields.contains(d.propertyName)
-          )
-          .map { discriminatorType =>
-            val propName = Term.Name(d.propertyName)
-            q"""sealed trait $traitName {
-          def $propName: ${discriminatorType.tpe}
+      coproduct: Coproduct
+  ): IM[Defn.Trait] =
+    for {
+      props <- coproduct.properties.traverse(processParams)
+    } yield {
+      val defParams = props.map(p => q"def ${Term.Name(p.paramName)}: ${p.tpe}")
+      q"""sealed trait ${coproduct.name.typeName} {
+            ..$defParams
         }
         """
-          }
-
-      case None =>
-        q"sealed trait $traitName".pure[IM]
-
     }
-  }
-
   private def processParams(
-      name: String,
-      schema: SafeSchema,
-      isRequired: Boolean
-  ): IM[Term.Param] =
+      property: Property
+  ): IM[TypeRef] =
     model
       .schemaToType(
-        schema,
-        isRequired
+        property.schema,
+        property.isRequired
       )
-      .map(_.copy(paramName = name).asParam)
+      .map(_.copy(paramName = property.name))
 }
 
 object ModelGenerator {
@@ -134,4 +176,23 @@ object ModelGenerator {
       model,
       jsonTypeProvider
     )
+
+  private case class Coproduct( //TODO merge with model coproduct
+      name: ClassName,
+      properties: List[Property],
+      discriminator: Option[Discriminator]
+  )
+  private case class Discriminator(name: String, schema: SafeSchema)
+
+  private case class Product(
+      name: ClassName,
+      properties: List[Property],
+      parents: List[ClassName],
+      isOpen: Boolean
+  )
+  private case class Property(
+      name: String,
+      schema: SafeSchema,
+      isRequired: Boolean
+  )
 }

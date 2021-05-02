@@ -183,7 +183,10 @@ class SafeDoubleSchema(s: NumberSchema) extends SafeSchema(s) {
 class SafeFloatSchema(s: NumberSchema) extends SafeSchema(s) {
   def default: Option[Float] = Option(s.getDefault).map(_.floatValue())
 }
-class SafeObjectSchema(s: ObjectSchema) extends SchemaWithProperties(s)
+class SafeObjectSchema(s: ObjectSchema) extends SchemaWithProperties(s) {
+  def discriminator: Option[SafeDiscriminator] =
+    Option(s.getDiscriminator).map(new SafeDiscriminator(_))
+}
 class SafePasswordSchema(s: PasswordSchema) extends SafeSchema(s)
 class SafeStringSchema(s: StringSchema) extends SafeSchema(s) {
   def default: Option[String] = Option(s.getDefault)
@@ -194,7 +197,14 @@ class SafeRefSchema(s: Schema[_]) extends SafeSchema(s) {
 }
 class SafeComposedSchema(s: ComposedSchema) extends SafeSchema(s) {
   def oneOf: List[SafeRefSchema] =
-    s.getOneOf.asScala.map(new SafeRefSchema(_)).toList
+    Option(s.getOneOf)
+      .map(_.asScala.map(new SafeRefSchema(_)).toList)
+      .getOrElse(List.empty)
+
+  def allOf: List[SafeSchema] =
+    Option(s.getAllOf)
+      .map(_.asScala.map(SafeSchema(_)).toList)
+      .getOrElse(List.empty)
 
   def discriminator: Option[SafeDiscriminator] =
     Option(s.getDiscriminator).map(new SafeDiscriminator(_))
@@ -230,8 +240,7 @@ object SafeSchema {
       case ss: StringSchema               => new SafeStringSchema(ss)
       case us: UUIDSchema                 => new SafeUUIDSchema(us)
       case other if other.get$ref != null => new SafeRefSchema(other)
-      case composed: ComposedSchema if composed.getOneOf != null =>
-        new SafeComposedSchema(composed)
+      case composed: ComposedSchema       => new SafeComposedSchema(composed)
     }
 }
 

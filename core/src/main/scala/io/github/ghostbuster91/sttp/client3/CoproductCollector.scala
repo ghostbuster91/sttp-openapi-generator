@@ -7,24 +7,55 @@ class CoproductCollector(model: Model, enums: List[Enum]) {
   def collect(
       schemas: Map[String, SafeSchema]
   ): List[Coproduct] =
-    schemas.collect { case (k, c: SafeComposedSchema) =>
-      collectSingle(k, c)
-    }.toList
+    schemas
+      .collect { case (k, c: SafeComposedSchema) =>
+        collectOneOf(k, c) ++ collectAllOf(c)
+      }
+      .flatten
+      .toList
 
-  private def collectSingle(
+  private def collectOneOf(
       key: String,
       schema: SafeComposedSchema
-  ): Coproduct =
+  ): Option[Coproduct] =
+    schema.oneOf.headOption
+      .map(childRef => oneOfCoproduct(key, schema, childRef))
+
+  private def oneOfCoproduct(
+      key: String,
+      schema: SafeComposedSchema,
+      childRef: SafeRefSchema
+  ) =
     Coproduct(
-      ClassName(key),
+      model.classNameFor(SchemaRef.schema(key)),
       schema.discriminator
         .map { dsc =>
-          val childRef = schema.oneOf.head.ref
           val child =
             model
-              .schemaFor(childRef)
-              .asInstanceOf[SafeObjectSchema] //TODO handle error
+              .schemaFor(childRef.ref)
+              .asInstanceOf[SafeObjectSchema]
           val discriminatorSchema = child.properties(dsc.propertyName)
+          coproductDiscriminator(dsc, discriminatorSchema)
+        }
+    )
+
+  private def collectAllOf(schema: SafeComposedSchema) =
+    schema.allOf.collect { case parent: SafeRefSchema =>
+      val parentSchema = model
+        .schemaFor(parent.ref)
+        .asInstanceOf[SafeObjectSchema]
+      allOfCoproduct(parent, parentSchema)
+    }
+
+  private def allOfCoproduct(
+      parent: SafeRefSchema,
+      parentSchema: SafeObjectSchema
+  ) =
+    Coproduct(
+      model.classNameFor(parent.ref),
+      parentSchema.discriminator
+        .map { dsc =>
+          val discriminatorSchema = parentSchema.properties(dsc.propertyName)
           coproductDiscriminator(dsc, discriminatorSchema)
         }
     )
@@ -32,7 +63,7 @@ class CoproductCollector(model: Model, enums: List[Enum]) {
   private def coproductDiscriminator(
       dsc: SafeDiscriminator,
       discriminatorSchema: SafeSchema
-  ) =
+  ): Discriminator[_] =
     discriminatorSchema match {
       case _: SafeStringSchema =>
         Discriminator.StringDsc(

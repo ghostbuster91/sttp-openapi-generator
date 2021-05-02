@@ -7,7 +7,7 @@ import io.github.ghostbuster91.sttp.client3.openapi._
 import io.github.ghostbuster91.sttp.client3.ImportRegistry._
 import scala.meta._
 
-case class Model(
+case class Model( //TODO change to model IMPL and expose over interface
     schemas: Map[SchemaRef, SafeSchema],
     classNames: Map[SchemaRef, String],
     childToParentRef: Map[SchemaRef, List[SchemaRef]]
