@@ -9,12 +9,12 @@ Why creating another openapi-generator when there is an official one? While the 
 
 ## Goals of the project
 
-- generate code which feels like native and always compile
+- generate code which feels like native
 - support popular json libararies from scala ecosystem
 - support major sttp version
 - support discriminators
 - proper integration with sbt and other build tools
-- support for error encoding
+- support error encoding
 
 ## Teaser
 
