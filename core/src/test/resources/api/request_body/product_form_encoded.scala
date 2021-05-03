@@ -15,9 +15,9 @@ class DefaultApi(baseUrl: String) extends CirceCodecs {
     .put(uri"$baseUrl/person")
     .body(
       List(
-        List("name" -> body.name),
+        Some("name" -> body.name),
         body.age.map(age => "age" -> age.toString)
-      ).flatten
+      ).flatten.toMap[String, String]
     )
     .response(
       fromMetadata(

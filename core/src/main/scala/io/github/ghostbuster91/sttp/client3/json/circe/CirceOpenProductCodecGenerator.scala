@@ -22,8 +22,8 @@ private[circe] class CirceOpenProductCodecGenerator {
       jsonTpe <- CirceTypeProvider.AnyType
     } yield {
       val resultClassType = openProduct.name.typeName
-      val encoderName = openProduct.name.asPrefix("Encoder")
-      val encodedVarName = openProduct.name.toVar
+      val encoderName = openProduct.name.toParam.asPrefix("Encoder")
+      val encodedVarName = openProduct.name.toParam.term
       val encoderInit = init"${t"$encoderTpe[$resultClassType]"}()"
       q"""
     implicit val $encoderName: $encoderTpe[$resultClassType] = 
@@ -56,7 +56,7 @@ private[circe] class CirceOpenProductCodecGenerator {
     } yield {
       val resultClassType = openProduct.name.typeName
       val decoderInit = init"${t"$decoderTpe[$resultClassType]"}()"
-      val decoderName = p"${openProduct.name.asPrefix("Decoder")}"
+      val decoderName = p"${openProduct.name.toParam.asPrefix("Decoder")}"
       q"""implicit val $decoderName: $decoderTpe[$resultClassType] = 
           new $decoderInit {
             override def apply(c: $hCursor): $decoderRes[$resultClassType] = 
@@ -84,11 +84,11 @@ private[circe] class CirceOpenProductCodecGenerator {
 
   private def filterOutProperty(
       source: Term,
-      propertyName: PropertyName
+      propertyName: ParameterName
   ): Term =
     q"$source.filterKeys(_ != ${propertyName.v})"
 
-  private def decodeProperty(property: TypeRef) = {
+  private def decodeProperty(property: ParameterRef) = {
     val propertyName = property.paramName
     ForCompStatement(
       enumerator"${propertyName.patVar} <- c.downField(${propertyName.v}).as[${property.tpe}]",

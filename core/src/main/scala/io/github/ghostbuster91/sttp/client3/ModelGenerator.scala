@@ -133,10 +133,10 @@ class ModelGenerator(
         .traverse(processParams)
       adjustedProps <- product.additionalProperties match {
         case Right(schema) =>
-          model.schemaToType(schema, isRequired = true).map { tpe =>
+          model.schemaToType(schema).map { tpe =>
             props.map(
               _.asParam
-            ) :+ param"_additionalProperties: Map[String, ${tpe.tpe}]"
+            ) :+ param"_additionalProperties: Map[String, $tpe]"
           }
         case Left(true) =>
           jsonTypeProvider.AnyType.map(anyType =>
@@ -168,13 +168,13 @@ class ModelGenerator(
     }
   private def processParams(
       property: Property
-  ): IM[TypeRef] =
+  ): IM[ParameterRef] =
     model
-      .schemaToType(
+      .schemaToParameter(
         property.schema,
         property.isRequired
       )
-      .map(_.copy(paramName = PropertyName(property.name)))
+      .map(_.withName(property.name))
 }
 
 object ModelGenerator {

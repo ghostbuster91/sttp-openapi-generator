@@ -77,12 +77,12 @@ private[circe] class CirceCoproductCodecGenerator() {
         mapping.values.map(clazzToEncoderCase)
     })
     encoderCasesForTypes.map { case EncoderCase(when, child) =>
-      p"case $when => Encoder[${child.typeName}].apply(${child.toVar})"
+      p"case $when => Encoder[${child.typeName}].apply(${child.toParam.term})"
     }.toList
   }
 
   private def clazzToEncoderCase(clazz: ClassName) =
-    EncoderCase(clazz.asParam, clazz)
+    EncoderCase(clazz.asPattern, clazz)
 
   private def decoderCases(
       discriminator: Discriminator[_],

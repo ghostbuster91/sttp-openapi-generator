@@ -98,13 +98,11 @@ class ApiCallGenerator(
       headerParam: SafeHeaderParameter
   ): IM[Term.Param] =
     model
-      .schemaToType(
+      .schemaToParameter(
         headerParam.schema,
         headerParam.required
       )
-      .map(paramType =>
-        paramType.copy(paramName = PropertyName(headerParam.name)).asParam
-      )
+      .map(_.withName(headerParam.name).asParam)
 
   private def createRequestCall(method: Method, uri: Term) =
     method match {
@@ -121,13 +119,11 @@ class ApiCallGenerator(
   ): IM[List[Term.Param]] =
     operation.parameters.collect { case pathParam: SafePathParameter =>
       model
-        .schemaToType(
+        .schemaToParameter(
           pathParam.schema,
           pathParam.required
         )
-        .map(paramType =>
-          paramType.copy(paramName = PropertyName(pathParam.name)).asParam
-        )
+        .map(_.withName(pathParam.name).asParam)
     }.sequence
 
   private def queryAsFuncParam(
@@ -135,13 +131,11 @@ class ApiCallGenerator(
   ): IM[List[Term.Param]] =
     operation.parameters.collect { case queryParam: SafeQueryParameter =>
       model
-        .schemaToType(
+        .schemaToParameter(
           queryParam.schema,
           queryParam.required
         )
-        .map { paramType =>
-          paramType.copy(paramName = PropertyName(queryParam.name)).asParam
-        }
+        .map(_.withName(queryParam.name).asParam)
     }.sequence
 
   private def reqBodyAsFuncParam(
@@ -169,8 +163,8 @@ class ApiCallGenerator(
       .registerExternalTpe(q"import _root_.java.io.File")
       .map { tFile =>
         val tRef =
-          if (requestBody.required) TypeRef(tFile)
-          else TypeRef(tFile).asOption
+          if (requestBody.required) ParameterRef(tFile)
+          else ParameterRef(tFile).asOption
         RequestBodySpec(
           tRef.asParam,
           req => q"$req.body(${tRef.paramName.term})"
@@ -182,7 +176,7 @@ class ApiCallGenerator(
       jsonRequest: SafeMediaType
   ) =
     model
-      .schemaToType(
+      .schemaToParameter(
         jsonRequest.schema,
         requestBody.required
       )
@@ -208,7 +202,7 @@ class ApiCallGenerator(
         )
     }
     model
-      .schemaToType(
+      .schemaToParameter(
         formReq.schema,
         requestBody.required
       )
@@ -217,7 +211,7 @@ class ApiCallGenerator(
         val extractors = formBodyExtractors(schema, topParamName)
         RequestBodySpec(
           tRef.asParam,
-          req => q"$req.body(List(..$extractors).flatten)"
+          req => q"$req.body(List(..$extractors).flatten.toMap[String,String])"
         )
       }
   }
@@ -235,7 +229,7 @@ class ApiCallGenerator(
         }
       val paramName = Term.Name(p)
       if (isRequired) {
-        q"List($p -> $topParamName.$paramName)"
+        q"Some($p -> ${stringify(q"$topParamName.$paramName")})"
       } else {
         val paramParamName = param"$paramName"
         q"$topParamName.$paramName.map($paramParamName=> $p -> ${stringify(paramName)})"

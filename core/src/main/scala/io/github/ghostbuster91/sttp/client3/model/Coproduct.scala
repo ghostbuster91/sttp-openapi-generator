@@ -7,8 +7,8 @@ case class Coproduct(
     discriminator: Option[Discriminator[_]]
 ) {
   def typeName: Type.Name = name.typeName
-  def asPrefix(postfix: String): Pat.Var = name.asPrefix(postfix)
-  def toVar: Term.Name = name.toVar
+  def asPrefix(postfix: String): Pat.Var = name.toParam.asPrefix(postfix)
+  def toVar: Term.Name = name.toParam.term
 }
 
 sealed trait Discriminator[T] {

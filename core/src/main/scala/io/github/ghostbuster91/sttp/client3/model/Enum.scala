@@ -8,7 +8,7 @@ sealed trait Enum {
 
   def typeName: Type.Name = name.typeName
   def term: Term.Name = name.term
-  def asPrefix(postfix: String): Pat.Var = name.asPrefix(postfix)
+  def asPrefix(postfix: String): Pat.Var = name.toParam.asPrefix(postfix)
 }
 object Enum {
   case class StringEnum(name: ClassName, values: List[EnumValue.StringEv])

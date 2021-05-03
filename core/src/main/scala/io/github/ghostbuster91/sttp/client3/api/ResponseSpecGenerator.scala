@@ -103,7 +103,7 @@ private class ResponseSpecGenerator(
   ) =
     errorResponseSpecs.toList
       .traverse { case (k, schema) =>
-        model.schemaToType(schema, isRequired = true).map(t => k -> t.tpe)
+        model.schemaToType(schema).map(t => k -> t)
       }
       .map(_.toMap)
 
@@ -112,7 +112,7 @@ private class ResponseSpecGenerator(
   ) =
     successResponseSpecs.toList
       .traverse { case (k, schema) =>
-        model.schemaToType(schema, isRequired = true).map(t => k -> t.tpe)
+        model.schemaToType(schema).map(t => k -> t)
       }
       .map(_.toMap)
 
@@ -122,8 +122,8 @@ private class ResponseSpecGenerator(
     errorResponseSpecs match {
       case ::(head, Nil) =>
         model
-          .schemaToType(head, isRequired = true)
-          .map(t => Some(t.tpe))
+          .schemaToType(head)
+          .map(t => Some(t))
       case ::(head, tl) =>
         val errorAncestor = model
           .commonAncestor(

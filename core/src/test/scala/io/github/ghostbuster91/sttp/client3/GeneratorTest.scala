@@ -50,10 +50,7 @@ object GeneratorTest extends TestSuite {
       "bool" - test()
       "bool_with_default" - test()
       "product" - test()
-      //TODO
-      //scala.tools.reflect.ToolBoxError: reflective compilation has failed:
-      //No implicit view available from Product with Serializable => scala.collection.GenTraversableOnce[B].
-      "product_form_encoded" - testNoCompile()
+      "product_form_encoded" - test()
       "optional_product" - test()
       "array_product" - test()
       "request_body_direct" - test()

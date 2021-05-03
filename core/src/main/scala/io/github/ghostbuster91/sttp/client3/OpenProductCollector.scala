@@ -23,8 +23,8 @@ class OpenProductCollector(model: Model, jsonTypeProvider: JsonTypeProvider) {
     schema.properties
       .map { case (k, v) =>
         model
-          .schemaToType(v, schema.requiredFields.contains(k))
-          .map(_.copy(paramName = PropertyName(k)))
+          .schemaToParameter(v, schema.requiredFields.contains(k))
+          .map(_.withName(k))
       }
       .toList
       .sequence
@@ -33,20 +33,20 @@ class OpenProductCollector(model: Model, jsonTypeProvider: JsonTypeProvider) {
     schema.additionalProperties match {
       case Left(_) =>
         jsonTypeProvider.AnyType.map(any =>
-          TypeRef(
+          ParameterRef(
             t"Map[String, $any]",
-            PropertyName("_additionalProperties"),
+            ParameterName("_additionalProperties"),
             None
           )
         )
       case Right(value) =>
         model
-          .schemaToType(value, isRequired = true)
+          .schemaToType(value)
           .map(f =
             s =>
-              TypeRef(
-                t"Map[String, ${s.tpe}]",
-                PropertyName("_additionalProperties"),
+              ParameterRef(
+                t"Map[String, $s]",
+                ParameterName("_additionalProperties"),
                 None
               )
           )

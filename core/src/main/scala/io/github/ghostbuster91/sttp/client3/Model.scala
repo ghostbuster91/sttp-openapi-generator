@@ -4,8 +4,8 @@ import cats.data.NonEmptyList
 import cats.syntax.all._
 import io.github.ghostbuster91.sttp.client3.model.{
   ClassName,
-  PropertyName,
-  TypeRef
+  ParameterName,
+  ParameterRef
 }
 import io.github.ghostbuster91.sttp.client3.openapi._
 import io.github.ghostbuster91.sttp.client3.ImportRegistry._
@@ -22,10 +22,17 @@ case class Model(
   def schemaFor(schemaRef: SchemaRef): SafeSchema = schemas(schemaRef)
 
   def schemaToType(
+      schema: SafeSchema
+  ): IM[Type] = {
+    val declType = schemaToParameter(schema)
+    declType.map(d => d.tpe)
+  }
+
+  def schemaToParameter(
       schema: SafeSchema,
       isRequired: Boolean
-  ): IM[TypeRef] = {
-    val declType = schemaToType(schema)
+  ): IM[ParameterRef] = {
+    val declType = schemaToParameter(schema)
     if (isRequired || schema.isArray) {
       declType
     } else {
@@ -33,36 +40,36 @@ case class Model(
     }
   }
 
-  private def schemaToType(schema: SafeSchema): IM[TypeRef] =
+  private def schemaToParameter(schema: SafeSchema): IM[ParameterRef] =
     schema match {
       case ss: SafeStringSchema =>
-        TypeRef("String", ss.default.map(Lit.String(_))).pure[IM]
+        ParameterRef("String", ss.default.map(Lit.String(_))).pure[IM]
       case si: SafeIntegerSchema =>
-        TypeRef("Int", si.default.map(Lit.Int(_))).pure[IM]
+        ParameterRef("Int", si.default.map(Lit.Int(_))).pure[IM]
       case sl: SafeLongSchema =>
-        TypeRef("Long", sl.default.map(Lit.Long(_))).pure[IM]
+        ParameterRef("Long", sl.default.map(Lit.Long(_))).pure[IM]
       case sf: SafeFloatSchema =>
-        TypeRef("Float", sf.default.map(Lit.Float(_))).pure[IM]
+        ParameterRef("Float", sf.default.map(Lit.Float(_))).pure[IM]
       case sd: SafeDoubleSchema =>
-        TypeRef("Double", sd.default.map(Lit.Double(_))).pure[IM]
+        ParameterRef("Double", sd.default.map(Lit.Double(_))).pure[IM]
       case sb: SafeBooleanSchema =>
-        TypeRef("Boolean", sb.default.map(Lit.Boolean(_))).pure[IM]
+        ParameterRef("Boolean", sb.default.map(Lit.Boolean(_))).pure[IM]
       case s: SafeArraySchema =>
-        schemaToType(s.items).map { itemTypeRef =>
-          TypeRef(
+        schemaToParameter(s.items).map { itemTypeRef =>
+          ParameterRef(
             t"List[${itemTypeRef.tpe}]",
-            itemTypeRef.paramName.copy(v = itemTypeRef.paramName.v + "List"),
+            ParameterName(itemTypeRef.paramName.v + "List"),
             None
           )
         }
       case ref: SafeRefSchema =>
-        TypeRef(classNames(ref.ref).v, None).pure[IM]
+        ParameterRef(classNames(ref.ref).v, None).pure[IM]
       case _: SafeUUIDSchema =>
         ImportRegistry
           .registerExternalTpe(
             q"import _root_.java.util.UUID"
           )
-          .map(uuidTpe => TypeRef(uuidTpe, PropertyName("uuid"), None))
+          .map(uuidTpe => ParameterRef(uuidTpe, ParameterName("uuid"), None))
     }
 
   def commonAncestor(childs: NonEmptyList[SchemaRef]): List[SchemaRef] =
