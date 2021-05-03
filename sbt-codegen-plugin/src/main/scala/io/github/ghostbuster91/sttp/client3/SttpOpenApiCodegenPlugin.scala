@@ -17,6 +17,10 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
   val sttpOpenApiJsonLibrary =
     settingKey[JsonLibrary]("Json library for sttp-openapi generator to use")
 
+  val sttpOpenApiHandleErrors = settingKey[Boolean](
+    "If true the generator will include error information in types"
+  )
+
   object autoImport {
 
     lazy val generateSources =
@@ -26,7 +30,7 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
         val topLevelInputPath = sttpOpenApiInputPath.value
         val scalafmt = Scalafmt.create(this.getClass.getClassLoader)
         val config = CodegenConfig(
-          handleErrors = false,
+          handleErrors = sttpOpenApiHandleErrors.value,
           sttpOpenApiJsonLibrary.value
         )
         val codegen = new SbtCodegenAdapter(
@@ -76,6 +80,7 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
       sttpOpenApiOutputPath := (Compile / sourceManaged).value,
       sttpOpenApiInputPath := (Compile / resourceDirectory).value,
       sttpOpenApiJsonLibrary := JsonLibrary.Circe,
+      sttpOpenApiHandleErrors := true,
       Compile / sourceGenerators += generateSources.taskValue,
       libraryDependencies ++= coreDeps ++ (sttpOpenApiJsonLibrary.value match {
         case JsonLibrary.Circe => circeDeps
