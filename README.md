@@ -170,8 +170,8 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi {
 ## error encoding
 
 In openapi error responses can be represented equally easily as success ones.
-That is also the case for the sttp.client. 
-If you are not a fun of error handling, you can disable that feature in generator settings.
+That is also the case for the sttp client. 
+If you are not a fan of error handling, you can disable that feature in generator settings.
 
 ```yaml
 openapi: 3.0.2
