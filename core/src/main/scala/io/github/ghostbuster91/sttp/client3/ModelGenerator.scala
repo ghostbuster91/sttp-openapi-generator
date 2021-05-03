@@ -4,7 +4,6 @@ import io.github.ghostbuster91.sttp.client3.ImportRegistry._
 import cats.syntax.all._
 import io.github.ghostbuster91.sttp.client3.json._
 import io.github.ghostbuster91.sttp.client3.openapi._
-import io.github.ghostbuster91.sttp.client3.ModelGenerator._
 import io.github.ghostbuster91.sttp.client3.model._
 import cats.Eval
 import cats.data.IndexedStateT
@@ -12,24 +11,19 @@ import cats.data.IndexedStateT
 import scala.annotation.tailrec
 import scala.meta._
 
-class ModelGenerator(
-    model: Model,
-    jsonTypeProvider: JsonTypeProvider
-) {
+object ModelGenerator {
   def generate(
       coproducts: List[Coproduct],
       products: List[Product]
-  ): List[Defn] =
-    collectTraits(coproducts.sortBy(_.name)) ++ collectClasses(
-      products.sortBy(_.name)
-    )
-
-  private def collectClasses(products: List[Product]) =
-    products
+  ): List[Defn] = {
+    val classes = coproducts
+      .sortBy(_.name)
+      .map(schemaToSealedTrait)
+    val traits = products
+      .sortBy(_.name)
       .map(schemaToClassDef)
-
-  private def collectTraits(coproducts: List[Coproduct]) =
-    coproducts.map(schemaToSealedTrait)
+    classes ++ traits
+  }
 
   private def schemaToClassDef(
       product: Product
@@ -52,16 +46,4 @@ class ModelGenerator(
         }
         """
   }
-}
-
-object ModelGenerator {
-  def apply(
-      model: Model,
-      jsonTypeProvider: JsonTypeProvider
-  ): ModelGenerator =
-    new ModelGenerator(
-      model,
-      jsonTypeProvider
-    )
-
 }

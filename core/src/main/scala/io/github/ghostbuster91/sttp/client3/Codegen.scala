@@ -25,7 +25,6 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
 
     val jsonTypeProvider = CirceTypeProvider
     val model = Model(schemas, requestBodies)
-    val modelGenerator = ModelGenerator(model, jsonTypeProvider)
     val operations = collectOperations(openApi)
     val (imports, output) = (for {
       apiCalls <- new ApiCallGenerator(model, config, jsonTypeProvider)
@@ -35,7 +34,7 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       products <- new ProductCollector(model, jsonTypeProvider).collect(
         model.schemas
       )
-      classes = modelGenerator.generate(coproducts, products)
+      classes = ModelGenerator.generate(coproducts, products)
       codecs <- new CirceCodecGenerator().generate(
         enums,
         coproducts,
