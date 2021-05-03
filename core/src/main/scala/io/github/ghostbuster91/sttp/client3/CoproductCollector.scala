@@ -43,13 +43,13 @@ class CoproductCollector(model: Model, enums: List[Enum]) {
     schema.allOf.collect { case parent: SafeRefSchema =>
       val parentSchema = model
         .schemaFor(parent.ref)
-        .asInstanceOf[SafeObjectSchema]
+        .asInstanceOf[SchemaWithProperties]
       allOfCoproduct(parent, parentSchema)
     }
 
   private def allOfCoproduct(
       parent: SafeRefSchema,
-      parentSchema: SafeObjectSchema
+      parentSchema: SchemaWithProperties
   ) =
     Coproduct(
       model.classNameFor(parent.ref),

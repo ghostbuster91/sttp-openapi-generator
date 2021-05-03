@@ -106,7 +106,9 @@ object Model {
   private def calculateChildToParent(refToSchema: Map[SchemaRef, SafeSchema]) =
     refToSchema
       .collect { case (key, composed: SafeComposedSchema) =>
-        composed.oneOf.map(c => c.ref -> key)
+        composed.oneOf.map(c => c.ref -> key) ++ composed.allOf.collect {
+          case p: SafeRefSchema => key -> p.ref
+        }
       }
       .flatten
       .groupBy(_._1)

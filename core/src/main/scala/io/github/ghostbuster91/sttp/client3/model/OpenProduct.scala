@@ -27,6 +27,8 @@ case class ParameterRef(
     case None        => param"${paramName.term} : $tpe"
   }
 
+  def asDef: Decl.Def = q"def ${paramName.term}: $tpe"
+
   def asOption: ParameterRef =
     copy(
       tpe = t"Option[$tpe]",

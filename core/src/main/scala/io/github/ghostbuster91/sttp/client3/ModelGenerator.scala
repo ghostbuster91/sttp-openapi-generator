@@ -60,7 +60,14 @@ class ModelGenerator(
             schema.allOf.collect { case ref: SafeRefSchema =>
               model.classNameFor(ref.ref)
             },
-            additionalProperties = Left(false)
+            additionalProperties = schema.allOf
+              .collectFirst { case ref: SafeRefSchema =>
+                model.schemaFor(ref.ref) match {
+                  case s: SafeMapSchema => s.additionalProperties
+                  case _                => Left(false)
+                }
+              }
+              .getOrElse(Left(false))
           )
       }
       .toList
@@ -68,10 +75,21 @@ class ModelGenerator(
   }
 
   @tailrec
+  private def extractAdditionalProperties(
+      schema: SafeSchema
+  ): Either[Boolean, SafeSchema] =
+    schema match {
+      case s: SafeRefSchema =>
+        extractAdditionalProperties(model.schemaFor(s.ref))
+      case s: SafeMapSchema => s.additionalProperties
+      case _                => Left(false)
+    }
+
+  @tailrec
   private def extractProperties(schema: SafeSchema): List[Property] =
     schema match {
-      case s: SafeRefSchema    => extractProperties(model.schemaFor(s.ref))
-      case s: SafeObjectSchema => extractObjectProperties(s)
+      case s: SafeRefSchema        => extractProperties(model.schemaFor(s.ref))
+      case s: SchemaWithProperties => extractObjectProperties(s)
     }
 
   private def extractObjectProperties(
@@ -95,16 +113,19 @@ class ModelGenerator(
               dsc
                 .map(d => Property(d.name, d.schema, isRequired = true))
                 .toList,
-              dsc
+              dsc,
+              Left(false)
             )
           )
         case (key, composed: SafeComposedSchema) if composed.allOf.nonEmpty =>
           composed.allOf
             .collect { case parent: SafeRefSchema =>
+              val value = extractAdditionalProperties(parent)
               Coproduct(
                 model.classNameFor(parent.ref),
                 extractProperties(parent),
-                None
+                None,
+                value
               )
             }
       }
@@ -125,27 +146,43 @@ class ModelGenerator(
     Discriminator(discriminator.propertyName, discriminatorProperty)
   }
 
+  private def handleAdditionalProps(
+      schema: Either[Boolean, SafeSchema]
+  ): IM[Option[ParameterRef]] =
+    schema match {
+      case Right(schema) =>
+        model.schemaToType(schema).map { tpe =>
+          Some(
+            ParameterRef(
+              t"Map[String, $tpe]",
+              ParameterName("_additionalProperties"),
+              None
+            )
+          )
+        }
+      case Left(true) =>
+        jsonTypeProvider.AnyType.map(anyType =>
+          Some(
+            ParameterRef(
+              t"Map[String, $anyType]",
+              ParameterName("_additionalProperties"),
+              None
+            )
+          )
+        )
+      case Left(false) => Option.empty[ParameterRef].pure[IM]
+    }
+
   private def schemaToClassDef(
       product: Product
   ): IM[Defn] =
     for {
       props <- product.properties
         .traverse(processParams)
-      adjustedProps <- product.additionalProperties match {
-        case Right(schema) =>
-          model.schemaToType(schema).map { tpe =>
-            props.map(
-              _.asParam
-            ) :+ param"_additionalProperties: Map[String, $tpe]"
-          }
-        case Left(true) =>
-          jsonTypeProvider.AnyType.map(anyType =>
-            props.map(
-              _.asParam
-            ) :+ param"_additionalProperties: Map[String, $anyType]"
-          )
-        case Left(false) => props.map(_.asParam).pure[IM]
-      }
+      additionalProperties <- handleAdditionalProps(
+        product.additionalProperties
+      )
+      adjustedProps = (props ++ additionalProperties).map(_.asParam)
     } yield product.parents match {
       case parents if parents.nonEmpty =>
         val parentInits = parents.sortBy(_.v).map(p => init"${p.typeName}()")
@@ -159,8 +196,10 @@ class ModelGenerator(
   ): IM[Defn.Trait] =
     for {
       props <- coproduct.properties.traverse(processParams)
+      additionalProps <- handleAdditionalProps(coproduct.additionalProperties)
     } yield {
-      val defParams = props.map(p => q"def ${p.paramName.term}: ${p.tpe}")
+      val defParams = (props ++ additionalProps).map(_.asDef)
+
       q"""sealed trait ${coproduct.name.typeName} {
             ..$defParams
         }
@@ -190,7 +229,8 @@ object ModelGenerator {
   private case class Coproduct( //TODO merge with model coproduct
       name: ClassName,
       properties: List[Property],
-      discriminator: Option[Discriminator]
+      discriminator: Option[Discriminator],
+      additionalProperties: Either[Boolean, SafeSchema]
   )
   private case class Discriminator(name: String, schema: SafeSchema)
 

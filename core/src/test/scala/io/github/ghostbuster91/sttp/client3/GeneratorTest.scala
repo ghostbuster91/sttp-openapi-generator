@@ -87,6 +87,7 @@ object GeneratorTest extends TestSuite {
     "open_product" - {
       "free_form" - test()
       "int_values" - test()
+      "all_of" - test()
     }
 
     "format" - {

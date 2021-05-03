@@ -147,6 +147,8 @@ sealed trait SchemaWithProperties extends SafeSchema {
     .getOrElse(Map.empty)
   def requiredFields: List[String] =
     Option(unsafe.getRequired).map(_.asScala.toList).getOrElse(List.empty)
+  def discriminator: Option[SafeDiscriminator] =
+    Option(unsafe.getDiscriminator).map(SafeDiscriminator.apply)
 }
 sealed trait SafePrimitiveSchema extends SafeSchema
 case class SafeArraySchema(unsafe: ArraySchema) extends SafeSchema {
@@ -183,10 +185,7 @@ case class SafeDoubleSchema(unsafe: NumberSchema) extends SafeSchema {
 case class SafeFloatSchema(unsafe: NumberSchema) extends SafeSchema {
   def default: Option[Float] = Option(unsafe.getDefault).map(_.floatValue())
 }
-case class SafeObjectSchema(unsafe: ObjectSchema) extends SchemaWithProperties {
-  def discriminator: Option[SafeDiscriminator] =
-    Option(unsafe.getDiscriminator).map(new SafeDiscriminator(_))
-}
+case class SafeObjectSchema(unsafe: ObjectSchema) extends SchemaWithProperties
 case class SafePasswordSchema(unsafe: PasswordSchema) extends SafeSchema
 case class SafeStringSchema(unsafe: StringSchema) extends SafeSchema {
   def default: Option[String] = Option(unsafe.getDefault)
@@ -198,7 +197,7 @@ case class SafeRefSchema(unsafe: Schema[_]) extends SafeSchema {
 case class SafeComposedSchema(unsafe: ComposedSchema) extends SafeSchema {
   def oneOf: List[SafeRefSchema] =
     Option(unsafe.getOneOf)
-      .map(_.asScala.map(new SafeRefSchema(_)).toList)
+      .map(_.asScala.map(SafeRefSchema.apply).toList)
       .getOrElse(List.empty)
 
   def allOf: List[SafeSchema] =
@@ -207,7 +206,7 @@ case class SafeComposedSchema(unsafe: ComposedSchema) extends SafeSchema {
       .getOrElse(List.empty)
 
   def discriminator: Option[SafeDiscriminator] =
-    Option(unsafe.getDiscriminator).map(new SafeDiscriminator(_))
+    Option(unsafe.getDiscriminator).map(SafeDiscriminator.apply)
   override def toString: String = unsafe.toString
 }
 
