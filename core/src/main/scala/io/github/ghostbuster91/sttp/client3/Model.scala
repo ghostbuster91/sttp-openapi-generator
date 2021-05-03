@@ -29,6 +29,13 @@ case class Model(
   }
 
   def schemaToParameter(
+      key: String,
+      schema: SafeSchema,
+      isRequired: Boolean
+  ): IM[ParameterRef] =
+    schemaToParameter(schema, isRequired).map(_.withName(key))
+
+  def schemaToParameter(
       schema: SafeSchema,
       isRequired: Boolean
   ): IM[ParameterRef] = {

@@ -5,11 +5,7 @@ import cats.syntax.all._
 import io.github.ghostbuster91.sttp.client3.json._
 import io.github.ghostbuster91.sttp.client3.openapi._
 import io.github.ghostbuster91.sttp.client3.ModelGenerator._
-import _root_.io.github.ghostbuster91.sttp.client3.model.{
-  Coproduct => _,
-  Discriminator => _,
-  _
-}
+import _root_.io.github.ghostbuster91.sttp.client3.model.{Discriminator => _, _}
 import cats.Eval
 import cats.data.IndexedStateT
 
@@ -20,11 +16,10 @@ class ModelGenerator(
     model: Model,
     jsonTypeProvider: JsonTypeProvider
 ) {
-  def generate: IM[List[Defn]] =
+  def generate(coproducts: List[Coproduct]): IM[List[Defn]] =
     for {
       classes <- collectClasses(model.schemas)
-      traits <- collectTraits(model.schemas)
-    } yield traits ++ classes
+    } yield collectTraits(coproducts) ++ classes
 
   private def collectClasses(schemas: Map[SchemaRef, SafeSchema]) = {
     val allOfParents = schemas
@@ -99,41 +94,8 @@ class ModelGenerator(
       Property(k, v, schema.requiredFields.contains(k))
     }.toList
 
-  private def collectTraits(schemas: Map[SchemaRef, SafeSchema]) = {
-    val coproducts = model.schemas
-      .collect {
-        case (key, composed: SafeComposedSchema) if composed.oneOf.nonEmpty =>
-          val dsc = composed.discriminator
-            .map { discriminator =>
-              oneOfDiscriminator(composed, discriminator)
-            }
-          List(
-            Coproduct(
-              model.classNameFor(key),
-              dsc
-                .map(d => Property(d.name, d.schema, isRequired = true))
-                .toList,
-              dsc,
-              Left(false)
-            )
-          )
-        case (key, composed: SafeComposedSchema) if composed.allOf.nonEmpty =>
-          composed.allOf
-            .collect { case parent: SafeRefSchema =>
-              val value = extractAdditionalProperties(parent)
-              Coproduct(
-                model.classNameFor(parent.ref),
-                extractProperties(parent),
-                None,
-                value
-              )
-            }
-      }
-      .flatten
-      .toSet
-
-    coproducts.toList.traverse(schemaToSealedTrait)
-  }
+  private def collectTraits(coproducts: List[Coproduct]) =
+    coproducts.map(schemaToSealedTrait)
 
   private def oneOfDiscriminator(
       composed: SafeComposedSchema,
@@ -193,18 +155,15 @@ class ModelGenerator(
 
   private def schemaToSealedTrait(
       coproduct: Coproduct
-  ): IM[Defn.Trait] =
-    for {
-      props <- coproduct.properties.traverse(processParams)
-      additionalProps <- handleAdditionalProps(coproduct.additionalProperties)
-    } yield {
-      val defParams = (props ++ additionalProps).map(_.asDef)
+  ): Defn.Trait = {
+    val defParams =
+      (coproduct.properties ++ coproduct.additionalProperties).map(_.asDef)
 
-      q"""sealed trait ${coproduct.name.typeName} {
+    q"""sealed trait ${coproduct.name.typeName} {
             ..$defParams
         }
         """
-    }
+  }
   private def processParams(
       property: Property
   ): IM[ParameterRef] =
@@ -226,12 +185,6 @@ object ModelGenerator {
       jsonTypeProvider
     )
 
-  private case class Coproduct( //TODO merge with model coproduct
-      name: ClassName,
-      properties: List[Property],
-      discriminator: Option[Discriminator],
-      additionalProperties: Either[Boolean, SafeSchema]
-  )
   private case class Discriminator(name: String, schema: SafeSchema)
 
   private case class Product(

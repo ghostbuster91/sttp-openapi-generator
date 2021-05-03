@@ -4,7 +4,9 @@ import scala.meta.{Pat, Term, Type}
 
 case class Coproduct(
     name: ClassName,
-    discriminator: Option[Discriminator[_]]
+    properties: List[ParameterRef],
+    discriminator: Option[Discriminator[_]],
+    additionalProperties: Option[ParameterRef]
 ) {
   def typeName: Type.Name = name.typeName
   def asPrefix(postfix: String): Pat.Var = name.toParam.asPrefix(postfix)
