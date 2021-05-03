@@ -2,9 +2,14 @@ package io.github.ghostbuster91.sttp.client3
 
 import cats.data.NonEmptyList
 import cats.syntax.all._
-import io.github.ghostbuster91.sttp.client3.model.{ClassName, TypeRef}
+import io.github.ghostbuster91.sttp.client3.model.{
+  ClassName,
+  PropertyName,
+  TypeRef
+}
 import io.github.ghostbuster91.sttp.client3.openapi._
 import io.github.ghostbuster91.sttp.client3.ImportRegistry._
+
 import scala.meta._
 
 case class Model( //TODO change to model IMPL and expose over interface
@@ -48,7 +53,7 @@ case class Model( //TODO change to model IMPL and expose over interface
         schemaToType(s.items).map { itemTypeRef =>
           TypeRef(
             t"List[${itemTypeRef.tpe}]",
-            itemTypeRef.paramName + "List",
+            itemTypeRef.paramName.copy(v = itemTypeRef.paramName.v + "List"),
             None
           )
         }
@@ -59,7 +64,7 @@ case class Model( //TODO change to model IMPL and expose over interface
           .registerExternalTpe(
             q"import _root_.java.util.UUID"
           )
-          .map(uuidTpe => TypeRef(uuidTpe, "uuid", None))
+          .map(uuidTpe => TypeRef(uuidTpe, PropertyName("uuid"), None))
     }
 
   def commonAncestor(childs: NonEmptyList[SchemaRef]): List[SchemaRef] =

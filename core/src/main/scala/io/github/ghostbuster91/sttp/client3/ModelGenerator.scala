@@ -47,7 +47,11 @@ class ModelGenerator(
               Property(k, v, schema.requiredFields.contains(k))
             }.toList,
             parentClassName,
-            schema.isInstanceOf[SafeMapSchema]
+            schema match {
+              case mp: SafeMapSchema =>
+                mp.additionalProperties
+              case _ => Left(false)
+            }
           )
         case (key, schema: SafeComposedSchema) if schema.allOf.nonEmpty =>
           Product(
@@ -56,7 +60,7 @@ class ModelGenerator(
             schema.allOf.collect { case ref: SafeRefSchema =>
               model.classNameFor(ref.ref)
             },
-            isOpen = false
+            additionalProperties = Left(false)
           )
       }
       .toList
@@ -127,14 +131,20 @@ class ModelGenerator(
     for {
       props <- product.properties
         .traverse(processParams)
-      adjustedProps <- product.isOpen match {
-        case true =>
+      adjustedProps <- product.additionalProperties match {
+        case Right(schema) =>
+          model.schemaToType(schema, isRequired = true).map { tpe =>
+            props.map(
+              _.asParam
+            ) :+ param"_additionalProperties: Map[String, ${tpe.tpe}]"
+          }
+        case Left(true) =>
           jsonTypeProvider.AnyType.map(anyType =>
             props.map(
               _.asParam
             ) :+ param"_additionalProperties: Map[String, $anyType]"
           )
-        case false => props.map(_.asParam).pure[IM]
+        case Left(false) => props.map(_.asParam).pure[IM]
       }
     } yield product.parents match {
       case parents if parents.nonEmpty =>
@@ -150,7 +160,7 @@ class ModelGenerator(
     for {
       props <- coproduct.properties.traverse(processParams)
     } yield {
-      val defParams = props.map(p => q"def ${Term.Name(p.paramName)}: ${p.tpe}")
+      val defParams = props.map(p => q"def ${p.paramName.term}: ${p.tpe}")
       q"""sealed trait ${coproduct.name.typeName} {
             ..$defParams
         }
@@ -164,7 +174,7 @@ class ModelGenerator(
         property.schema,
         property.isRequired
       )
-      .map(_.copy(paramName = property.name))
+      .map(_.copy(paramName = PropertyName(property.name)))
 }
 
 object ModelGenerator {
@@ -188,7 +198,7 @@ object ModelGenerator {
       name: ClassName,
       properties: List[Property],
       parents: List[ClassName],
-      isOpen: Boolean
+      additionalProperties: Either[Boolean, SafeSchema]
   )
   private case class Property(
       name: String,

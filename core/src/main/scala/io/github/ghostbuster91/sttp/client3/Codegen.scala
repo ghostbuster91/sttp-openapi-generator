@@ -32,7 +32,9 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       classes <- modelGenerator.generate
       apiCalls <- new ApiCallGenerator(model, config, jsonTypeProvider)
         .generate(operations)
-      openProducts <- new OpenProductCollector(model).collect(schemas)
+      openProducts <- new OpenProductCollector(model, jsonTypeProvider).collect(
+        schemas
+      )
       codecs <- new CirceCodecGenerator().generate(
         enums,
         coproducts,

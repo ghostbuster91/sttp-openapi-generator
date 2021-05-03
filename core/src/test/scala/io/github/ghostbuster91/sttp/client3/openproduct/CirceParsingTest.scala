@@ -40,11 +40,11 @@ object CirceParsingTest extends TestSuite {
         for {
           name <- c.downField("name").as[String]
           age <- c.downField("age").as[Int]
-          props <- c.as[JsonObject]
+          props <- c.as[Map[String, Json]]
         } yield Person(
           name,
           age,
-          props.toMap.filterKeys(_ != "name").filterKeys(_ != "age")
+          props.filterKeys(_ != "name").filterKeys(_ != "age")
         )
     }
 
@@ -57,7 +57,7 @@ object CirceParsingTest extends TestSuite {
           )
           .apply(a)
           .deepMerge(
-            Encoder.encodeMap[String, Json].apply(a._additionalProperties)
+            Encoder[Map[String, Json]].apply(a._additionalProperties)
           )
     }
 

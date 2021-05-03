@@ -21,4 +21,5 @@ object CirceTypeProvider extends JsonTypeProvider {
     q"import _root_.io.circe.Decoder.Result"
   )
   val JsonObjectTpe = registerExternalTpe(q"import _root_.io.circe.JsonObject")
+  override val MapType: IM[Type.Name] = JsonObjectTpe
 }

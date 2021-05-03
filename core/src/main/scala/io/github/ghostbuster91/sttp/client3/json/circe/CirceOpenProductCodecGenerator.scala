@@ -32,7 +32,7 @@ private[circe] class CirceOpenProductCodecGenerator {
          ${baseEncoderApplication(openProduct)}
             .apply($encodedVarName)
             .deepMerge(
-              Encoder.encodeMap[String, $jsonTpe].apply($encodedVarName._additionalProperties)
+              Encoder[${openProduct.additionalProperties.tpe}].apply($encodedVarName._additionalProperties)
             )
       }
     """
@@ -41,8 +41,8 @@ private[circe] class CirceOpenProductCodecGenerator {
   private def baseEncoderApplication(openProduct: OpenProduct) = {
     val productEncoder = Term.Name(s"forProduct${openProduct.properties.size}")
     val encoderTypes =
-      openProduct.name.typeName +: openProduct.properties.values.toList
-    val propNames = openProduct.properties.keys.toList
+      openProduct.name.typeName +: openProduct.properties.map(_.tpe)
+    val propNames = openProduct.properties.map(_.paramName)
     val extractors = propNames.map(p => q"p.${p.term}")
     val prodKeys = propNames.map(n => Lit.String(n.v))
     q"Encoder.$productEncoder[..$encoderTypes](..$prodKeys)(p => (..$extractors))"
@@ -53,7 +53,6 @@ private[circe] class CirceOpenProductCodecGenerator {
       decoderTpe <- CirceTypeProvider.DecoderTpe
       hCursor <- CirceTypeProvider.HCursorTpe
       decoderRes <- CirceTypeProvider.DecodingResultTpe
-      jsonObjectTpe <- CirceTypeProvider.JsonObjectTpe
     } yield {
       val resultClassType = openProduct.name.typeName
       val decoderInit = init"${t"$decoderTpe[$resultClassType]"}()"
@@ -61,22 +60,20 @@ private[circe] class CirceOpenProductCodecGenerator {
       q"""implicit val $decoderName: $decoderTpe[$resultClassType] = 
           new $decoderInit {
             override def apply(c: $hCursor): $decoderRes[$resultClassType] = 
-              ${decoderBody(openProduct, jsonObjectTpe)}
+              ${decoderBody(openProduct)}
           }
     """
     }
 
   private def decoderBody(
-      openProduct: OpenProduct,
-      jsonObjectTpe: Type.Name
+      openProduct: OpenProduct
   ): Term = {
-    val knownProps = openProduct.properties.map { case (k, v) =>
-      decodeProperty(k, v)
-    }.toList
+    val knownProps = openProduct.properties.map(decodeProperty)
     val allProps = knownProps :+ ForCompStatement(
-      enumerator"additionalProperties <- c.as[$jsonObjectTpe]",
-      openProduct.properties.keys.toList
-        .foldLeft(q"additionalProperties.toMap": Term)((acc, item) =>
+      enumerator"additionalProperties <- c.as[${openProduct.additionalProperties.tpe}]",
+      openProduct.properties
+        .map(_.paramName)
+        .foldLeft(q"additionalProperties": Term)((acc, item) =>
           filterOutProperty(acc, item)
         )
     )
@@ -91,11 +88,13 @@ private[circe] class CirceOpenProductCodecGenerator {
   ): Term =
     q"$source.filterKeys(_ != ${propertyName.v})"
 
-  private def decodeProperty(name: PropertyName, pType: Type) =
+  private def decodeProperty(property: TypeRef) = {
+    val propertyName = property.paramName
     ForCompStatement(
-      enumerator"${name.patVar} <- c.downField(${name.v}).as[$pType]",
-      name.term
+      enumerator"${propertyName.patVar} <- c.downField(${propertyName.v}).as[${property.tpe}]",
+      propertyName.term
     )
+  }
 }
 
 case class ForCompStatement(forStat: Enumerator.Generator, bind: Term)

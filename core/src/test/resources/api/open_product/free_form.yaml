@@ -25,5 +25,4 @@ components:
           type: string
         age:
           type: integer
-      additionalProperties:
-        type: object
+      additionalProperties: true

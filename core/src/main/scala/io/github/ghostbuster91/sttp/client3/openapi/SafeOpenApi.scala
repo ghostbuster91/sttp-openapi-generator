@@ -172,8 +172,8 @@ case class SafeMapSchema(unsafe: MapSchema) extends SchemaWithProperties {
   def additionalProperties: Either[Boolean, SafeSchema] =
     Option(unsafe.getAdditionalProperties)
       .map {
-        case v: SafeSchema => Right(v)
-        case v             => Left(v.asInstanceOf[Boolean])
+        case v: Schema[_] => Right(SafeSchema(v))
+        case v            => Left(v.asInstanceOf[Boolean])
       }
       .getOrElse(Left(false))
 }

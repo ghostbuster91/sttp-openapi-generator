@@ -86,7 +86,11 @@ object GeneratorTest extends TestSuite {
     }
 
     "get_inline_response_200" - test()
-    "get_additional_props" - test()
+
+    "open_product" - {
+      "free_form" - test()
+      "int_values" - test()
+    }
 
     "format" - {
       "int32" - test()

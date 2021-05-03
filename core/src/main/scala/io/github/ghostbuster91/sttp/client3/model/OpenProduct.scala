@@ -4,7 +4,8 @@ import scala.meta._
 
 case class OpenProduct(
     name: ClassName,
-    properties: Map[PropertyName, Type]
+    properties: List[TypeRef],
+    additionalProperties: TypeRef
 )
 
 case class ClassName(v: String) {
@@ -18,10 +19,14 @@ case class ClassName(v: String) {
   def asParam: Pat = p"${Pat.Var(toVar)}: $typeName"
 }
 
-case class TypeRef(tpe: Type, paramName: String, defaultValue: Option[Term]) {
+case class TypeRef(
+    tpe: Type,
+    paramName: PropertyName,
+    defaultValue: Option[Term]
+) {
   def asParam: Term.Param = defaultValue match {
-    case Some(value) => param"${Term.Name(paramName)} : $tpe = $value"
-    case None        => param"${Term.Name(paramName)} : $tpe"
+    case Some(value) => param"${paramName.term} : $tpe = $value"
+    case None        => param"${paramName.term} : $tpe"
   }
 
   def asOption: TypeRef =
@@ -33,9 +38,9 @@ case class TypeRef(tpe: Type, paramName: String, defaultValue: Option[Term]) {
 
 object TypeRef {
   def apply(v: String, defaultValue: Option[Term]): TypeRef =
-    new TypeRef(Type.Name(v), uncapitalized(v), defaultValue)
+    new TypeRef(Type.Name(v), PropertyName(uncapitalized(v)), defaultValue)
   def apply(tpe: Type.Name): TypeRef =
-    new TypeRef(tpe, uncapitalized(tpe.value), None)
+    new TypeRef(tpe, PropertyName(uncapitalized(tpe.value)), None)
 }
 
 case class PropertyName(v: String) {

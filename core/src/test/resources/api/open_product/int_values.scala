@@ -1,12 +1,11 @@
 package io.github.ghostbuster91.sttp.client3.example
 import _root_.sttp.client3._
 import _root_.sttp.model._
-import _root_.io.circe.Json
 import _root_.io.circe.Decoder
 import _root_.io.circe.HCursor
 import _root_.io.circe.Decoder.Result
-import _root_.io.circe.JsonObject
 import _root_.io.circe.Encoder
+import _root_.io.circe.Json
 import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
@@ -16,12 +15,12 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi {
       for (
         name <- c.downField("name").as[String];
         age <- c.downField("age").as[Int];
-        additionalProperties <- c.as[JsonObject]
+        additionalProperties <- c.as[Map[String, Int]]
       )
         yield Person(
           name,
           age,
-          additionalProperties.toMap
+          additionalProperties
             .filterKeys(_ != "name")
             .filterKeys(_ != "age")
         )
@@ -32,7 +31,7 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi {
         .forProduct2[Person, String, Int]("name", "age")(p => (p.name, p.age))
         .apply(person)
         .deepMerge(
-          Encoder.encodeMap[String, Json].apply(person._additionalProperties)
+          Encoder[Map[String, Int]].apply(person._additionalProperties)
         )
   }
 
@@ -41,7 +40,7 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi {
 case class Person(
     name: String,
     age: Int,
-    _additionalProperties: Map[String, Json]
+    _additionalProperties: Map[String, Int]
 )
 
 class DefaultApi(baseUrl: String) extends CirceCodecs {

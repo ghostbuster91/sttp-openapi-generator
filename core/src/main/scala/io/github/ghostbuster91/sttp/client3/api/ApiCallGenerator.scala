@@ -102,7 +102,9 @@ class ApiCallGenerator(
         headerParam.schema,
         headerParam.required
       )
-      .map(paramType => paramType.copy(paramName = headerParam.name).asParam)
+      .map(paramType =>
+        paramType.copy(paramName = PropertyName(headerParam.name)).asParam
+      )
 
   private def createRequestCall(method: Method, uri: Term) =
     method match {
@@ -123,7 +125,9 @@ class ApiCallGenerator(
           pathParam.schema,
           pathParam.required
         )
-        .map(paramType => paramType.copy(paramName = pathParam.name).asParam)
+        .map(paramType =>
+          paramType.copy(paramName = PropertyName(pathParam.name)).asParam
+        )
     }.sequence
 
   private def queryAsFuncParam(
@@ -136,7 +140,7 @@ class ApiCallGenerator(
           queryParam.required
         )
         .map { paramType =>
-          paramType.copy(paramName = queryParam.name).asParam
+          paramType.copy(paramName = PropertyName(queryParam.name)).asParam
         }
     }.sequence
 
@@ -169,7 +173,7 @@ class ApiCallGenerator(
           else TypeRef(tFile).asOption
         RequestBodySpec(
           tRef.asParam,
-          req => q"$req.body(${Term.Name(tRef.paramName)})"
+          req => q"$req.body(${tRef.paramName.term})"
         )
       }
 
@@ -185,7 +189,7 @@ class ApiCallGenerator(
       .map { tRef =>
         RequestBodySpec(
           tRef.asParam,
-          req => q"$req.body(${Term.Name(tRef.paramName)})"
+          req => q"$req.body(${tRef.paramName.term})"
         )
       }
 
@@ -209,7 +213,7 @@ class ApiCallGenerator(
         requestBody.required
       )
       .map { tRef =>
-        val topParamName = Term.Name(tRef.paramName)
+        val topParamName = tRef.paramName.term
         val extractors = formBodyExtractors(schema, topParamName)
         RequestBodySpec(
           tRef.asParam,
@@ -255,3 +259,5 @@ private case class ResponseSpec(
     returnType: Type,
     responseAs: Term
 )
+//TODO schemaToType should always accept paramName?
+//TODO Product and Coproduct should be similar to OpenProduct i.e. should be based on TypeRef
