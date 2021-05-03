@@ -97,17 +97,6 @@ class ModelGenerator(
   private def collectTraits(coproducts: List[Coproduct]) =
     coproducts.map(schemaToSealedTrait)
 
-  private def oneOfDiscriminator(
-      composed: SafeComposedSchema,
-      discriminator: SafeDiscriminator
-  ): Discriminator = {
-    val childSchema =
-      model.schemas(composed.oneOf.head.ref).asInstanceOf[SafeObjectSchema]
-    val discriminatorProperty =
-      childSchema.properties(discriminator.propertyName)
-    Discriminator(discriminator.propertyName, discriminatorProperty)
-  }
-
   private def handleAdditionalProps(
       schema: Either[Boolean, SafeSchema]
   ): IM[Option[ParameterRef]] =
@@ -184,8 +173,6 @@ object ModelGenerator {
       model,
       jsonTypeProvider
     )
-
-  private case class Discriminator(name: String, schema: SafeSchema)
 
   private case class Product(
       name: ClassName,
