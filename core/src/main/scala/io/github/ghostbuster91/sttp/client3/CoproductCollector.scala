@@ -14,7 +14,7 @@ class CoproductCollector(
     jsonTypeProvider: JsonTypeProvider
 ) {
   def collect(
-      schemas: Map[String, SafeSchema]
+      schemas: Map[SchemaRef, SafeSchema]
   ): IM[List[Coproduct]] =
     schemas
       .collect { case (k, c: SafeComposedSchema) =>
@@ -28,14 +28,14 @@ class CoproductCollector(
       .map(_.flatten.groupBy(_.name).values.map(_.head).toList)
 
   private def collectOneOf(
-      key: String,
+      key: SchemaRef,
       schema: SafeComposedSchema
   ): IM[Option[Coproduct]] =
     schema.oneOf.headOption
       .traverse(childRef => oneOfCoproduct(key, schema, childRef))
 
   private def oneOfCoproduct(
-      key: String,
+      key: SchemaRef,
       schema: SafeComposedSchema,
       childRef: SafeRefSchema
   ) =
@@ -54,7 +54,7 @@ class CoproductCollector(
           )
           .map { paramRef =>
             Coproduct(
-              model.classNameFor(SchemaRef.schema(key)),
+              model.classNameFor(key),
               List(paramRef.withName(dsc.propertyName)),
               Some(coproductDiscriminator(dsc, discriminatorSchema)),
               None
@@ -62,7 +62,7 @@ class CoproductCollector(
           }
       case None =>
         Coproduct(
-          model.classNameFor(SchemaRef.schema(key)),
+          model.classNameFor(key),
           List.empty,
           None,
           None

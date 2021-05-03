@@ -16,14 +16,14 @@ sealed trait BreedAble {
   def breed: Option[String]
 }
 
-case class Dog(
+case class Cat(
     className: String,
     color: Option[String] = Some("red"),
     breed: Option[String]
 ) extends Animal()
     with BreedAble()
 
-case class Cat(
+case class Dog(
     className: String,
     color: Option[String] = Some("red"),
     breed: Option[String]

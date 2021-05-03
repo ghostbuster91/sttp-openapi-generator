@@ -10,7 +10,7 @@ class CirceCodecGenerator() extends JsonCodecGenerator {
   def generate(
       enums: List[Enum],
       coproducts: List[Coproduct],
-      openProducts: List[OpenProduct]
+      openProducts: List[Product.Open]
   ): IM[Source] = {
     val coproductGen = new CirceCoproductCodecGenerator()
     val openProductGen = new CirceOpenProductCodecGenerator()

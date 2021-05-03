@@ -9,9 +9,9 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi
 
 sealed trait GetRootGenericSuccess
 
-case class Person(name: String, age: Int) extends GetRootGenericSuccess()
-
 case class Organization(name: String) extends GetRootGenericSuccess()
+
+case class Person(name: String, age: Int) extends GetRootGenericSuccess()
 
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def getRoot(): Request[GetRootGenericSuccess, Any] = basicRequest

@@ -2,12 +2,13 @@ package io.github.ghostbuster91.sttp.client3.json.circe
 
 import io.github.ghostbuster91.sttp.client3.ImportRegistry._
 import io.github.ghostbuster91.sttp.client3.model._
+import io.github.ghostbuster91.sttp.client3.json.circe.CirceOpenProductCodecGenerator.ForCompStatement
 
 import scala.meta._
 
 private[circe] class CirceOpenProductCodecGenerator {
 
-  def generate(openProduct: OpenProduct): IM[List[Stat]] =
+  def generate(openProduct: Product.Open): IM[List[Stat]] =
     for {
       decoder <- decoderForSchema(openProduct)
       encoder <- encoderForSchema(openProduct)
@@ -16,7 +17,7 @@ private[circe] class CirceOpenProductCodecGenerator {
     $encoder
     """.stats
 
-  private def encoderForSchema(openProduct: OpenProduct): IM[Defn.Val] =
+  private def encoderForSchema(openProduct: Product.Open): IM[Defn.Val] =
     for {
       encoderTpe <- CirceTypeProvider.EncoderTpe
       jsonTpe <- CirceTypeProvider.AnyType
@@ -38,7 +39,7 @@ private[circe] class CirceOpenProductCodecGenerator {
     """
     }
 
-  private def baseEncoderApplication(openProduct: OpenProduct) = {
+  private def baseEncoderApplication(openProduct: Product.Open) = {
     val productEncoder = Term.Name(s"forProduct${openProduct.properties.size}")
     val encoderTypes =
       openProduct.name.typeName +: openProduct.properties.map(_.tpe)
@@ -48,7 +49,7 @@ private[circe] class CirceOpenProductCodecGenerator {
     q"Encoder.$productEncoder[..$encoderTypes](..$prodKeys)(p => (..$extractors))"
   }
 
-  private def decoderForSchema(openProduct: OpenProduct): IM[Defn.Val] =
+  private def decoderForSchema(openProduct: Product.Open): IM[Defn.Val] =
     for {
       decoderTpe <- CirceTypeProvider.DecoderTpe
       hCursor <- CirceTypeProvider.HCursorTpe
@@ -66,7 +67,7 @@ private[circe] class CirceOpenProductCodecGenerator {
     }
 
   private def decoderBody(
-      openProduct: OpenProduct
+      openProduct: Product.Open
   ): Term = {
     val knownProps = openProduct.properties.map(decodeProperty)
     val allProps = knownProps :+ ForCompStatement(
@@ -95,6 +96,9 @@ private[circe] class CirceOpenProductCodecGenerator {
       propertyName.term
     )
   }
+
 }
 
-case class ForCompStatement(forStat: Enumerator.Generator, bind: Term)
+private object CirceOpenProductCodecGenerator {
+  private case class ForCompStatement(forStat: Enumerator.Generator, bind: Term)
+}

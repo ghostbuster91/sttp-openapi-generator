@@ -35,19 +35,19 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi {
       case Status.Neutral => "neutral"
     })
 }
-sealed trait Status2
-object Status2 {
-  case object New extends Status2()
-  case object Old extends Status2()
-}
 sealed trait Status
 object Status {
   case object Happy extends Status()
   case object Neutral extends Status()
 }
+sealed trait Status2
+object Status2 {
+  case object New extends Status2()
+  case object Old extends Status2()
+}
+case class Couple(p1: Person1, p2: Person2)
 case class Person1(status: Status)
 case class Person2(status: Status2)
-case class Couple(p1: Person1, p2: Person2)
 
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def getPerson(): Request[Couple, Any] =

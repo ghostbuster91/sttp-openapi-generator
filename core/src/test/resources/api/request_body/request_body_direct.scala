@@ -7,8 +7,8 @@ import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends AutoDerivation with SttpCirceApi
 
-case class PetResponse(name: String)
 case class PetRequest(id: String)
+case class PetResponse(name: String)
 
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def addPet(petRequest: PetRequest): Request[PetResponse, Any] = basicRequest

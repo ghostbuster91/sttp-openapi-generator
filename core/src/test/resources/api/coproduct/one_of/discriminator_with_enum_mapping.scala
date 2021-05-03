@@ -50,8 +50,8 @@ object PersonName {
   case object Alice extends PersonName()
 }
 sealed trait Entity { def name: PersonName }
-case class Person(name: PersonName, age: Int) extends Entity()
 case class Organization(name: PersonName) extends Entity()
+case class Person(name: PersonName, age: Int) extends Entity()
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def getRoot(): Request[Entity, Any] =
     basicRequest

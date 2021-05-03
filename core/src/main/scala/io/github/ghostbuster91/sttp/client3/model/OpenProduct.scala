@@ -2,11 +2,31 @@ package io.github.ghostbuster91.sttp.client3.model
 
 import scala.meta._
 
-case class OpenProduct(
-    name: ClassName,
-    properties: List[ParameterRef],
-    additionalProperties: ParameterRef
-)
+sealed trait Product {
+  def name: ClassName
+  def parents: List[ClassName]
+  def properties: List[ParameterRef]
+
+  def allProperties: List[ParameterRef]
+}
+object Product {
+  case class Regular(
+      name: ClassName,
+      parents: List[ClassName],
+      properties: List[ParameterRef]
+  ) extends Product {
+    override def allProperties: List[ParameterRef] = properties
+  }
+  case class Open(
+      name: ClassName,
+      parents: List[ClassName],
+      properties: List[ParameterRef],
+      additionalProperties: ParameterRef
+  ) extends Product {
+    override def allProperties: List[ParameterRef] =
+      properties :+ additionalProperties
+  }
+}
 
 case class ClassName(v: String) {
   def term: Term.Name = Term.Name(v)
@@ -15,6 +35,10 @@ case class ClassName(v: String) {
   def typeName: Type.Name = Type.Name(v)
   def asPattern: Pat = p"${toParam.patVar}: $typeName"
   def toParam: ParameterName = ParameterName(v)
+}
+object ClassName {
+  def apply(v: String): ClassName = new ClassName(v.capitalize)
+  implicit val ord: Ordering[ClassName] = Ordering[String].on[ClassName](_.v)
 }
 
 case class ParameterRef(

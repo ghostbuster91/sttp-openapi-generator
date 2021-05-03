@@ -9,29 +9,67 @@ import io.github.ghostbuster91.sttp.client3.openapi._
 import scala.annotation.tailrec
 import scala.meta._
 
-class OpenProductCollector(model: Model, jsonTypeProvider: JsonTypeProvider) {
-  def collect(schema: Map[String, SafeSchema]): IM[List[OpenProduct]] = {
-    val parents = model.childToParentRef.values.flatten.map(_.key).toSet
+class ProductCollector(model: Model, jsonTypeProvider: JsonTypeProvider) {
+  def collect(schema: Map[SchemaRef, SafeSchema]): IM[List[Product]] = {
+    val parents = model.childToParentRef.values.flatten.toSet
     schema
       .collect {
-        case (k, schema: SafeMapSchema) if !parents.contains(k) =>
-          for {
-            props <- handleRegularProp(schema)
-            additionalProps <- handleAdditionalProps(schema)
-          } yield Option(OpenProduct(ClassName(k), props, additionalProps))
+        case (key, schema: SchemaWithProperties) if !parents.contains(key) =>
+          handleSchemaWithProperties(key, schema)
         case (k, schema: SafeComposedSchema) if schema.allOf.nonEmpty =>
-          for {
-            props <- schema.allOf
-              .traverse(extractProperties)
-              .map(_.flatten)
-            additionalProps <- schema.allOf
-              .traverse(extractAdditionalProperties)
-              .map(_.head)
-          } yield additionalProps.map(OpenProduct(ClassName(k), props, _))
+          handleComposedSchema(k, schema)
       }
       .toList
       .sequence
-      .map(_.flatten)
+  }
+
+  private def handleComposedSchema(
+      key: SchemaRef,
+      schema: SafeComposedSchema
+  ): IM[Product] =
+    for {
+      props <- schema.allOf
+        .traverse(extractProperties)
+        .map(_.flatten)
+      additionalProps <- schema.allOf
+        .traverse(extractAdditionalProperties)
+        .map(_.head)
+    } yield additionalProps match {
+      case Some(value) =>
+        Product.Open(
+          model.classNameFor(key),
+          schema.allOf.collect { case ref: SafeRefSchema =>
+            model.classNameFor(ref.ref)
+          },
+          props,
+          value
+        )
+      case None =>
+        Product.Regular(
+          model.classNameFor(key),
+          schema.allOf.collect { case ref: SafeRefSchema =>
+            model.classNameFor(ref.ref)
+          },
+          props
+        )
+    }
+
+  private def handleSchemaWithProperties(
+      key: SchemaRef,
+      schema: SchemaWithProperties
+  ): IM[Product] = {
+    val parentClassName = model.childToParentRef
+      .getOrElse(key, List.empty)
+      .map(model.classNameFor)
+    for {
+      props <- handleRegularProp(schema)
+      additionalProps <- extractAdditionalProperties(schema)
+    } yield additionalProps match {
+      case Some(value) =>
+        Product.Open(model.classNameFor(key), parentClassName, props, value)
+      case None =>
+        Product.Regular(model.classNameFor(key), parentClassName, props)
+    }
   }
 
   @tailrec
@@ -61,7 +99,7 @@ class OpenProductCollector(model: Model, jsonTypeProvider: JsonTypeProvider) {
         .map(_.withName(k))
     }
 
-  private def handleRegularProp(schema: SafeMapSchema) =
+  private def handleRegularProp(schema: SchemaWithProperties) =
     schema.properties
       .map { case (k, v) =>
         model

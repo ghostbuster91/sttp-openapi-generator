@@ -31,15 +31,15 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       apiCalls <- new ApiCallGenerator(model, config, jsonTypeProvider)
         .generate(operations)
       coproducts <- new CoproductCollector(model, enums, jsonTypeProvider)
-        .collect(schemas)
-      openProducts <- new OpenProductCollector(model, jsonTypeProvider).collect(
-        schemas
+        .collect(model.schemas)
+      products <- new ProductCollector(model, jsonTypeProvider).collect(
+        model.schemas
       )
-      classes <- modelGenerator.generate(coproducts)
+      classes = modelGenerator.generate(coproducts, products)
       codecs <- new CirceCodecGenerator().generate(
         enums,
         coproducts,
-        openProducts
+        products.collect { case p: Product.Open => p }
       )
     } yield CodegenOutput(
       apiCalls,
@@ -59,6 +59,7 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
   ): Source = {
     val apiDefs = createApiDefs(codegenOutput.processedOps)
     val enumDefs = codegenOutput.enums
+      .sortBy(_.name)
       .flatMap(EnumGenerator.enumToSealedTraitDef)
     val pkgName = rawPkgName.map(
       _.parse[Term].get

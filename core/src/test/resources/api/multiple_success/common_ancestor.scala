@@ -9,9 +9,9 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi
 
 sealed trait Entity
 
-case class Person(name: String, age: Int) extends Entity()
-
 case class Organization(name: String) extends Entity()
+
+case class Person(name: String, age: Int) extends Entity()
 
 class DefaultApi(baseUrl: String) extends CirceCodecs {
   def getRoot(): Request[Entity, Any] = basicRequest
