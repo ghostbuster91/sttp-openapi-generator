@@ -12,15 +12,13 @@ import io.github.ghostbuster91.sttp.client3.ImportRegistry._
 
 import scala.meta._
 
-case class Model( //TODO change to model IMPL and expose over interface
+case class Model(
     schemas: Map[SchemaRef, SafeSchema],
-    classNames: Map[SchemaRef, String],
+    classNames: Map[SchemaRef, ClassName],
     childToParentRef: Map[SchemaRef, List[SchemaRef]]
 ) {
 
-  def classNameFor(schemaRef: SchemaRef): ClassName = ClassName(
-    classNames(schemaRef)
-  )
+  def classNameFor(schemaRef: SchemaRef): ClassName = classNames(schemaRef)
   def schemaFor(schemaRef: SchemaRef): SafeSchema = schemas(schemaRef)
 
   def schemaToType(
@@ -58,7 +56,7 @@ case class Model( //TODO change to model IMPL and expose over interface
           )
         }
       case ref: SafeRefSchema =>
-        TypeRef(classNames(ref.ref), None).pure[IM]
+        TypeRef(classNames(ref.ref).v, None).pure[IM]
       case _: SafeUUIDSchema =>
         ImportRegistry
           .registerExternalTpe(
@@ -87,7 +85,9 @@ object Model {
 
     val refToSchema = adjSchemas ++ adjReqBodies
     val modelClassNames =
-      refToSchema.keys.map(key => key -> snakeToCamelCase(key.key)).toMap
+      refToSchema.keys
+        .map(key => key -> ClassName(snakeToCamelCase(key.key)))
+        .toMap
     val childToParentRef = calculateChildToParent(refToSchema)
     new Model(
       refToSchema,
