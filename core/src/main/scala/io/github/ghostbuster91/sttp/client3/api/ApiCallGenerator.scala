@@ -165,10 +165,7 @@ class ApiCallGenerator(
         val tRef =
           if (requestBody.required) ParameterRef(tFile)
           else ParameterRef(tFile).asOption
-        RequestBodySpec(
-          tRef.asParam,
-          req => q"$req.body(${tRef.paramName.term})"
-        )
+        requestBodySpec(tRef, requestBody.required)
       }
 
   private def handleJsonRequestBody(
@@ -180,12 +177,18 @@ class ApiCallGenerator(
         jsonRequest.schema,
         requestBody.required
       )
-      .map { tRef =>
-        RequestBodySpec(
-          tRef.asParam,
-          req => q"$req.body(${tRef.paramName.term})"
-        )
-      }
+      .map(tRef => requestBodySpec(tRef, requestBody.required))
+
+  private def requestBodySpec(tRef: ParameterRef, isRequired: Boolean) =
+    RequestBodySpec(
+      tRef.asParam,
+      req =>
+        if (isRequired) {
+          q"$req.body(${tRef.paramName.term})"
+        } else {
+          q"${tRef.paramName.term}.foldLeft($req)((acc, item)=> acc.body(item))"
+        }
+    )
 
   private def formUrlEncodedRequestBody(
       requestBody: SafeRequestBody,

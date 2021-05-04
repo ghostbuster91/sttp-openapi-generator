@@ -55,6 +55,9 @@ object GeneratorTest extends TestSuite {
       "array_product" - test()
       "request_body_direct" - test()
       "request_body_indirect" - test()
+      "binary" - {
+        "optional_file" - test()
+      }
     }
 
     "tag" - {

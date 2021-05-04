@@ -10,9 +10,11 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi
 case class Person(name: String, age: Int)
 
 class DefaultApi(baseUrl: String) extends CirceCodecs {
-  def updatePerson(person: Option[Person]): Request[Person, Any] = basicRequest
-    .put(uri"$baseUrl/person")
-    .body(person)
+  def updatePerson(person: Option[Person]): Request[Person, Any] = person
+    .foldLeft(
+      basicRequest
+        .put(uri"$baseUrl/person")
+    )((acc, item) => acc.body(item))
     .response(
       fromMetadata(
         asJson[Person].getRight,
