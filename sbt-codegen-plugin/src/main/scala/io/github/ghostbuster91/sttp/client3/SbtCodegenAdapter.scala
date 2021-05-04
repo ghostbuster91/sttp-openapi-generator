@@ -19,7 +19,9 @@ class SbtCodegenAdapter(
   def processSingleFile(
       inputFile: File
   ): File = {
-    log.info(s"Generating classes for ${inputFile.getAbsolutePath}...")
+    log.info(
+      s"[SttpOpenapi] Generating classes for ${inputFile.getAbsolutePath}..."
+    )
     val swaggerYaml = IO.read(inputFile)
     val relativePath = Option(
       IO
@@ -46,7 +48,7 @@ class SbtCodegenAdapter(
   private def format(scalafmt: Scalafmt, code: String, futureFile: File) = {
     val scalafmtConfig = Paths.get(".scalafmt.conf")
     if (scalafmtConfig.toFile.exists()) {
-      log.info(s"Formatting ${futureFile.getAbsolutePath}")
+      log.info(s"[SttpOpenapi] Formatting ${futureFile.getAbsolutePath}")
       scalafmt.format(scalafmtConfig, futureFile.toPath, code)
     } else {
       code

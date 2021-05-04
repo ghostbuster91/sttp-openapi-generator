@@ -4,6 +4,7 @@ import sbt.{AutoPlugin, Def, File}
 import sbt.Keys._
 import sbt._
 import org.scalafmt.interfaces.Scalafmt
+import sbt.internal.util.ManagedLogger
 
 object SttpOpenApiCodegenPlugin extends AutoPlugin {
 
@@ -42,7 +43,7 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
         )
 
         val scalaVer = scalaVersion.value
-        val inputFiles = collectInputFiles(topLevelInputPath).toSet
+        val inputFiles = collectInputFiles(topLevelInputPath, log).toSet
         val cachedFun = FileFunction.cached(
           streams.value.cacheDirectory / s"sttp-openapi-src-$scalaVer",
           FileInfo.hash
@@ -54,12 +55,20 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
         cachedFun(inputFiles).toSeq
       }
 
-    private def collectInputFiles(f: File): List[File] = {
-      val these = f.listFiles
-      these
-        .filter(_.isFile)
-        .toList ++ these.filter(_.isDirectory).flatMap(collectInputFiles)
-    }
+    private def collectInputFiles(f: File, log: ManagedLogger): List[File] =
+      if (f.exists()) {
+        val these = f.listFiles
+        these
+          .filter(_.isFile)
+          .toList ++ these
+          .filter(_.isDirectory)
+          .flatMap(collectInputFiles(_, log))
+      } else {
+        log.warn(
+          s"[SttpOpenapi] Input directory $f does not exist. Skipping generation..."
+        )
+        List.empty
+      }
   }
 
   import autoImport._
