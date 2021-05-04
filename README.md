@@ -308,3 +308,11 @@ case class Person(
     _additionalProperties: Map[String, Json]
 )
 ```
+
+## Contributing
+
+Contributions are more than welcome. This is an early stage project which means that everything is subject to change. All suggestions welcome :)
+
+See the list of issues and pick one! Or report your own.
+
+If you are having doubts on the why or how something works, don't hesitate to ask a question.
