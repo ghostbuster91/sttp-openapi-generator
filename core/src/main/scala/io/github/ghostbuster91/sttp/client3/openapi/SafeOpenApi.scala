@@ -75,17 +75,20 @@ case class SafeOperation(op: Operation) {
   def parameters: List[SafeParameter] =
     Option(op.getParameters)
       .map(_.asScala.toList.map {
-        case pp: PathParameter   => new SafePathParameter(pp)
-        case cp: CookieParameter => new SafeCookieParameter(cp)
-        case hp: HeaderParameter => new SafeHeaderParameter(hp)
-        case qp: QueryParameter  => new SafeQueryParameter(qp)
+        case pp: PathParameter   => SafePathParameter(pp)
+        case cp: CookieParameter => SafeCookieParameter(cp)
+        case hp: HeaderParameter => SafeHeaderParameter(hp)
+        case qp: QueryParameter  => SafeQueryParameter(qp)
       })
       .getOrElse(List.empty)
 
   def responses: Map[SttpStatusCode, SafeApiResponse] =
     Option(op.getResponses)
-      .map(_.asScala.map { case (code, r) =>
-        SttpStatusCode.unsafeApply(code.toInt) -> new SafeApiResponse(r)
+      .map(_.asScala.collect {
+        case (code, r) if code != "default" =>
+          SttpStatusCode.unsafeApply(code.toInt) -> new SafeApiResponse(r)
+        case ("default", r) =>
+          SttpStatusCode.Ok -> new SafeApiResponse(r)
       }.toMap)
       .getOrElse(Map.empty)
 

@@ -61,6 +61,14 @@ case class Model(
         ParameterRef("Double", sd.default.map(Lit.Double(_))).pure[IM]
       case sb: SafeBooleanSchema =>
         ParameterRef("Boolean", sb.default.map(Lit.Boolean(_))).pure[IM]
+      case _: SafeDateSchema =>
+        registerExternalTpe(q"import _root_.java.time.LocalDate").map(tpe =>
+          ParameterRef(tpe, ParameterName("localDate"), None)
+        )
+      case _: SafeDateTimeSchema =>
+        registerExternalTpe(q"import _root_.java.time.LocalDateTime").map(tpe =>
+          ParameterRef(tpe, ParameterName("localDateTime"), None)
+        )
       case s: SafeArraySchema =>
         schemaToParameter(s.items).map { itemTypeRef =>
           ParameterRef(
