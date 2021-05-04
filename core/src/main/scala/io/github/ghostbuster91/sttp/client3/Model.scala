@@ -85,6 +85,26 @@ case class Model(
             q"import _root_.java.util.UUID"
           )
           .map(uuidTpe => ParameterRef(uuidTpe, ParameterName("uuid"), None))
+      case s: SafeMapSchema =>
+        s.additionalProperties match {
+          case Left(_) =>
+            registerExternalTpe(q"import _root_.io.circe.Json")
+              .map(jsonTpe =>
+                ParameterRef(
+                  t"Map[String, $jsonTpe]",
+                  ParameterName("_additionalProperties"),
+                  None
+                )
+              )
+          case Right(value) =>
+            schemaToType(value).map { valueType =>
+              ParameterRef(
+                t"Map[String, $valueType]",
+                ParameterName("_additionalProperties"),
+                None
+              )
+            }
+        }
     }
 
   def commonAncestor(childs: NonEmptyList[SchemaRef]): List[SchemaRef] =

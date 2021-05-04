@@ -88,6 +88,7 @@ object GeneratorTest extends TestSuite {
       "free_form" - test()
       "int_values" - test()
       "all_of" - test()
+      "no_properties_inline" - test()
     }
 
     "format" - {
