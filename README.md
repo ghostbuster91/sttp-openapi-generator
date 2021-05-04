@@ -311,7 +311,7 @@ case class Person(
 
 ## Contributing
 
-Contributions are more than welcome. This is an early stage project which means that everything is subject to change. All suggestions welcome :)
+Contributions are more than welcome. This is an early stage project which means that everything is subject to change.
 
 See the list of issues and pick one! Or report your own.
 
