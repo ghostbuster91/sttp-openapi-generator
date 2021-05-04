@@ -9,7 +9,7 @@ Why creating another openapi-generator when there is an official one? While the 
 
 ## Goals of the project
 
-- generate code which feels like native
+- generate idiomatic scala code
 - support popular json libararies from scala ecosystem
 - support only sttp but do it well
 - [proper integration with sbt and other build tools](#sbt-plugin)
