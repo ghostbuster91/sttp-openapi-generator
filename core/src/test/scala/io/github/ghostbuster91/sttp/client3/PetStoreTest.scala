@@ -6,7 +6,7 @@ import utest._
 object PetStoreTest extends TestSuite {
 
   val tests = Tests {
-//    "pet_store" - testCompile() //FIX ME
+    "pet_store" - testCompile()
   }
 
   def testCompile()(implicit testPath: utest.framework.TestPath) = {
