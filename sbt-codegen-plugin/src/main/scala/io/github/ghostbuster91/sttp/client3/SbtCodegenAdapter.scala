@@ -18,7 +18,7 @@ class SbtCodegenAdapter(
 
   def processSingleFile(
       inputFile: File
-  ) = {
+  ): File = {
     log.info(s"Generating classes for ${inputFile.getAbsolutePath}...")
     val swaggerYaml = IO.read(inputFile)
     val relativePath = Option(
@@ -38,7 +38,7 @@ class SbtCodegenAdapter(
     val targetFile =
       targetDirectory / relativePath.getOrElse(
         "."
-      ) / s"${inputFile.base.capitalize}.scala"
+      ) / s"${snakeToCamelCase(inputFile.base)}.scala"
     IO.write(targetFile, format(scalafmt, code.toString(), targetFile))
     targetFile
   }
@@ -52,4 +52,7 @@ class SbtCodegenAdapter(
       code
     }
   }
+
+  private def snakeToCamelCase(snake: String) =
+    snake.split('_').toList.map(_.capitalize).mkString
 }
