@@ -10,11 +10,21 @@ import sttp.model.MediaType
 import sttp.model.Method
 
 class Codegen(logger: LogAdapter, config: CodegenConfig) {
-  def generateUnsafe(
+  def generateUnsafe(openApiYaml: String, packageName: Option[String]): Source =
+    generate(openApiYaml, packageName) match {
+      case Left(error)  => throw new RuntimeException(error)
+      case Right(value) => value
+    }
+
+  def generate(
       openApiYaml: String,
       packageName: Option[String]
-  ): Source = {
-    val openApi = new SafeOpenApiParser(logger).parse(openApiYaml)
+  ): Either[String, Source] =
+    new SafeOpenApiParser(logger).parse(openApiYaml).map { openApi =>
+      generate(packageName, openApi)
+    }
+
+  private def generate(packageName: Option[String], openApi: SafeOpenApi) = {
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
     val requestBodies = collectRequestBodies(openApi)
     val enums = EnumCollector.collectEnums(schemas)

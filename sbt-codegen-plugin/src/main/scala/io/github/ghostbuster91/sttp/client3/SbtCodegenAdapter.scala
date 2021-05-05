@@ -18,7 +18,7 @@ class SbtCodegenAdapter(
 
   def processSingleFile(
       inputFile: File
-  ): File = {
+  ): Either[String, File] = {
     log.info(
       s"[SttpOpenapi] Generating classes for ${inputFile.getAbsolutePath}..."
     )
@@ -33,16 +33,19 @@ class SbtCodegenAdapter(
         )
         .getParent
     )
-    val code = codegen.generateUnsafe(
-      swaggerYaml,
-      relativePath.map(_.replace("/", ".")).filterNot(_.isEmpty)
-    )
-    val targetFile =
-      targetDirectory / relativePath.getOrElse(
-        "."
-      ) / s"${snakeToCamelCase(inputFile.base)}.scala"
-    IO.write(targetFile, format(scalafmt, code.toString(), targetFile))
-    targetFile
+    codegen
+      .generate(
+        swaggerYaml,
+        relativePath.map(_.replace("/", ".")).filterNot(_.isEmpty)
+      )
+      .map { code =>
+        val targetFile =
+          targetDirectory / relativePath.getOrElse(
+            "."
+          ) / s"${snakeToCamelCase(inputFile.base)}.scala"
+        IO.write(targetFile, format(scalafmt, code.toString(), targetFile))
+        targetFile
+      }
   }
 
   private def format(scalafmt: Scalafmt, code: String, futureFile: File) = {

@@ -49,7 +49,13 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
           FileInfo.hash
         ) { input: Set[File] =>
           input.foldLeft(Set.empty[File]) { (result, inputFile) =>
-            result + codegen.processSingleFile(inputFile)
+            val generationResult = codegen.processSingleFile(inputFile)
+            generationResult match {
+              case Left(failure) =>
+                log.warn(s"Couldn't process $inputFile because of $failure")
+                result
+              case Right(success) => result + success
+            }
           }
         }
         cachedFun(inputFiles).toSeq
@@ -59,7 +65,7 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
       if (f.exists()) {
         val these = f.listFiles
         these
-          .filter(_.isFile)
+          .filter(f => f.isFile && (f.ext == "yaml" || f.ext == "yml"))
           .toList ++ these
           .filter(_.isDirectory)
           .flatMap(collectInputFiles(_, log))

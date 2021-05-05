@@ -8,7 +8,7 @@ import scala.collection.JavaConverters._
 import io.swagger.v3.parser.core.models.AuthorizationValue
 
 class SafeOpenApiParser(log: LogAdapter) {
-  def parse(yaml: String): SafeOpenApi = {
+  def parse(yaml: String): Either[String, SafeOpenApi] = {
     val parser = new OpenAPIParser
     val opts = new ParseOptions()
     opts.setResolve(true)
@@ -23,12 +23,14 @@ class SafeOpenApiParser(log: LogAdapter) {
     }
     Option(parserResult.getOpenAPI) match {
       case Some(spec) =>
-        List(
-          OpenApiEnumFlattener.flatten(_),
-          OpenApiCoproductGenerator.generate(_)
-        ).foldLeft(new SafeOpenApi(spec))((acc, item) => item(acc))
+        Right(
+          List(
+            OpenApiEnumFlattener.flatten(_),
+            OpenApiCoproductGenerator.generate(_)
+          ).foldLeft(new SafeOpenApi(spec))((acc, item) => item(acc))
+        )
       case None =>
-        throw new RuntimeException(s"Failed to parse open api specification")
+        Left(s"Failed to parse open api specification")
     }
   }
 }

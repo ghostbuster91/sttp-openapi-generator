@@ -16,7 +16,9 @@ object DynamicCoproductTest extends TestSuite {
     val expected = load(s"${testPath.value.mkString("/")}_expected.yaml")
     val input = load(s"${testPath.value.mkString("/")}.yaml")
     val actual =
-      Yaml.pretty(new SafeOpenApiParser(LogAdapter.StdOut).parse(input).unsafe)
+      Yaml.pretty(
+        new SafeOpenApiParser(LogAdapter.StdOut).parse(input).right.get.unsafe
+      )
     assert(parser.parse(actual) == parser.parse(expected))
   }
 
