@@ -16,6 +16,7 @@ val commonSettings = Seq(
       url("https://github.com/ghostbuster91")
     )
   ),
+  sonatypeCredentialHost := "s01.oss.sonatype.org",
   scalacOptions ~= (_.filterNot(Set("-Xfatal-warnings"))),
   testFrameworks += new TestFramework("utest.runner.Framework")
 )
