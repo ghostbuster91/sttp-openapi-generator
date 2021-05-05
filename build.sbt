@@ -17,6 +17,7 @@ val commonSettings = Seq(
     )
   ),
   sonatypeCredentialHost := "s01.oss.sonatype.org",
+  sonatypeProfileName := "ghostbuster91",
   scalacOptions ~= (_.filterNot(Set("-Xfatal-warnings"))),
   testFrameworks += new TestFramework("utest.runner.Framework")
 )
