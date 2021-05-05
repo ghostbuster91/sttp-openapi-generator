@@ -1,7 +1,7 @@
 val Scala212 = "2.12.13"
 
 val commonSettings = Seq(
-  organization := "io.github.ghostbuster91.sttp3-openapi3",
+  organization := "io.github.ghostbuster91.sttp-openapi",
   homepage := Some(
     url("https://github.com/ghostbuster91/sttp-openapi-generator")
   ),
