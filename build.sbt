@@ -25,7 +25,8 @@ val commonSettings = Seq(
 lazy val rootProject = (project in file("."))
   .settings(commonSettings)
   .settings(
-    name := "sttp-openapi-generator"
+    name := "sttp-openapi-generator",
+    publish / skip := true
   )
   .aggregate(core, codegenSbtPlugin)
 
