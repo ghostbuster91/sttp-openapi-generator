@@ -60,7 +60,7 @@ pull_request_rules:
   - name: automatic merge for dependabot pull requests affecting gha workflow
     conditions:
       - author~=^dependabot(|-preview)\[bot\]$
-      - check-success=ci
+      - check-success=build
       - "#files=1"
       - files=.github/workflows/main.yml
     actions:
