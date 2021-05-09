@@ -17,6 +17,7 @@ Why creating another openapi-generator when there is an official one? While the 
 - [support discriminators](#discriminators)
 - [support error encoding](#error-encoding)
 - [support open products](#open-product)
+- [comparison to similar projects](#comparison-to-similar-projects)
 
 ## Teaser
 
@@ -309,6 +310,29 @@ case class Person(
     _additionalProperties: Map[String, Json]
 )
 ```
+
+## Comparison to similar projects
+
+Apart from official openApi generator which was mentioned in the [Why?](#why?) section there are other similar projects.
+
+[Guardrail](https://github.com/guardrail-dev/guardrail)
+
+|                           | sttp                                   | guardrail                                  |
+|---------------------------|----------------------------------------|--------------------------------------------|
+| main purpose              | client code generation                 | generate both client and server code       |
+| ecosystem                 | supports only sttp                     | support multiple frameworks (akka, http4s) |
+| serialization             | for now only circe but can be extended | circe                                      |
+| dependency management     | auto                                   | manual                                     |
+| enums                     | :heavy_check_mark:                     | :x:                                        |
+| coproducts                | :heavy_check_mark:                     | :x:                                        |
+| openProducts              | :heavy_check_mark:                     | :x:                                        |
+| multiple error handling   | :heavy_check_mark:                     | :heavy_check_mark:                         |
+| multiple success handling | :heavy_check_mark:                     | :heavy_check_mark:                         |
+| build tools               | only sbt for now                       | sbt, maven, make                           |
+
+Above table likely needs some refinement as I am quite biased. PRs are welcome :)
+
+In summary, they both serve the same purpose which is to generate scala code from openapi format, but approach it differently. 
 
 ## Contributing
 
