@@ -82,7 +82,7 @@ class DefaultApi(baseUrl: String) extends CirceCodecs {
 Currently, there is only an integration for sbt, but I hope to add support for mill in the nearest future.
 In order to use this project, follow the usual convention, first add it to `project/plugins.sbt`:
 ```scala
-addSbtPlugin("io.github.ghostbuster91.sttp3-openapi3" % "sbt-codegen-plugin" % "<latest-version>")
+addSbtPlugin("io.github.ghostbuster91.sttp3-openapi3" % "sbt-codegen-plugin" % "0.1.0")
 ```
 
 next, enable it for the desired modules in `build.sbt`:
