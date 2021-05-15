@@ -17,3 +17,5 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi {
       case PersonStatus.Neutral => "neutral"
     })
 }
+
+object CirceCodecs extends CirceCodecs

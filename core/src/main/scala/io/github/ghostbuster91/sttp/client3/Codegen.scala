@@ -101,7 +101,8 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
     processedOps.map { case (key, apiCalls) =>
       val className =
         Type.Name(key.map(_.capitalize).getOrElse("Default") + "Api")
-      q"""class $className(baseUrl: String) extends CirceCodecs {
+      q"""class $className(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+            import circeCodecs._
             ..$apiCalls
           }
       """

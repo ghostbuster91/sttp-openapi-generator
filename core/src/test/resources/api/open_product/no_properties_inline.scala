@@ -6,8 +6,11 @@ import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends AutoDerivation with SttpCirceApi
+object CirceCodecs extends CirceCodecs
 
-class StoreApi(baseUrl: String) extends CirceCodecs {
+class StoreApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+
   def getInventory(): Request[Map[String, Int], Any] =
     basicRequest
       .get(uri"$baseUrl/store/inventory")

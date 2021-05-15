@@ -6,8 +6,11 @@ import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends AutoDerivation with SttpCirceApi
+object CirceCodecs extends CirceCodecs
 
-class DefaultApi(baseUrl: String) extends CirceCodecs {
+class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+
   def updatePerson(boolean: Boolean = true): Request[Boolean, Any] =
     basicRequest
       .put(uri"$baseUrl/person")

@@ -6,6 +6,7 @@ import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends AutoDerivation with SttpCirceApi
+object CirceCodecs extends CirceCodecs
 
 sealed trait Entity {
   def name: Int
@@ -13,7 +14,9 @@ sealed trait Entity {
 case class Organization(name: Int) extends Entity()
 case class Person(name: Int, age: Int) extends Entity()
 
-class DefaultApi(baseUrl: String) extends CirceCodecs {
+class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+
   def getRoot(): Request[Entity, Any] = basicRequest
     .get(uri"$baseUrl")
     .response(

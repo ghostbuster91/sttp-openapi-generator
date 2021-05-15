@@ -31,8 +31,8 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi {
         Encoder[Map[String, Json]].apply(person._additionalProperties)
       )
   }
-
 }
+object CirceCodecs extends CirceCodecs
 
 case class Person(
     name: String,
@@ -40,7 +40,9 @@ case class Person(
     _additionalProperties: Map[String, Json]
 )
 
-class DefaultApi(baseUrl: String) extends CirceCodecs {
+class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+
   def getRoot(): Request[Person, Any] = basicRequest
     .get(uri"$baseUrl")
     .response(

@@ -7,8 +7,11 @@ import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends AutoDerivation with SttpCirceApi
+object CirceCodecs extends CirceCodecs
 
-class PetApi(baseUrl: String) extends CirceCodecs {
+class PetApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+
   def uploadFile(
       petId: Long,
       additionalMetadata: Option[String],

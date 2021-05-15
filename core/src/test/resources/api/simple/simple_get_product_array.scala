@@ -6,6 +6,7 @@ import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends AutoDerivation with SttpCirceApi
+object CirceCodecs extends CirceCodecs
 
 case class Category(
     id: Int,
@@ -19,7 +20,9 @@ case class Pet(
     status: String
 )
 
-class DefaultApi(baseUrl: String) extends CirceCodecs {
+class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+
   def getRoot(): Request[Pet, Any] = basicRequest
     .get(uri"$baseUrl")
     .response(

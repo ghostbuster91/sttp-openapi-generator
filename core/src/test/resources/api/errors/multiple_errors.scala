@@ -7,12 +7,15 @@ import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends AutoDerivation with SttpCirceApi
+object CirceCodecs extends CirceCodecs
 
 sealed trait UpdatePersonGenericError
 case class ErrorModel(msg: String) extends UpdatePersonGenericError()
 case class ErrorModel2(msg: String) extends UpdatePersonGenericError()
 
-class DefaultApi(baseUrl: String) extends CirceCodecs {
+class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+
   def updatePerson(): Request[
     Either[ResponseException[UpdatePersonGenericError, CirceError], Unit],
     Any
