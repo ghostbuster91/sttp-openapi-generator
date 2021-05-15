@@ -32,6 +32,8 @@ class CirceCodecGenerator() extends JsonCodecGenerator {
         ..$enumCodecs
         ..$coproductCodecs
         ..$openProductCodecs
-    }"""
+    }
+    object CirceCodecs extends CirceCodecs
+    """
   }
 }

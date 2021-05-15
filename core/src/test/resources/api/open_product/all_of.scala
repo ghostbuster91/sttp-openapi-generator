@@ -39,6 +39,8 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi {
       .deepMerge(Encoder[Map[String, Json]].apply(dog._additionalProperties))
   }
 }
+object CirceCodecs extends CirceCodecs
+
 sealed trait Animal {
   def className: String
   def color: Option[String]
@@ -52,7 +54,9 @@ case class Dog(
     _additionalProperties: Map[String, Json]
 ) extends Animal()
 
-class DefaultApi(baseUrl: String) extends CirceCodecs {
+class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+
   def getRoot(): Request[Dog, Any] = basicRequest
     .get(uri"$baseUrl")
     .response(

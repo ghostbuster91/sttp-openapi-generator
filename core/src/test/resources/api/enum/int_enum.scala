@@ -26,6 +26,7 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi {
       case Status.`3` => 3
     })
 }
+object CirceCodecs extends CirceCodecs
 
 sealed trait Status
 object Status {
@@ -36,7 +37,9 @@ object Status {
 
 case class Person(status: Status)
 
-class DefaultApi(baseUrl: String) extends CirceCodecs {
+class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+
   def getPerson(): Request[Person, Any] =
     basicRequest
       .get(uri"$baseUrl/person")

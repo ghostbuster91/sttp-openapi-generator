@@ -5,10 +5,13 @@ import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends AutoDerivation with SttpCirceApi
+object CirceCodecs extends CirceCodecs
 
 case class Person(name: String, age: Int)
 
-class OtherApi(baseUrl: String) extends CirceCodecs {
+class OtherApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+
   def putPerson(): Request[Person, Any] = basicRequest
     .put(uri"$baseUrl")
     .response(
@@ -22,7 +25,9 @@ class OtherApi(baseUrl: String) extends CirceCodecs {
     )
 }
 
-class PersonApi(baseUrl: String) extends CirceCodecs {
+class PersonApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+
   def getPerson(): Request[Person, Any] = basicRequest
     .get(uri"$baseUrl")
     .response(

@@ -42,17 +42,22 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi {
         Encoder[Organization].apply(organization)
     }
   }
-
 }
+object CirceCodecs extends CirceCodecs
+
 sealed trait PersonName
 object PersonName {
   case object Bob extends PersonName()
   case object Alice extends PersonName()
 }
+
 sealed trait Entity { def name: PersonName }
 case class Organization(name: PersonName) extends Entity()
 case class Person(name: PersonName, age: Int) extends Entity()
-class DefaultApi(baseUrl: String) extends CirceCodecs {
+
+class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+
   def getRoot(): Request[Entity, Any] =
     basicRequest
       .get(uri"$baseUrl")

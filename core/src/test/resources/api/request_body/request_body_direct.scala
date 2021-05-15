@@ -6,11 +6,14 @@ import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends AutoDerivation with SttpCirceApi
+object CirceCodecs extends CirceCodecs
 
 case class PetRequest(id: String)
 case class PetResponse(name: String)
 
-class DefaultApi(baseUrl: String) extends CirceCodecs {
+class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+
   def addPet(petRequest: PetRequest): Request[PetResponse, Any] = basicRequest
     .post(uri"$baseUrl/pet")
     .body(petRequest)
