@@ -57,11 +57,19 @@ components:
 it will be turned into:
 
 ```scala
-trait CirceCodecs extends AutoDerivation with SttpCirceApi
+trait CirceCodecs extends SttpCirceApi {
+  implicit val personDecoder: Decoder[Person] =
+    Decoder.forProduct2("name", "age")(Person.apply)
+  implicit val personEncoder: Encoder[Person] =
+    Encoder.forProduct2("name", "age")(p => (p.name, p.age))
+}
+object CirceCodecs extends CirceCodecs
 
 case class Person(name: String, age: Int)
 
-class DefaultApi(baseUrl: String) extends CirceCodecs {
+class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+
   def getRoot(): Request[Person, Any] = basicRequest
     .get(uri"$baseUrl")
     .response(
@@ -74,7 +82,6 @@ class DefaultApi(baseUrl: String) extends CirceCodecs {
       )
     )
 }
-
 ```
 
 ## sbt-plugin
@@ -147,7 +154,9 @@ sealed trait Entity { def name: String }
 case class Organization(name: String) extends Entity()
 case class Person(name: String, age: Int) extends Entity()
 
-trait CirceCodecs extends AutoDerivation with SttpCirceApi {
+trait CirceCodecs extends SttpCirceApi {
+  // codecs for Person and Organization omitted for readability
+
   implicit val entityDecoder: Decoder[Entity] = new Decoder[Entity]() {
     override def apply(c: HCursor): Result[Entity] = c
       .downField("name")
@@ -220,7 +229,9 @@ sealed trait UpdatePersonGenericError
 case class ErrorModel(msg: String) extends UpdatePersonGenericError()
 case class ErrorModel2(msg: String) extends UpdatePersonGenericError()
 
-class DefaultApi(baseUrl: String) extends CirceCodecs {
+class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
+  import circeCodecs._
+ 
   def updatePerson(): Request[
     Either[ResponseException[UpdatePersonGenericError, CirceError], Unit],
     Any
@@ -280,7 +291,7 @@ components:
 ```
 
 ```scala
-trait CirceCodecs extends AutoDerivation with SttpCirceApi {
+trait CirceCodecs extends SttpCirceApi {
   implicit val personDecoder: Decoder[Person] = new Decoder[Person]() {
     override def apply(c: HCursor): Result[Person] =
       for {
