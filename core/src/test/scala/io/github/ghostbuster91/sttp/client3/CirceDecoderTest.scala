@@ -25,6 +25,29 @@ object CirceDecoderTest extends TestSuite {
         ._2
       assert(actual.structure == expected.structure)
     }
+
+    "product" - {
+      val expected = load(s"product.scala").parse[Source].get
+      val actual = new CirceCodecGenerator()
+        .generate(
+          Nil,
+          Nil,
+          List(
+            Product.Regular(
+              ClassName("Person"),
+              List.empty,
+              List(
+                ParameterRef(t"Int", ParameterName("age"), None),
+                ParameterRef(t"String", ParameterName("name"), None)
+              )
+            )
+          )
+        )
+        .run(ImportRegistry())
+        .value
+        ._2
+      assert(actual.structure == expected.structure)
+    }
   }
 
   private def load(fileName: String): String =

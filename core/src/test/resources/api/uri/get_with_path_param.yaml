@@ -18,20 +18,3 @@ paths:
       responses:
         "200":
           description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Person"
-components:
-  schemas:
-    Person:
-      required:
-        - name
-        - age
-      type: object
-      properties:
-        name:
-          type: string
-        age:
-          type: integer
-          minimum: 11

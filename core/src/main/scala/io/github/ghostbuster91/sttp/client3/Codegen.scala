@@ -48,7 +48,7 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       codecs <- new CirceCodecGenerator().generate(
         enums,
         coproducts,
-        products.collect { case p: Product.Open => p }
+        products
       )
     } yield CodegenOutput(
       apiCalls,

@@ -7,10 +7,9 @@ import _root_.io.circe.Decoder
 import _root_.io.circe.HCursor
 import _root_.io.circe.Decoder.Result
 import _root_.io.circe.Encoder
-import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
-trait CirceCodecs extends AutoDerivation with SttpCirceApi {
+trait CirceCodecs extends SttpCirceApi {
   implicit val dogDecoder: Decoder[Dog] = new Decoder[Dog]() {
     override def apply(c: HCursor): Result[Dog] = for (
       className <- c.downField("className").as[String];
@@ -38,6 +37,13 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi {
       .apply(dog)
       .deepMerge(Encoder[Map[String, Json]].apply(dog._additionalProperties))
   }
+  implicit val animalDecoder: Decoder[Animal] = List[Decoder[Animal]](
+    Decoder[Dog].asInstanceOf[Decoder[Animal]]
+  ).reduceLeft(_ or _)
+  implicit val animalEncoder: Encoder[Animal] = Encoder.instance({
+    case dog: Dog =>
+      Encoder[Dog].apply(dog)
+  })
 }
 object CirceCodecs extends CirceCodecs
 
