@@ -1,16 +1,15 @@
 package io.github.ghostbuster91.sttp.client3.example
+
 import _root_.sttp.client3._
 import _root_.sttp.model._
 import _root_.io.circe.Json
 import _root_.io.circe.Decoder
 import _root_.io.circe.HCursor
 import _root_.io.circe.Decoder.Result
-
 import _root_.io.circe.Encoder
-import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
-trait CirceCodecs extends AutoDerivation with SttpCirceApi {
+trait CirceCodecs extends SttpCirceApi {
   implicit val personDecoder: Decoder[Person] = new Decoder[Person]() {
     override def apply(c: HCursor): Result[Person] =
       for {

@@ -2,42 +2,54 @@ package io.github.ghostbuster91.sttp.client3.example
 
 import _root_.sttp.client3._
 import _root_.sttp.model._
-import _root_.io.circe.Json
-import _root_.io.circe.Encoder
-import _root_.io.circe.HCursor
 import _root_.io.circe.Decoder
+import _root_.io.circe.Encoder
+import _root_.io.circe.Json
+import _root_.io.circe.HCursor
 import _root_.io.circe.DecodingFailure
 import _root_.io.circe.Decoder.Result
-import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
-trait CirceCodecs extends AutoDerivation with SttpCirceApi {
-
+trait CirceCodecs extends SttpCirceApi {
   implicit val personNameDecoder: Decoder[PersonName] =
     Decoder.decodeString.emap({
-      case "bob"   => Right(PersonName.Bob)
-      case "alice" => Right(PersonName.Alice)
-      case other   => Left("Unexpected value for enum:" + other)
+      case "bob" =>
+        Right(PersonName.Bob)
+      case "alice" =>
+        Right(PersonName.Alice)
+      case other =>
+        Left("Unexpected value for enum:" + other)
     })
   implicit val personNameEncoder: Encoder[PersonName] =
     Encoder.encodeString.contramap({
       case PersonName.Bob   => "bob"
       case PersonName.Alice => "alice"
     })
+  implicit val personDecoder: Decoder[Person] =
+    Decoder.forProduct2("name", "age")(Person.apply)
+  implicit val personEncoder: Encoder[Person] =
+    Encoder.forProduct2("name", "age")(p => (p.name, p.age))
+  implicit val organizationDecoder: Decoder[Organization] =
+    Decoder.forProduct1("name")(Organization.apply)
+  implicit val organizationEncoder: Encoder[Organization] =
+    Encoder.forProduct1("name")(p => p.name)
   implicit val entityDecoder: Decoder[Entity] = new Decoder[Entity]() {
     override def apply(c: HCursor): Result[Entity] = c
       .downField("name")
       .as[PersonName]
       .flatMap({
-        case PersonName.Bob   => Decoder[Person].apply(c)
-        case PersonName.Alice => Decoder[Organization].apply(c)
+        case PersonName.Bob =>
+          Decoder[Person].apply(c)
+        case PersonName.Alice =>
+          Decoder[Organization].apply(c)
         case other =>
           Left(DecodingFailure("Unexpected value for coproduct:" + other, Nil))
       })
   }
   implicit val entityEncoder: Encoder[Entity] = new Encoder[Entity]() {
     override def apply(entity: Entity): Json = entity match {
-      case person: Person => Encoder[Person].apply(person)
+      case person: Person =>
+        Encoder[Person].apply(person)
       case organization: Organization =>
         Encoder[Organization].apply(organization)
     }

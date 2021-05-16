@@ -1,10 +1,12 @@
 package io.github.ghostbuster91.sttp.client3
 
+import cats.data.NonEmptyList
 import cats.syntax.all._
 import io.github.ghostbuster91.sttp.client3.ImportRegistry._
 import io.github.ghostbuster91.sttp.client3.json.JsonTypeProvider
 import io.github.ghostbuster91.sttp.client3.model._
 import io.github.ghostbuster91.sttp.client3.openapi._
+
 import scala.annotation.tailrec
 import scala.meta._
 
@@ -30,43 +32,39 @@ class CoproductCollector(
   private def collectOneOf(
       key: SchemaRef,
       schema: SafeComposedSchema
-  ): IM[Option[Coproduct]] =
-    schema.oneOf.headOption
-      .traverse(childRef => oneOfCoproduct(key, schema, childRef))
-
-  private def oneOfCoproduct(
-      key: SchemaRef,
-      schema: SafeComposedSchema,
-      childRef: SafeRefSchema
   ) =
-    schema.discriminator match {
-      case Some(dsc) =>
-        val child =
-          model
-            .schemaFor(childRef.ref)
-            .asInstanceOf[SafeObjectSchema]
-        val discriminatorSchema = child.properties(dsc.propertyName)
+    NonEmptyList.fromList(schema.oneOf).traverse { oneOf =>
+      schema.discriminator match {
+        case Some(dsc) =>
+          val child =
+            model
+              .schemaFor(oneOf.head.ref)
+              .asInstanceOf[SafeObjectSchema]
+          val discriminatorSchema = child.properties(dsc.propertyName)
 
-        model
-          .schemaToParameter(
-            discriminatorSchema,
-            child.requiredFields.contains(dsc.propertyName)
-          )
-          .map { paramRef =>
-            Coproduct(
-              model.classNameFor(key),
-              List(paramRef.withName(dsc.propertyName)),
-              Some(coproductDiscriminator(dsc, discriminatorSchema)),
-              None
+          model
+            .schemaToParameter(
+              discriminatorSchema,
+              child.requiredFields.contains(dsc.propertyName)
             )
-          }
-      case None =>
-        Coproduct(
-          model.classNameFor(key),
-          List.empty,
-          None,
-          None
-        ).pure[IM]
+            .map { paramRef =>
+              Coproduct(
+                model.classNameFor(key),
+                List(paramRef.withName(dsc.propertyName)),
+                Some(coproductDiscriminator(dsc, discriminatorSchema)),
+                None,
+                oneOf.map(childRef => model.classNameFor(childRef.ref))
+              )
+            }
+        case None =>
+          Coproduct(
+            model.classNameFor(key),
+            List.empty,
+            None,
+            None,
+            oneOf.map(childRef => model.classNameFor(childRef.ref))
+          ).pure[IM]
+      }
     }
 
   private def collectAllOf(schema: SafeComposedSchema) =
@@ -128,7 +126,13 @@ class CoproductCollector(
 
   private def allOfCoproduct(
       parent: SafeRefSchema
-  ): IM[Coproduct] =
+  ): IM[Coproduct] = {
+    val parentToChilds = model.childToParentRef.toList
+      .flatMap { case (child, parents) =>
+        parents.map(parent => parent -> child)
+      }
+      .groupBy(_._1)
+      .mapValues(_.map(_._2))
     for {
       props <- extractProperties(parent)
       addProps <- extractAdditionalProperties(parent)
@@ -144,9 +148,13 @@ class CoproductCollector(
             val discriminatorSchema = parentSchema.properties(dsc.propertyName)
             coproductDiscriminator(dsc, discriminatorSchema)
           },
-        addProps
+        addProps,
+        NonEmptyList.fromListUnsafe(
+          parentToChilds(parent.ref).map(model.classNameFor)
+        )
       )
     }
+  }
 
   private def coproductDiscriminator(
       dsc: SafeDiscriminator,

@@ -10,12 +10,18 @@ class CirceCodecGenerator() extends JsonCodecGenerator {
   def generate(
       enums: List[Enum],
       coproducts: List[Coproduct],
-      openProducts: List[Product.Open]
+      products: List[Product]
   ): IM[Source] = {
     val coproductGen = new CirceCoproductCodecGenerator()
     val openProductGen = new CirceOpenProductCodecGenerator()
+    val productGen = new CirceProductCodecGenerator()
     for {
-      openProductCodecs <- openProducts
+      productCodecs <- products
+        .collect { case p: Product.Regular => p }
+        .traverse(productGen.generate)
+        .map(_.flatten)
+      openProductCodecs <- products
+        .collect { case p: Product.Open => p }
         .traverse(openProductGen.generate)
         .map(_.flatten)
       coproductCodecs <- coproducts
@@ -25,13 +31,13 @@ class CirceCodecGenerator() extends JsonCodecGenerator {
         .traverse(CirceEnumCodecGenerator.generate)
         .map(_.flatten)
     } yield source"""
-    import _root_.io.circe.generic.AutoDerivation
     import _root_.sttp.client3.circe.SttpCirceApi
 
-    trait CirceCodecs extends AutoDerivation with SttpCirceApi {
+    trait CirceCodecs extends SttpCirceApi {
         ..$enumCodecs
-        ..$coproductCodecs
+        ..$productCodecs
         ..$openProductCodecs
+        ..$coproductCodecs
     }
     object CirceCodecs extends CirceCodecs
     """

@@ -2,10 +2,22 @@ package io.github.ghostbuster91.sttp.client3.example
 
 import _root_.sttp.client3._
 import _root_.sttp.model._
-import _root_.io.circe.generic.AutoDerivation
+import _root_.io.circe.Decoder
+import _root_.io.circe.Encoder
 import _root_.sttp.client3.circe.SttpCirceApi
 
-trait CirceCodecs extends AutoDerivation with SttpCirceApi
+trait CirceCodecs extends SttpCirceApi {
+  implicit val categoryDecoder: Decoder[Category] =
+    Decoder.forProduct2("id", "name")(Category.apply)
+  implicit val categoryEncoder: Encoder[Category] =
+    Encoder.forProduct2("id", "name")(p => (p.id, p.name))
+  implicit val petDecoder: Decoder[Pet] =
+    Decoder.forProduct4("id", "name", "categories", "status")(Pet.apply)
+  implicit val petEncoder: Encoder[Pet] =
+    Encoder.forProduct4("id", "name", "categories", "status")(p =>
+      (p.id, p.name, p.categories, p.status)
+    )
+}
 object CirceCodecs extends CirceCodecs
 
 case class Category(

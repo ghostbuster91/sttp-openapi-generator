@@ -9,6 +9,6 @@ trait JsonCodecGenerator {
   def generate(
       enums: List[Enum],
       coproducts: List[Coproduct],
-      openProducts: List[Product.Open]
+      products: List[Product]
   ): IM[Source]
 }

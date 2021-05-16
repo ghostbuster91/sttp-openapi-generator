@@ -1,7 +1,6 @@
-import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
-trait CirceCodecs extends AutoDerivation with SttpCirceApi {
+trait CirceCodecs extends SttpCirceApi {
   implicit val personStatusDecoder: Decoder[PersonStatus] =
     Decoder.decodeString.emap({
       case "happy" =>

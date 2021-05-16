@@ -4,10 +4,9 @@ import _root_.sttp.client3._
 import _root_.sttp.model._
 import _root_.io.circe.Decoder
 import _root_.io.circe.Encoder
-import _root_.io.circe.generic.AutoDerivation
 import _root_.sttp.client3.circe.SttpCirceApi
 
-trait CirceCodecs extends AutoDerivation with SttpCirceApi {
+trait CirceCodecs extends SttpCirceApi {
   implicit val statusDecoder: Decoder[Status] =
     Decoder.decodeInt.emap({
       case 1 =>
@@ -25,6 +24,10 @@ trait CirceCodecs extends AutoDerivation with SttpCirceApi {
       case Status.`2` => 2
       case Status.`3` => 3
     })
+  implicit val personDecoder: Decoder[Person] =
+    Decoder.forProduct1("status")(Person.apply)
+  implicit val personEncoder: Encoder[Person] =
+    Encoder.forProduct1("status")(p => p.status)
 }
 object CirceCodecs extends CirceCodecs
 

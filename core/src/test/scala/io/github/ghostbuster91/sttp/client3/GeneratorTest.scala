@@ -30,15 +30,11 @@ object GeneratorTest extends TestSuite {
       "mixed_path_and_query" - test()
     }
     "enum" - {
-      //TODO:
-      //reflective compilation has failed:
-      //Internal error: unable to find the outer accessor symbol of class Api
-      //    scala.tools.reflect.ToolBoxFactory$ToolBoxImpl$ToolBoxGlobal.throwIfErrors(ToolBoxFactory.scala:332)
-      "string_enum" - testNoCompile()
-      "int_enum" - testNoCompile()
-      "component_enum" - testNoCompile()
-      "duplicated_enum_usage" - testNoCompile()
-      "duplicated_enum" - testNoCompile()
+      "string_enum" - test()
+      "int_enum" - test()
+      "component_enum" - test()
+      "duplicated_enum_usage" - test()
+      "duplicated_enum" - test()
     }
 
     "request_body" - {
@@ -80,8 +76,8 @@ object GeneratorTest extends TestSuite {
         "discriminator_with_mapping" - test()
         // Following case is actually invalid because there is no way to create discriminator mapping using empty value as a key
         //"optional_discriminator" - test()
-        "discriminator_enum" - testNoCompile()
-        "discriminator_with_enum_mapping" - testNoCompile()
+        "discriminator_enum" - test()
+        "discriminator_with_enum_mapping" - test()
       }
     }
 

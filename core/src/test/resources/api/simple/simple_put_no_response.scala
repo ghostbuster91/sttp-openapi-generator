@@ -2,10 +2,10 @@ package io.github.ghostbuster91.sttp.client3.example
 
 import _root_.sttp.client3._
 import _root_.sttp.model._
-import _root_.io.circe.generic.AutoDerivation
+
 import _root_.sttp.client3.circe.SttpCirceApi
 
-trait CirceCodecs extends AutoDerivation with SttpCirceApi
+trait CirceCodecs extends SttpCirceApi
 object CirceCodecs extends CirceCodecs
 
 class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
@@ -13,7 +13,5 @@ class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
 
   def updatePerson(): Request[Unit, Any] = basicRequest
     .put(uri"$baseUrl/person")
-    .response(
-      fromMetadata(asJson[Unit].getRight)
-    )
+    .response(fromMetadata(asJson[Unit].getRight))
 }

@@ -1,12 +1,15 @@
 package io.github.ghostbuster91.sttp.client3.model
 
+import cats.data.NonEmptyList
+
 import scala.meta.{Pat, Term, Type}
 
 case class Coproduct(
     name: ClassName,
     properties: List[ParameterRef],
     discriminator: Option[Discriminator[_]],
-    additionalProperties: Option[ParameterRef]
+    additionalProperties: Option[ParameterRef],
+    childs: NonEmptyList[ClassName]
 ) {
   def typeName: Type.Name = name.typeName
   def asPrefix(postfix: String): Pat.Var = name.toParam.asPrefix(postfix)
