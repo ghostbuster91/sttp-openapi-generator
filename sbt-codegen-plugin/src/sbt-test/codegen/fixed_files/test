@@ -1,0 +1,4 @@
+# check if the file gets created
+> compile
+$ exists target/scala-2.12/src_managed/main/com/example/openapi/Openapi.scala
+$ exists target/scala-2.12/src_managed/main/com/example/other/OtherYamlFile.scala
