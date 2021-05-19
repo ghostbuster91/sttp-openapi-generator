@@ -20,9 +20,13 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       openApiYaml: String,
       packageName: Option[String]
   ): Either[String, Source] =
-    new SafeOpenApiParser(logger).parse(openApiYaml).map { openApi =>
-      generate(packageName, openApi)
-    }
+    new SafeOpenApiParser(
+      logger,
+      List(
+        OpenApiEnumFlattener.flatten,
+        OpenApiCoproductGenerator.generate
+      )
+    ).parse(openApiYaml).map(openApi => generate(packageName, openApi))
 
   private def generate(packageName: Option[String], openApi: SafeOpenApi) = {
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)

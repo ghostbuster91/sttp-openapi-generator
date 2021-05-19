@@ -22,7 +22,10 @@ object FlattenerTest extends TestSuite {
     val input = load(s"${testPath.value.mkString("/")}.yaml")
     val actual =
       Yaml.pretty(
-        new SafeOpenApiParser(LogAdapter.StdOut).parse(input).right.get.unsafe
+        new SafeOpenApiParser(
+          LogAdapter.StdOut,
+          List(OpenApiEnumFlattener.flatten)
+        ).parse(input).right.get.unsafe
       )
     assert(parser.parse(actual) == parser.parse(expected))
   }
