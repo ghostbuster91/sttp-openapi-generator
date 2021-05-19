@@ -24,7 +24,7 @@ class SafeOpenApi(openApi: OpenAPI) {
       .mapValues(item => new SafePathItem(item))
 
   override def toString: String = openApi.toString
-  private[openapi] def unsafe: OpenAPI = openApi
+  def unsafe: OpenAPI = openApi
 }
 
 class SafeComponents(c: Components) {
@@ -37,7 +37,7 @@ class SafeComponents(c: Components) {
       .map(_.asScala.mapValues(new SafeRequestBody(_)).toMap)
       .getOrElse(Map.empty)
   override def toString: String = c.toString
-  private[openapi] def unsafe: Components = c
+  def unsafe: Components = c
 }
 
 case class SafeRequestBody(rb: RequestBody) {
@@ -137,7 +137,7 @@ class SafeApiResponse(r: ApiResponse) {
 
 class SafeMediaType(m: MediaType) {
   def schema: SafeSchema = SafeSchema(m.getSchema)
-  private[openapi] def unsafe: MediaType = m
+  def unsafe: MediaType = m
 }
 
 sealed trait SafeSchema {
