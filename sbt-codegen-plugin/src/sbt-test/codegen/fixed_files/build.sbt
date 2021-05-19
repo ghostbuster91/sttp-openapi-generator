@@ -5,7 +5,7 @@ lazy val root = (project in file("."))
   .settings(
     version := "0.1",
     scalaVersion := "2.12.13",
-    sttpOpenApiInputPath := Seq(
+    sttpOpenApiInput := Seq(
       Input.SingleFile(
         (Compile / resourceDirectory).value / "openapi.yaml",
         pkg = "com.example.openapi"
