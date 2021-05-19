@@ -111,6 +111,8 @@ case class SafeOperation(op: Operation) {
   }
 
   override def toString: String = op.toString
+
+  def unsafe: Operation = op
 }
 
 case class OperationId(v: String) extends AnyVal
