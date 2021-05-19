@@ -67,8 +67,8 @@ case class SafePathItem(unsafe: PathItem) {
 }
 
 case class SafeOperation(op: Operation) {
-  def operationId: String =
-    op.getOperationId //TODO introduce operationId value object
+  def operationId: OperationId =
+    OperationId(op.getOperationId)
   def tags: Option[List[String]] =
     Option(op.getTags).map(_.asScala.toList)
 
@@ -112,6 +112,8 @@ case class SafeOperation(op: Operation) {
 
   override def toString: String = op.toString
 }
+
+case class OperationId(v: String) extends AnyVal
 
 sealed trait SafeParameter {
   def unsafe: Parameter
@@ -223,13 +225,14 @@ case class SafeDiscriminator(d: Discriminator) {
 object SafeSchema {
   def apply(s: Schema[_]): SafeSchema =
     s match {
-      case as: ArraySchema      => SafeArraySchema(as)
-      case bs: BooleanSchema    => SafeBooleanSchema(bs)
-      case bas: ByteArraySchema => SafeByteArraySchema(bas)
-      case ds: DateSchema       => SafeDateSchema(ds)
-      case dts: DateTimeSchema  => SafeDateTimeSchema(dts)
-      case es: EmailSchema      => SafeEmailSchema(es)
-      case fs: FileSchema       => SafeFileSchema(fs)
+      case as: ArraySchema            => SafeArraySchema(as)
+      case bs: BooleanSchema          => SafeBooleanSchema(bs)
+      case bas: ByteArraySchema       => SafeByteArraySchema(bas)
+      case binarySchema: BinarySchema => SafeBinarySchema(binarySchema)
+      case ds: DateSchema             => SafeDateSchema(ds)
+      case dts: DateTimeSchema        => SafeDateTimeSchema(dts)
+      case es: EmailSchema            => SafeEmailSchema(es)
+      case fs: FileSchema             => SafeFileSchema(fs)
       case is: IntegerSchema if Option(is.getFormat).contains("int64") =>
         SafeLongSchema(is)
       case is: IntegerSchema => SafeIntegerSchema(is)

@@ -22,6 +22,9 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
   val sttpOpenApiHandleErrors = settingKey[Boolean](
     "If true the generator will include error information in types"
   )
+  val sttpOpenApiMinimizeOutput = settingKey[Boolean](
+    "If true the generator will render model classes only if they are referenced by any of the exiting operations"
+  )
 
   object autoImport {
 
@@ -33,7 +36,8 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
         val scalafmt = Scalafmt.create(this.getClass.getClassLoader)
         val config = CodegenConfig(
           handleErrors = sttpOpenApiHandleErrors.value,
-          sttpOpenApiJsonLibrary.value
+          sttpOpenApiJsonLibrary.value,
+          sttpOpenApiMinimizeOutput.value
         )
         val codegen = new SbtCodegenAdapter(
           config,
@@ -144,6 +148,7 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
       ),
       sttpOpenApiJsonLibrary := JsonLibrary.Circe,
       sttpOpenApiHandleErrors := true,
+      sttpOpenApiMinimizeOutput := true,
       Compile / sourceGenerators += generateSources.taskValue,
       libraryDependencies ++= coreDeps ++ (sttpOpenApiJsonLibrary.value match {
         case JsonLibrary.Circe => circeDeps

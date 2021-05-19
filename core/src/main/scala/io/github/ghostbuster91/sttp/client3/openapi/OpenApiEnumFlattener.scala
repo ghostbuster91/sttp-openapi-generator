@@ -91,7 +91,7 @@ object OpenApiEnumFlattener {
     operation.requestBody
       .flatMap(_.content.get(MediaType.ApplicationJson.toString))
       .map(mt =>
-        operation.operationId -> SchemaWithReassign(
+        operation.operationId.v -> SchemaWithReassign(
           mt.schema,
           s => mt.unsafe.setSchema(s.unsafe)
         )
@@ -104,7 +104,7 @@ object OpenApiEnumFlattener {
     operation.responses.values
       .flatMap(_.content.get(MediaType.ApplicationJson.toString))
       .map(mt =>
-        operation.operationId -> SchemaWithReassign(
+        operation.operationId.v -> SchemaWithReassign(
           mt.schema,
           s => mt.unsafe.setSchema(s.unsafe)
         )

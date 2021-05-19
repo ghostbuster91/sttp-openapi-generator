@@ -66,7 +66,7 @@ object GeneratorTest extends TestSuite {
       "all_of" - {
         "simple" - test()
         "multiple_parents" - test()
-        "multiple_siblings" - test()
+        "multiple_siblings" - test(minimize = false)
       }
       "one_of" - {
         "simple" - test()
@@ -117,7 +117,8 @@ object GeneratorTest extends TestSuite {
   }
 
   def testNoCompile(
-      handleErrors: Boolean = false
+      handleErrors: Boolean = false,
+      minimize: Boolean = true
   )(implicit testPath: utest.framework.TestPath) = {
     val testName = testPath.value.mkString("/")
     val yaml = load(s"$testName.yaml")
@@ -125,7 +126,8 @@ object GeneratorTest extends TestSuite {
       LogAdapter.StdOut,
       CodegenConfig(
         handleErrors,
-        JsonLibrary.Circe
+        JsonLibrary.Circe,
+        minimize
       )
     )
       .generateUnsafe(
@@ -137,9 +139,10 @@ object GeneratorTest extends TestSuite {
   }
 
   def test(
-      handleErrors: Boolean = false
+      handleErrors: Boolean = false,
+      minimize: Boolean = true
   )(implicit testPath: utest.framework.TestPath) = {
-    testNoCompile(handleErrors)
+    testNoCompile(handleErrors, minimize)
     val testName = testPath.value.mkString("/")
     val expected = load(s"$testName.scala")
     expected.shouldCompile()

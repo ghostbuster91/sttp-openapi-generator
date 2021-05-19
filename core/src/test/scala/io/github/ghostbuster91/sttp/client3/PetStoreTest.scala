@@ -16,7 +16,8 @@ object PetStoreTest extends TestSuite {
       LogAdapter.StdOut,
       CodegenConfig(
         handleErrors = true,
-        JsonLibrary.Circe
+        JsonLibrary.Circe,
+        minimize = true
       )
     )
     val result = codegen
