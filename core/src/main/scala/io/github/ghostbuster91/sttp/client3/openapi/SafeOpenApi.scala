@@ -52,18 +52,29 @@ case class SafeRequestBody(rb: RequestBody) {
 
 case class SafePathItem(unsafe: PathItem) {
   def operations: Map[SttpMethod, SafeOperation] =
-    List(
-      Option(unsafe.getGet).map(op =>
-        (SttpMethod.GET: SttpMethod) -> new SafeOperation(op)
-      ),
-      Option(unsafe.getPut).map(op =>
-        (SttpMethod.PUT: SttpMethod) -> new SafeOperation(op)
-      ),
-      Option(unsafe.getPost).map(op =>
-        (SttpMethod.POST: SttpMethod) -> new SafeOperation(op)
-      )
-    ).flatten.toMap
+    Option(
+      unsafe
+        .readOperationsMap()
+    )
+      .map(_.asScala.map { case (m, o) =>
+        SafePathItem.openapiMethodToSttp(m) -> SafeOperation(o)
+      }.toMap)
+      .getOrElse(Map.empty)
+
   override def toString: String = unsafe.toString
+}
+object SafePathItem {
+  def openapiMethodToSttp(m: PathItem.HttpMethod): SttpMethod =
+    m match {
+      case PathItem.HttpMethod.POST    => SttpMethod.POST
+      case PathItem.HttpMethod.GET     => SttpMethod.GET
+      case PathItem.HttpMethod.PUT     => SttpMethod.PUT
+      case PathItem.HttpMethod.PATCH   => SttpMethod.PATCH
+      case PathItem.HttpMethod.DELETE  => SttpMethod.DELETE
+      case PathItem.HttpMethod.HEAD    => SttpMethod.HEAD
+      case PathItem.HttpMethod.OPTIONS => SttpMethod.OPTIONS
+      case PathItem.HttpMethod.TRACE   => SttpMethod.TRACE
+    }
 }
 
 case class SafeOperation(op: Operation) {
