@@ -5,7 +5,7 @@ lazy val root = (project in file("."))
   .enablePlugins(SttpOpenApiCodegenPlugin)
   .settings(
     version := "0.1",
-    scalaVersion := "2.12.13",
+    scalaVersion := "2.12.14",
     Test / fork := true,
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.client3" %% "okhttp-backend" % "3.3.0", //TODO should it match with plugin's sttp version?
