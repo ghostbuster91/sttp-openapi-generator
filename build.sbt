@@ -39,7 +39,7 @@ lazy val testDependencies = Seq(
   "io.circe" %% "circe-core" % "0.13.0",
   "io.circe" %% "circe-generic" % "0.13.0",
   "io.circe" %% "circe-parser" % "0.13.0",
-  "io.circe" %% "circe-yaml" % "0.13.1"
+  "io.circe" %% "circe-yaml" % "0.14.0"
 ).map(_ % Test)
 
 lazy val core: Project = (project in file("core"))
