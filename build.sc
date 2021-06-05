@@ -10,8 +10,8 @@ object core extends BaseModule with SbtModule {
   def scalaVersion = "2.12.13"
 
   def ivyDeps = Agg(
-    ivy"org.scalameta::scalameta::4.4.20",
-    ivy"io.swagger.parser.v3:swagger-parser:2.0.26",
+    ivy"org.scalameta::scalameta::4.4.21",
+    ivy"io.swagger.parser.v3:swagger-parser:2.0.25",
     ivy"com.softwaremill.sttp.model::core:1.4.7",
     ivy"org.typelevel::cats-core::2.6.1"
   )
@@ -28,7 +28,7 @@ trait CommonTestModule extends BaseModule with TestModule {
     ivy"io.circe::circe-core::0.13.0",
     ivy"io.circe::circe-generic::0.13.0",
     ivy"io.circe::circe-parser::0.13.0",
-    ivy"io.circe::circe-yaml::0.13.1"
+    ivy"io.circe::circe-yaml::0.14.0"
   )
   def testFrameworks = Seq("utest.runner.Framework")
 }
