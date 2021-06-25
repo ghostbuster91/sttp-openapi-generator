@@ -36,9 +36,9 @@ lazy val testDependencies = Seq(
   "com.softwaremill.diffx" %% "diffx-cats" % "0.5.2",
   "com.softwaremill.sttp.client3" %% "core" % "3.3.7",
   "com.softwaremill.sttp.client3" %% "circe" % "3.3.7",
-  "io.circe" %% "circe-core" % "0.13.0",
-  "io.circe" %% "circe-generic" % "0.13.0",
-  "io.circe" %% "circe-parser" % "0.13.0",
+  "io.circe" %% "circe-core" % "0.14.1",
+  "io.circe" %% "circe-generic" % "0.14.1",
+  "io.circe" %% "circe-parser" % "0.14.1",
   "io.circe" %% "circe-yaml" % "0.14.0"
 ).map(_ % Test)
 
