@@ -1,4 +1,4 @@
-val Scala212 = "2.12.14"
+val Scala212 = "2.13.6"
 
 val commonSettings = Seq(
   organization := "io.github.ghostbuster91.sttp-openapi",

@@ -7,7 +7,7 @@ import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.9:0.1.1`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 object core extends BaseModule with SbtModule {
-  def scalaVersion = "2.12.14"
+  def scalaVersion = "2.13.6"
 
   def ivyDeps = Agg(
     ivy"org.scalameta::scalameta::4.4.22",
