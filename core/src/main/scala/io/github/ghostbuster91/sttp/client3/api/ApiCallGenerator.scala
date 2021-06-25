@@ -52,7 +52,7 @@ class ApiCallGenerator(
       operation: SafeOperation,
       basicRequestWithMethod: Term
   ): IM[Defn.Def] = {
-    val functionName = Term.Name(operation.operationId)
+    val functionName = Term.Name(operation.operationId.v)
     val headerParameters = operation.parameters.collect {
       case p: SafeHeaderParameter => p
     }

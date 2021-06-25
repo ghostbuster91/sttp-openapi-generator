@@ -27,7 +27,7 @@ object OpenApiCoproductGenerator {
   private def collectCandidates(
       openApi: SafeOpenApi,
       childToParent: Map[SchemaRef, SafeComposedSchema],
-      collector: SafePathItem => List[(String, SafeRefSchema)]
+      collector: SafePathItem => List[(OperationId, SafeRefSchema)]
   ) = {
     val responses = openApi.paths.values.flatMap(collector)
     val responsePerOperation = responses
@@ -42,13 +42,13 @@ object OpenApiCoproductGenerator {
   }
 
   private def createCoproduct(
-      operationId: String,
+      operationId: OperationId,
       errors: List[SafeSchema],
       postfix: String
   ) = {
     val unsafeNewSchema = new ComposedSchema
     unsafeNewSchema.setOneOf(errors.map(_.unsafe).asJava)
-    s"${operationId.capitalize}$postfix" -> unsafeNewSchema
+    s"${operationId.v.capitalize}$postfix" -> unsafeNewSchema
   }
 
   private def collectCoproducts(openApi: SafeOpenApi) =

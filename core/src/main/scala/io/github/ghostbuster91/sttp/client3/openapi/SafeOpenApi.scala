@@ -24,7 +24,7 @@ class SafeOpenApi(openApi: OpenAPI) {
       .mapValues(item => new SafePathItem(item))
 
   override def toString: String = openApi.toString
-  private[openapi] def unsafe: OpenAPI = openApi
+  def unsafe: OpenAPI = openApi
 }
 
 class SafeComponents(c: Components) {
@@ -37,7 +37,7 @@ class SafeComponents(c: Components) {
       .map(_.asScala.mapValues(new SafeRequestBody(_)).toMap)
       .getOrElse(Map.empty)
   override def toString: String = c.toString
-  private[openapi] def unsafe: Components = c
+  def unsafe: Components = c
 }
 
 case class SafeRequestBody(rb: RequestBody) {
@@ -52,23 +52,34 @@ case class SafeRequestBody(rb: RequestBody) {
 
 case class SafePathItem(unsafe: PathItem) {
   def operations: Map[SttpMethod, SafeOperation] =
-    List(
-      Option(unsafe.getGet).map(op =>
-        (SttpMethod.GET: SttpMethod) -> new SafeOperation(op)
-      ),
-      Option(unsafe.getPut).map(op =>
-        (SttpMethod.PUT: SttpMethod) -> new SafeOperation(op)
-      ),
-      Option(unsafe.getPost).map(op =>
-        (SttpMethod.POST: SttpMethod) -> new SafeOperation(op)
-      )
-    ).flatten.toMap
+    Option(
+      unsafe
+        .readOperationsMap()
+    )
+      .map(_.asScala.map { case (m, o) =>
+        SafePathItem.openapiMethodToSttp(m) -> SafeOperation(o)
+      }.toMap)
+      .getOrElse(Map.empty)
+
   override def toString: String = unsafe.toString
+}
+object SafePathItem {
+  def openapiMethodToSttp(m: PathItem.HttpMethod): SttpMethod =
+    m match {
+      case PathItem.HttpMethod.POST    => SttpMethod.POST
+      case PathItem.HttpMethod.GET     => SttpMethod.GET
+      case PathItem.HttpMethod.PUT     => SttpMethod.PUT
+      case PathItem.HttpMethod.PATCH   => SttpMethod.PATCH
+      case PathItem.HttpMethod.DELETE  => SttpMethod.DELETE
+      case PathItem.HttpMethod.HEAD    => SttpMethod.HEAD
+      case PathItem.HttpMethod.OPTIONS => SttpMethod.OPTIONS
+      case PathItem.HttpMethod.TRACE   => SttpMethod.TRACE
+    }
 }
 
 case class SafeOperation(op: Operation) {
-  def operationId: String =
-    op.getOperationId //TODO introduce operationId value object
+  def operationId: OperationId =
+    OperationId(op.getOperationId)
   def tags: Option[List[String]] =
     Option(op.getTags).map(_.asScala.toList)
 
@@ -111,7 +122,11 @@ case class SafeOperation(op: Operation) {
   }
 
   override def toString: String = op.toString
+
+  def unsafe: Operation = op
 }
+
+case class OperationId(v: String) extends AnyVal
 
 sealed trait SafeParameter {
   def unsafe: Parameter
@@ -133,7 +148,7 @@ class SafeApiResponse(r: ApiResponse) {
 
 class SafeMediaType(m: MediaType) {
   def schema: SafeSchema = SafeSchema(m.getSchema)
-  private[openapi] def unsafe: MediaType = m
+  def unsafe: MediaType = m
 }
 
 sealed trait SafeSchema {
@@ -223,13 +238,14 @@ case class SafeDiscriminator(d: Discriminator) {
 object SafeSchema {
   def apply(s: Schema[_]): SafeSchema =
     s match {
-      case as: ArraySchema      => SafeArraySchema(as)
-      case bs: BooleanSchema    => SafeBooleanSchema(bs)
-      case bas: ByteArraySchema => SafeByteArraySchema(bas)
-      case ds: DateSchema       => SafeDateSchema(ds)
-      case dts: DateTimeSchema  => SafeDateTimeSchema(dts)
-      case es: EmailSchema      => SafeEmailSchema(es)
-      case fs: FileSchema       => SafeFileSchema(fs)
+      case as: ArraySchema            => SafeArraySchema(as)
+      case bs: BooleanSchema          => SafeBooleanSchema(bs)
+      case bas: ByteArraySchema       => SafeByteArraySchema(bas)
+      case binarySchema: BinarySchema => SafeBinarySchema(binarySchema)
+      case ds: DateSchema             => SafeDateSchema(ds)
+      case dts: DateTimeSchema        => SafeDateTimeSchema(dts)
+      case es: EmailSchema            => SafeEmailSchema(es)
+      case fs: FileSchema             => SafeFileSchema(fs)
       case is: IntegerSchema if Option(is.getFormat).contains("int64") =>
         SafeLongSchema(is)
       case is: IntegerSchema => SafeIntegerSchema(is)

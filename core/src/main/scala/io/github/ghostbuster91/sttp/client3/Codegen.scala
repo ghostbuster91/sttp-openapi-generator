@@ -20,9 +20,13 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       openApiYaml: String,
       packageName: Option[String]
   ): Either[String, Source] =
-    new SafeOpenApiParser(logger).parse(openApiYaml).map { openApi =>
-      generate(packageName, openApi)
-    }
+    new SafeOpenApiParser(
+      logger,
+      List(
+        OpenApiEnumFlattener.flatten,
+        OpenApiCoproductGenerator.generate
+      )
+    ).parse(openApiYaml).map(openApi => generate(packageName, openApi))
 
   private def generate(packageName: Option[String], openApi: SafeOpenApi) = {
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
@@ -34,16 +38,21 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
     )
 
     val jsonTypeProvider = CirceTypeProvider
-    val model = Model(schemas, requestBodies)
     val operations = collectOperations(openApi)
+    val model = createModel(schemas, requestBodies, operations)
     val (imports, output) = (for {
       apiCalls <- new ApiCallGenerator(model, config, jsonTypeProvider)
         .generate(operations)
-      coproducts <- new CoproductCollector(model, enums, jsonTypeProvider)
-        .collect(model.schemas)
-      products <- new ProductCollector(model, jsonTypeProvider).collect(
-        model.schemas
+      coproducts <- new CoproductCollector(
+        model,
+        enums,
+        jsonTypeProvider
       )
+        .collect(model.schemas)
+      products <- new ProductCollector(model, jsonTypeProvider)
+        .collect(
+          model.schemas
+        )
       classes = ModelGenerator.generate(coproducts, products)
       codecs <- new CirceCodecGenerator().generate(
         enums,
@@ -59,6 +68,21 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
     )).run(InitialImports).value
 
     createSource(imports.getImports, output, packageName)
+  }
+
+  private def createModel(
+      schemas: Map[String, SafeSchema],
+      requestBodies: Map[String, SafeSchema],
+      operations: List[CollectedOperation]
+  ) = {
+    val model = Model(schemas, requestBodies)
+    if (config.minimize) {
+      val usedReferences =
+        new ReferenceCollector(model).collect(operations.map(_.operation))
+      model.copy(schemas = model.schemas.filterKeys(usedReferences.contains))
+    } else {
+      model
+    }
   }
 
   private def createSource(
@@ -135,7 +159,8 @@ case class CollectedOperation(
 
 case class CodegenConfig(
     handleErrors: Boolean,
-    jsonLibrary: JsonLibrary
+    jsonLibrary: JsonLibrary,
+    minimize: Boolean
 )
 case class CodegenOutput(
     processedOps: Map[Option[String], List[Defn.Def]],
