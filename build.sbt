@@ -1,4 +1,4 @@
-val Scala212 = "2.12.13"
+val Scala212 = "2.12.14"
 
 val commonSettings = Seq(
   organization := "io.github.ghostbuster91.sttp-openapi",
@@ -32,13 +32,13 @@ lazy val rootProject = (project in file("."))
 
 lazy val testDependencies = Seq(
   "com.lihaoyi" %% "utest" % "0.7.10",
-  "com.softwaremill.diffx" %% "diffx-utest" % "0.4.5",
-  "com.softwaremill.diffx" %% "diffx-cats" % "0.4.5",
-  "com.softwaremill.sttp.client3" %% "core" % "3.3.4",
-  "com.softwaremill.sttp.client3" %% "circe" % "3.3.4",
-  "io.circe" %% "circe-core" % "0.14.1",
-  "io.circe" %% "circe-generic" % "0.14.1",
-  "io.circe" %% "circe-parser" % "0.14.1",
+  "com.softwaremill.diffx" %% "diffx-utest" % "0.5.2",
+  "com.softwaremill.diffx" %% "diffx-cats" % "0.5.2",
+  "com.softwaremill.sttp.client3" %% "core" % "3.3.7",
+  "com.softwaremill.sttp.client3" %% "circe" % "3.3.7",
+  "io.circe" %% "circe-core" % "0.13.0",
+  "io.circe" %% "circe-generic" % "0.13.0",
+  "io.circe" %% "circe-parser" % "0.13.0",
   "io.circe" %% "circe-yaml" % "0.14.0"
 ).map(_ % Test)
 
@@ -48,7 +48,7 @@ lazy val core: Project = (project in file("core"))
     name := "codegen-core",
     scalaVersion := Scala212,
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "scalameta" % "4.4.20",
+      "org.scalameta" %% "scalameta" % "4.4.22",
       "io.swagger.parser.v3" % "swagger-parser" % "2.0.25",
       "com.softwaremill.sttp.model" %% "core" % "1.4.7",
       "org.typelevel" %% "cats-core" % "2.6.1"
