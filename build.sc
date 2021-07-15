@@ -11,8 +11,8 @@ object core extends BaseModule with SbtModule {
 
   def ivyDeps = Agg(
     ivy"org.scalameta::scalameta::4.4.24",
-    ivy"io.swagger.parser.v3:swagger-parser:2.0.27",
-    ivy"com.softwaremill.sttp.model::core:1.4.7",
+    ivy"io.swagger.parser.v3:swagger-parser:2.0.25",
+    ivy"com.softwaremill.sttp.model::core:1.4.8",
     ivy"org.typelevel::cats-core::2.6.1"
   )
   object test extends Tests with CommonTestModule
