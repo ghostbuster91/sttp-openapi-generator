@@ -32,7 +32,8 @@ object OpenApiCoproductGenerator {
     val responses = openApi.paths.values.flatMap(collector)
     val responsePerOperation = responses
       .groupBy(_._1)
-      .mapValues(_.map(_._2).toList)
+      .mapValues(t => t.map(_._2).toList)
+      .toMap
     val responseWithoutCommonParent = responsePerOperation
       .filter(_._2.size >= 2)
       .filterNot { case (_, errors) =>
