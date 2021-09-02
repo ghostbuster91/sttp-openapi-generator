@@ -18,7 +18,6 @@ object DynamicCoproductTest extends TestSuite {
     val actual =
       Yaml.pretty(
         new SafeOpenApiParser(
-          LogAdapter.StdOut,
           List(OpenApiCoproductGenerator.generate)
         ).parse(input).right.get.unsafe
       )

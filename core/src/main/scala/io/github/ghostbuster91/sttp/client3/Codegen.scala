@@ -12,16 +12,15 @@ import sttp.model.Method
 class Codegen(logger: LogAdapter, config: CodegenConfig) {
   def generateUnsafe(openApiYaml: String, packageName: Option[String]): Source =
     generate(openApiYaml, packageName) match {
-      case Left(error)  => throw new RuntimeException(error)
+      case Left(errors)  => throw new RuntimeException(errors.toString())
       case Right(value) => value
     }
 
   def generate(
       openApiYaml: String,
       packageName: Option[String]
-  ): Either[String, Source] =
+  ): Either[Seq[String], Source] =
     new SafeOpenApiParser(
-      logger,
       List(
         OpenApiEnumFlattener.flatten,
         OpenApiCoproductGenerator.generate
