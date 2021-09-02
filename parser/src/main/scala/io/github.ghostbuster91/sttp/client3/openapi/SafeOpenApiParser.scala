@@ -6,6 +6,8 @@ import io.swagger.v3.parser.core.models.ParseOptions
 import scala.collection.JavaConverters._
 import io.swagger.v3.parser.core.models.AuthorizationValue
 
+import scala.collection.Seq
+
 class SafeOpenApiParser(extensions: List[SafeOpenApi => SafeOpenApi]) {
   def parse(yaml: String): Either[Seq[String], SafeOpenApi] = {
     val parser = new OpenAPIParser
@@ -24,7 +26,7 @@ class SafeOpenApiParser(extensions: List[SafeOpenApi => SafeOpenApi]) {
         )
       case None =>
         Left(
-          Option(parserResult.getMessages).map(_.asScala).getOrElse(List.empty)
+          Option(parserResult.getMessages).map(_.asScala).getOrElse(Seq.empty)
         )
     }
   }
