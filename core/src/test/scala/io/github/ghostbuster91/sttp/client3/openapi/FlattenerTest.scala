@@ -23,7 +23,6 @@ object FlattenerTest extends TestSuite {
     val actual =
       Yaml.pretty(
         new SafeOpenApiParser(
-          LogAdapter.StdOut,
           List(OpenApiEnumFlattener.flatten)
         ).parse(input).right.get.unsafe
       )

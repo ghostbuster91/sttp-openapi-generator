@@ -19,7 +19,7 @@ class SbtCodegenAdapter(
   def processSingleFile(
       inputFile: File,
       opts: FileOpts
-  ): Either[String, File] = {
+  ): Either[Seq[String], File] = {
     log.info(
       s"[SttpOpenapi] Generating classes for ${inputFile.getAbsolutePath}..."
     )

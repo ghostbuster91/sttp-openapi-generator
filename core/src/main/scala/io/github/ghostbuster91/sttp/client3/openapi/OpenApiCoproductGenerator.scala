@@ -3,7 +3,7 @@ package io.github.ghostbuster91.sttp.client3.openapi
 import io.swagger.v3.oas.models.media.ComposedSchema
 import sttp.model.StatusCode
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.seqAsJavaListConverter
 
 object OpenApiCoproductGenerator {
   def generate(openApi: SafeOpenApi): SafeOpenApi = {
@@ -32,7 +32,8 @@ object OpenApiCoproductGenerator {
     val responses = openApi.paths.values.flatMap(collector)
     val responsePerOperation = responses
       .groupBy(_._1)
-      .mapValues(_.map(_._2).toList)
+      .mapValues(t => t.map(_._2).toList)
+      .toMap
     val responseWithoutCommonParent = responsePerOperation
       .filter(_._2.size >= 2)
       .filterNot { case (_, errors) =>

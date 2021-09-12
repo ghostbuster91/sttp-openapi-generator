@@ -22,6 +22,7 @@ class SafeOpenApi(openApi: OpenAPI) {
   def paths: Map[String, SafePathItem] =
     openApi.getPaths.asScala.toMap
       .mapValues(item => new SafePathItem(item))
+      .toMap
 
   override def toString: String = openApi.toString
   def unsafe: OpenAPI = openApi

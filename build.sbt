@@ -1,4 +1,9 @@
 val Scala212 = "2.12.14"
+val Scala213 = "2.13.6"
+
+lazy val supportedScalaVersions = List(Scala213, Scala212)
+
+ThisBuild / scalaVersion := Scala212
 
 val commonSettings = Seq(
   organization := "io.github.ghostbuster91.sttp-openapi",
@@ -42,11 +47,21 @@ lazy val testDependencies = Seq(
   "io.circe" %% "circe-yaml" % "0.14.1"
 ).map(_ % Test)
 
+lazy val parser: Project = (project in file("parser"))
+  .settings(commonSettings)
+  .settings(
+    name := "parser",
+    crossScalaVersions := supportedScalaVersions,
+    libraryDependencies ++= Seq(
+      "io.swagger.parser.v3" % "swagger-parser" % "2.0.25",
+      "com.softwaremill.sttp.model" %% "core" % "1.4.10"
+    ) ++ testDependencies
+  )
+
 lazy val core: Project = (project in file("core"))
   .settings(commonSettings)
   .settings(
     name := "codegen-core",
-    scalaVersion := Scala212,
     libraryDependencies ++= Seq(
       "org.scalameta" %% "scalameta" % "4.4.27",
       "io.swagger.parser.v3" % "swagger-parser" % "2.0.25",
@@ -54,6 +69,7 @@ lazy val core: Project = (project in file("core"))
       "org.typelevel" %% "cats-core" % "2.6.1"
     ) ++ testDependencies
   )
+  .dependsOn(parser)
 
 lazy val codegenSbtPlugin: Project = (project in file("sbt-codegen-plugin"))
   .enablePlugins(SbtPlugin)
