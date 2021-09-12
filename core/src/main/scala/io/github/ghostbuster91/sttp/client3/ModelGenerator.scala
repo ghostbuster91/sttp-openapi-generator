@@ -1,14 +1,6 @@
 package io.github.ghostbuster91.sttp.client3
 
-import io.github.ghostbuster91.sttp.client3.ImportRegistry._
-import cats.syntax.all._
-import io.github.ghostbuster91.sttp.client3.json._
-import io.github.ghostbuster91.sttp.client3.openapi._
 import io.github.ghostbuster91.sttp.client3.model._
-import cats.Eval
-import cats.data.IndexedStateT
-
-import scala.annotation.tailrec
 import scala.meta._
 
 object ModelGenerator {

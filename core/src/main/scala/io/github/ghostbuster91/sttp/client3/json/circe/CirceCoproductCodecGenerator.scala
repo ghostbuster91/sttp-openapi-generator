@@ -1,10 +1,7 @@
 package io.github.ghostbuster91.sttp.client3.json.circe
 
-import io.github.ghostbuster91.sttp.client3.model._
 import io.github.ghostbuster91.sttp.client3.ImportRegistry._
-import cats.syntax.all._
-import io.github.ghostbuster91.sttp.client3.Model
-
+import io.github.ghostbuster91.sttp.client3.model._
 import scala.meta._
 
 private[circe] class CirceCoproductCodecGenerator() {

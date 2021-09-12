@@ -1,9 +1,9 @@
 package io.github.ghostbuster91.sttp.client3.openapi
 
-import utest._
-import io.swagger.v3.core.util.Yaml
 import io.circe.yaml.parser
-import io.github.ghostbuster91.sttp.client3.{FileLoader, LogAdapter}
+import io.github.ghostbuster91.sttp.client3.FileLoader
+import io.swagger.v3.core.util.Yaml
+import utest._
 
 object FlattenerTest extends TestSuite {
   val tests = Tests {

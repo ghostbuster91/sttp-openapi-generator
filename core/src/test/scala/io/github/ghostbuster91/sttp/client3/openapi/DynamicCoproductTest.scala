@@ -1,8 +1,8 @@
 package io.github.ghostbuster91.sttp.client3.openapi
 
-import io.github.ghostbuster91.sttp.client3.{FileLoader, LogAdapter}
-import io.swagger.v3.core.util.Yaml
 import io.circe.yaml.parser
+import io.github.ghostbuster91.sttp.client3.FileLoader
+import io.swagger.v3.core.util.Yaml
 import utest._
 
 object DynamicCoproductTest extends TestSuite {
