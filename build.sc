@@ -11,7 +11,7 @@ object parser extends BaseModule with SbtModule {
 
   def ivyDeps = Agg(
     ivy"io.swagger.parser.v3:swagger-parser:2.0.27",
-    ivy"com.softwaremill.sttp.model::core:1.4.11",
+    ivy"com.softwaremill.sttp.model::core:1.4.11"
   )
   object test extends Tests with CommonTestModule
 }

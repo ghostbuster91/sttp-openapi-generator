@@ -23,18 +23,18 @@ trait CirceCodecs extends SttpCirceApi {
     Decoder[Dog].asInstanceOf[Decoder[Animal]],
     Decoder[Cat].asInstanceOf[Decoder[Animal]]
   ).reduceLeft(_ or _)
-  implicit val animalEncoder: Encoder[Animal] = Encoder.instance({
+  implicit val animalEncoder: Encoder[Animal] = Encoder.instance {
     case dog: Dog => Encoder[Dog].apply(dog)
     case cat: Cat => Encoder[Cat].apply(cat)
-  })
+  }
   implicit val breedAbleDecoder: Decoder[BreedAble] = List[Decoder[BreedAble]](
     Decoder[Dog].asInstanceOf[Decoder[BreedAble]],
     Decoder[Cat].asInstanceOf[Decoder[BreedAble]]
   ).reduceLeft(_ or _)
-  implicit val breedAbleEncoder: Encoder[BreedAble] = Encoder.instance({
+  implicit val breedAbleEncoder: Encoder[BreedAble] = Encoder.instance {
     case dog: Dog => Encoder[Dog].apply(dog)
     case cat: Cat => Encoder[Cat].apply(cat)
-  })
+  }
 }
 object CirceCodecs extends CirceCodecs
 

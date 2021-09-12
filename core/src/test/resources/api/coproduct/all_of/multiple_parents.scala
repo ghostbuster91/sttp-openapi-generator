@@ -16,15 +16,15 @@ trait CirceCodecs extends SttpCirceApi {
   implicit val animalDecoder: Decoder[Animal] = List[Decoder[Animal]](
     Decoder[Dog].asInstanceOf[Decoder[Animal]]
   ).reduceLeft(_ or _)
-  implicit val animalEncoder: Encoder[Animal] = Encoder.instance({
+  implicit val animalEncoder: Encoder[Animal] = Encoder.instance {
     case dog: Dog => Encoder[Dog].apply(dog)
-  })
+  }
   implicit val breedAbleDecoder: Decoder[BreedAble] = List[Decoder[BreedAble]](
     Decoder[Dog].asInstanceOf[Decoder[BreedAble]]
   ).reduceLeft(_ or _)
-  implicit val breedAbleEncoder: Encoder[BreedAble] = Encoder.instance({
+  implicit val breedAbleEncoder: Encoder[BreedAble] = Encoder.instance {
     case dog: Dog => Encoder[Dog].apply(dog)
-  })
+  }
 }
 object CirceCodecs extends CirceCodecs
 

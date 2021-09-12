@@ -8,19 +8,19 @@ import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
   implicit val statusDecoder: Decoder[Status] =
-    Decoder.decodeString.emap({
+    Decoder.decodeString.emap {
       case "happy" =>
         Right(Status.Happy)
       case "neutral" =>
         Right(Status.Neutral)
       case other =>
         Left("Unexpected value for enum:" + other)
-    })
+    }
   implicit val statusEncoder: Encoder[Status] =
-    Encoder.encodeString.contramap({
+    Encoder.encodeString.contramap {
       case Status.Happy   => "happy"
       case Status.Neutral => "neutral"
-    })
+    }
 
   implicit val personDecoder: Decoder[Person] =
     Decoder.forProduct1("status")(Person.apply)

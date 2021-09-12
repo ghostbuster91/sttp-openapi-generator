@@ -23,14 +23,14 @@ trait CirceCodecs extends SttpCirceApi {
     override def apply(c: HCursor): Result[Entity] = c
       .downField("name")
       .as[String]
-      .flatMap({
+      .flatMap {
         case "john" =>
           Decoder[Person].apply(c)
         case "sml" =>
           Decoder[Organization].apply(c)
         case other =>
           Left(DecodingFailure("Unexpected value for coproduct:" + other, Nil))
-      })
+      }
   }
   implicit val entityEncoder: Encoder[Entity] = new Encoder[Entity]() {
     override def apply(entity: Entity): Json = entity match {
