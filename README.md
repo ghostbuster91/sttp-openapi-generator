@@ -4,6 +4,8 @@
 
 _This project is in a very early stage, use it at your own risk!_
 
+The generator can be used in project with scala version 2.12, 2.13 and 3.x
+
 ## Why?
 
 Why creating another openapi-generator when there is an official one? While the mentioned generator is generally a great project and serves well for many people its scala part has a few flaws in my opinion. There is no proper encoding for discriminators, neither support for other json libraries. The genereted code doesn't feel like native. These, as well as the other things, could (and probably will at some point) be implemented, but the size of the project and underlying templating engine(mustache) don't make it easier. Last but not least it is currently impossible to generate openapi code into src-managed directory (https://github.com/OpenAPITools/openapi-generator/issues/6685). I think that, by extracting and focusing only on a scala related part, it can be done better.
