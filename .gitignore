@@ -6,3 +6,5 @@ out
 .bsp
 target
 .history
+
+metals.sbt
