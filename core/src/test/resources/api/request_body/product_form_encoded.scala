@@ -10,25 +10,25 @@ trait CirceCodecs extends SttpCirceApi {
     Decoder.forProduct2("name", "age")(Person.apply)
   implicit val personEncoder: Encoder[Person] =
     Encoder.forProduct2("name", "age")(p => (p.name, p.age))
-  implicit val bodyDecoder: Decoder[Body] =
-    Decoder.forProduct2("name", "age")(Body.apply)
-  implicit val bodyEncoder: Encoder[Body] =
+  implicit val personBodyDecoder: Decoder[PersonBody] =
+    Decoder.forProduct2("name", "age")(PersonBody.apply)
+  implicit val personBodyEncoder: Encoder[PersonBody] =
     Encoder.forProduct2("name", "age")(p => (p.name, p.age))
 }
 object CirceCodecs extends CirceCodecs
 
-case class Body(name: String, age: Option[Int])
 case class Person(name: String, age: Int)
+case class PersonBody(name: String, age: Option[Int])
 
 class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
   import circeCodecs._
 
-  def updatePerson(body: Body): Request[Person, Any] = basicRequest
+  def updatePerson(personBody: PersonBody): Request[Person, Any] = basicRequest
     .put(uri"$baseUrl/person")
     .body(
       List(
-        Some("name" -> body.name),
-        body.age.map(age => "age" -> age.toString)
+        Some("name" -> personBody.name),
+        personBody.age.map(age => "age" -> age.toString)
       ).flatten.toMap[String, String]
     )
     .response(
