@@ -4,7 +4,7 @@
 
 _This project is in a very early stage, use it at your own risk!_
 
-The generator can be used in project with scala version 2.12, 2.13 and 3.x
+The generator can be used in projects with following scala versions: 2.12, 2.13 and 3.x
 
 ## Why?
 
