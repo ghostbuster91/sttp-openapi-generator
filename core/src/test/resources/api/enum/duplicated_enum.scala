@@ -7,32 +7,32 @@ import _root_.io.circe.Encoder
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-  implicit val status2Decoder: Decoder[Status2] = Decoder.decodeString.emap({
+  implicit val status2Decoder: Decoder[Status2] = Decoder.decodeString.emap {
     case "new" =>
       Right(Status2.New)
     case "old" =>
       Right(Status2.Old)
     case other =>
       Left("Unexpected value for enum:" + other)
-  })
+  }
   implicit val status2Encoder: Encoder[Status2] =
-    Encoder.encodeString.contramap({
+    Encoder.encodeString.contramap {
       case Status2.New => "new"
       case Status2.Old => "old"
-    })
-  implicit val statusDecoder: Decoder[Status] = Decoder.decodeString.emap({
+    }
+  implicit val statusDecoder: Decoder[Status] = Decoder.decodeString.emap {
     case "happy" =>
       Right(Status.Happy)
     case "neutral" =>
       Right(Status.Neutral)
     case other =>
       Left("Unexpected value for enum:" + other)
-  })
+  }
   implicit val statusEncoder: Encoder[Status] =
-    Encoder.encodeString.contramap({
+    Encoder.encodeString.contramap {
       case Status.Happy   => "happy"
       case Status.Neutral => "neutral"
-    })
+    }
   implicit val person1Decoder: Decoder[Person1] =
     Decoder.forProduct1("status")(Person1.apply)
   implicit val person1Encoder: Encoder[Person1] =

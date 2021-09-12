@@ -12,19 +12,19 @@ import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
   implicit val personNameDecoder: Decoder[PersonName] =
-    Decoder.decodeString.emap({
+    Decoder.decodeString.emap {
       case "bob" =>
         Right(PersonName.Bob)
       case "alice" =>
         Right(PersonName.Alice)
       case other =>
         Left("Unexpected value for enum:" + other)
-    })
+    }
   implicit val personNameEncoder: Encoder[PersonName] =
-    Encoder.encodeString.contramap({
+    Encoder.encodeString.contramap {
       case PersonName.Bob   => "bob"
       case PersonName.Alice => "alice"
-    })
+    }
   implicit val personDecoder: Decoder[Person] =
     Decoder.forProduct2("name", "age")(Person.apply)
   implicit val personEncoder: Encoder[Person] =
@@ -37,14 +37,14 @@ trait CirceCodecs extends SttpCirceApi {
     override def apply(c: HCursor): Result[Entity] = c
       .downField("name")
       .as[PersonName]
-      .flatMap({
+      .flatMap {
         case PersonName.Bob =>
           Decoder[Person].apply(c)
         case PersonName.Alice =>
           Decoder[Organization].apply(c)
         case other =>
           Left(DecodingFailure("Unexpected value for coproduct:" + other, Nil))
-      })
+      }
   }
   implicit val entityEncoder: Encoder[Entity] = new Encoder[Entity]() {
     override def apply(entity: Entity): Json = entity match {

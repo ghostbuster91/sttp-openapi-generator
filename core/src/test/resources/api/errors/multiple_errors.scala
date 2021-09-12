@@ -23,12 +23,12 @@ trait CirceCodecs extends SttpCirceApi {
       Decoder[ErrorModel2].asInstanceOf[Decoder[UpdatePersonGenericError]]
     ).reduceLeft(_ or _)
   implicit val updatePersonGenericErrorEncoder
-      : Encoder[UpdatePersonGenericError] = Encoder.instance({
+      : Encoder[UpdatePersonGenericError] = Encoder.instance {
     case errorModel: ErrorModel =>
       Encoder[ErrorModel].apply(errorModel)
     case errorModel2: ErrorModel2 =>
       Encoder[ErrorModel2].apply(errorModel2)
-  })
+  }
 }
 object CirceCodecs extends CirceCodecs
 

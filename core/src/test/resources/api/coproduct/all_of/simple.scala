@@ -16,9 +16,9 @@ trait CirceCodecs extends SttpCirceApi {
   implicit val animalDecoder: Decoder[Animal] = List[Decoder[Animal]](
     Decoder[Dog].asInstanceOf[Decoder[Animal]]
   ).reduceLeft(_ or _)
-  implicit val animalEncoder: Encoder[Animal] = Encoder.instance({
+  implicit val animalEncoder: Encoder[Animal] = Encoder.instance {
     case dog: Dog => Encoder[Dog].apply(dog)
-  })
+  }
 }
 object CirceCodecs extends CirceCodecs
 

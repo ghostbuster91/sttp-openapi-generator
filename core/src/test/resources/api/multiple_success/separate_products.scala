@@ -21,12 +21,12 @@ trait CirceCodecs extends SttpCirceApi {
       Decoder[Organization].asInstanceOf[Decoder[GetRootGenericSuccess]]
     ).reduceLeft(_ or _)
   implicit val getRootGenericSuccessEncoder: Encoder[GetRootGenericSuccess] =
-    Encoder.instance({
+    Encoder.instance {
       case person: Person =>
         Encoder[Person].apply(person)
       case organization: Organization =>
         Encoder[Organization].apply(organization)
-    })
+    }
 }
 object CirceCodecs extends CirceCodecs
 

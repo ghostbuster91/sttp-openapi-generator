@@ -19,12 +19,12 @@ trait CirceCodecs extends SttpCirceApi {
     Decoder[Person].asInstanceOf[Decoder[Entity]],
     Decoder[Organization].asInstanceOf[Decoder[Entity]]
   ).reduceLeft(_ or _)
-  implicit val entityEncoder: Encoder[Entity] = Encoder.instance({
+  implicit val entityEncoder: Encoder[Entity] = Encoder.instance {
     case person: Person =>
       Encoder[Person].apply(person)
     case organization: Organization =>
       Encoder[Organization].apply(organization)
-  })
+  }
 }
 object CirceCodecs extends CirceCodecs
 
