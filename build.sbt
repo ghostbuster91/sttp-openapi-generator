@@ -33,7 +33,7 @@ lazy val rootProject = (project in file("."))
     name := "sttp-openapi-generator",
     publish / skip := true
   )
-  .aggregate(core, codegenSbtPlugin)
+  .aggregate(core, codegenSbtPlugin, parser)
 
 lazy val testDependencies = Seq(
   "com.lihaoyi" %% "utest" % "0.7.10",
