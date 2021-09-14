@@ -7,7 +7,7 @@ import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.9:0.1.1`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 object parser extends BaseModule with SbtModule {
-  def scalaVersion = "2.12.14"
+  def scalaVersion = "2.12.15"
 
   def ivyDeps = Agg(
     ivy"io.swagger.parser.v3:swagger-parser:2.0.27",
@@ -17,7 +17,7 @@ object parser extends BaseModule with SbtModule {
 }
 
 object core extends BaseModule with SbtModule {
-  def scalaVersion = "2.12.14"
+  def scalaVersion = "2.12.15"
   def moduleDeps = Seq(parser)
 
   def ivyDeps = Agg(
