@@ -10,7 +10,7 @@ object parser extends BaseModule with SbtModule {
   def scalaVersion = "2.12.15"
 
   def ivyDeps = Agg(
-    ivy"io.swagger.parser.v3:swagger-parser:2.0.27",
+    ivy"io.swagger.parser.v3:swagger-parser:2.0.28",
     ivy"com.softwaremill.sttp.model::core:1.4.15"
   )
   object test extends Tests with CommonTestModule
