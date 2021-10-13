@@ -53,8 +53,8 @@ lazy val parser: Project = (project in file("parser"))
     name := "parser",
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
-      "io.swagger.parser.v3" % "swagger-parser" % "2.0.28",
-      "com.softwaremill.sttp.model" %% "core" % "1.4.11"
+      "io.swagger.parser.v3" % "swagger-parser" % "2.0.27",
+      "com.softwaremill.sttp.model" %% "core" % "1.4.15"
     ) ++ testDependencies
   )
 
