@@ -63,7 +63,7 @@ lazy val core: Project = (project in file("core"))
   .settings(
     name := "codegen-core",
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "scalameta" % "4.4.28",
+      "org.scalameta" %% "scalameta" % "4.4.29",
       "org.typelevel" %% "cats-core" % "2.6.1"
     ) ++ testDependencies
   )
