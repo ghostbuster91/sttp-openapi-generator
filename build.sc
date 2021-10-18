@@ -21,7 +21,7 @@ object core extends BaseModule with SbtModule {
   def moduleDeps = Seq(parser)
 
   def ivyDeps = Agg(
-    ivy"org.scalameta::scalameta::4.4.28",
+    ivy"org.scalameta::scalameta::4.4.29",
     ivy"org.typelevel::cats-core::2.6.1"
   )
   object test extends Tests with CommonTestModule
