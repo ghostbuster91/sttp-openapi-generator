@@ -30,10 +30,10 @@ object core extends BaseModule with SbtModule {
 trait CommonTestModule extends BaseModule with TestModule {
   def ivyDeps = Agg(
     ivy"com.lihaoyi::utest::0.7.10",
-    ivy"com.softwaremill.diffx::diffx-utest::0.5.6",
-    ivy"com.softwaremill.diffx::diffx-cats::0.5.6",
-    ivy"com.softwaremill.sttp.client3::core::3.3.16",
-    ivy"com.softwaremill.sttp.client3::circe::3.3.16",
+    ivy"com.softwaremill.diffx::diffx-utest::0.6.0",
+    ivy"com.softwaremill.diffx::diffx-cats::0.6.0",
+    ivy"com.softwaremill.sttp.client3::core::3.3.15",
+    ivy"com.softwaremill.sttp.client3::circe::3.3.15",
     ivy"io.circe::circe-core::0.14.1",
     ivy"io.circe::circe-generic::0.14.1",
     ivy"io.circe::circe-parser::0.14.1",
