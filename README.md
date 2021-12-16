@@ -1,4 +1,6 @@
 # sttp-openapi-generator
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fghostbuster91%2Fsttp-openapi-generator.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fghostbuster91%2Fsttp-openapi-generator?ref=badge_shield)
+
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/ghostbuster91/sttp-openapi-generator/CI/master?style=for-the-badge" height="24">](https://github.com/ghostbuster91/sttp-openapi-generator/actions)
 [<img alt="Maven Central" src="https://img.shields.io/maven-central/v/io.github.ghostbuster91.sttp-openapi/codegen-core_2.12?style=for-the-badge" height="24">](https://search.maven.org/artifact/io.github.ghostbuster91.sttp-openapi/codegen-core_2.12)
 
@@ -340,3 +342,7 @@ Contributions are more than welcome. This is an early stage project which means 
 See the list of issues and pick one! Or report your own.
 
 If you are having doubts on the why or how something works, don't hesitate to ask a question.
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fghostbuster91%2Fsttp-openapi-generator.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fghostbuster91%2Fsttp-openapi-generator?ref=badge_large)
