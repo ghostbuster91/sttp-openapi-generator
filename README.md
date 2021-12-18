@@ -1,6 +1,5 @@
 # sttp-openapi-generator
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fghostbuster91%2Fsttp-openapi-generator.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fghostbuster91%2Fsttp-openapi-generator?ref=badge_shield)
-
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/ghostbuster91/sttp-openapi-generator/CI/master?style=for-the-badge" height="24">](https://github.com/ghostbuster91/sttp-openapi-generator/actions)
 [<img alt="Maven Central" src="https://img.shields.io/maven-central/v/io.github.ghostbuster91.sttp-openapi/codegen-core_2.12?style=for-the-badge" height="24">](https://search.maven.org/artifact/io.github.ghostbuster91.sttp-openapi/codegen-core_2.12)
 
