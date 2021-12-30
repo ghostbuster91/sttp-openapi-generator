@@ -1,3 +1,4 @@
+
 val Scala212 = "2.12.15"
 val Scala213 = "2.13.6"
 
@@ -24,7 +25,8 @@ val commonSettings = Seq(
   sonatypeCredentialHost := "s01.oss.sonatype.org",
   sonatypeProfileName := "io.github.ghostbuster91",
   scalacOptions ~= (_.filterNot(Set("-Xfatal-warnings"))),
-  testFrameworks += new TestFramework("utest.runner.Framework")
+  testFrameworks += new TestFramework("utest.runner.Framework"),
+  addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % "4.4.31" cross CrossVersion.full)
 )
 
 lazy val rootProject = (project in file("."))
