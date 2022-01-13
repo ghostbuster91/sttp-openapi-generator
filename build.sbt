@@ -1,5 +1,5 @@
 val Scala212 = "2.12.15"
-val Scala213 = "2.13.6"
+val Scala213 = "2.13.7"
 
 lazy val supportedScalaVersions = List(Scala213, Scala212)
 
@@ -24,7 +24,10 @@ val commonSettings = Seq(
   sonatypeCredentialHost := "s01.oss.sonatype.org",
   sonatypeProfileName := "io.github.ghostbuster91",
   scalacOptions ~= (_.filterNot(Set("-Xfatal-warnings"))),
-  testFrameworks += new TestFramework("utest.runner.Framework")
+  testFrameworks += new TestFramework("utest.runner.Framework"),
+  addCompilerPlugin(
+    ("org.scalameta" % "semanticdb-scalac" % "4.4.31").cross(CrossVersion.full)
+  )
 )
 
 lazy val rootProject = (project in file("."))
@@ -37,10 +40,10 @@ lazy val rootProject = (project in file("."))
 
 lazy val testDependencies = Seq(
   "com.lihaoyi" %% "utest" % "0.7.10",
-  "com.softwaremill.diffx" %% "diffx-utest" % "0.6.0",
-  "com.softwaremill.diffx" %% "diffx-cats" % "0.6.0",
-  "com.softwaremill.sttp.client3" %% "core" % "3.3.18",
-  "com.softwaremill.sttp.client3" %% "circe" % "3.3.18",
+  "com.softwaremill.diffx" %% "diffx-utest" % "0.7.0",
+  "com.softwaremill.diffx" %% "diffx-cats" % "0.7.0",
+  "com.softwaremill.sttp.client3" %% "core" % "3.3.15",
+  "com.softwaremill.sttp.client3" %% "circe" % "3.3.15",
   "io.circe" %% "circe-core" % "0.14.1",
   "io.circe" %% "circe-generic" % "0.14.1",
   "io.circe" %% "circe-parser" % "0.14.1",
@@ -63,7 +66,7 @@ lazy val core: Project = (project in file("core"))
   .settings(
     name := "codegen-core",
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "scalameta" % "4.4.30",
+      "org.scalameta" %% "scalameta" % "4.4.31",
       "org.typelevel" %% "cats-core" % "2.7.0"
     ) ++ testDependencies
   )
