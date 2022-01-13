@@ -1,4 +1,3 @@
-
 val Scala212 = "2.12.15"
 val Scala213 = "2.13.7"
 
@@ -26,7 +25,9 @@ val commonSettings = Seq(
   sonatypeProfileName := "io.github.ghostbuster91",
   scalacOptions ~= (_.filterNot(Set("-Xfatal-warnings"))),
   testFrameworks += new TestFramework("utest.runner.Framework"),
-  addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % "4.4.31" cross CrossVersion.full)
+  addCompilerPlugin(
+    ("org.scalameta" % "semanticdb-scalac" % "4.4.31").cross(CrossVersion.full)
+  )
 )
 
 lazy val rootProject = (project in file("."))
@@ -39,8 +40,8 @@ lazy val rootProject = (project in file("."))
 
 lazy val testDependencies = Seq(
   "com.lihaoyi" %% "utest" % "0.7.10",
-  "com.softwaremill.diffx" %% "diffx-utest" % "0.6.0",
-  "com.softwaremill.diffx" %% "diffx-cats" % "0.6.0",
+  "com.softwaremill.diffx" %% "diffx-utest" % "0.7.0",
+  "com.softwaremill.diffx" %% "diffx-cats" % "0.7.0",
   "com.softwaremill.sttp.client3" %% "core" % "3.3.15",
   "com.softwaremill.sttp.client3" %% "circe" % "3.3.15",
   "io.circe" %% "circe-core" % "0.14.1",
