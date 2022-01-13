@@ -26,7 +26,7 @@ val commonSettings = Seq(
   scalacOptions ~= (_.filterNot(Set("-Xfatal-warnings"))),
   testFrameworks += new TestFramework("utest.runner.Framework"),
   addCompilerPlugin(
-    ("org.scalameta" % "semanticdb-scalac" % "4.4.31").cross(CrossVersion.full)
+    ("org.scalameta" % "semanticdb-scalac" % "4.4.32").cross(CrossVersion.full)
   )
 )
 
@@ -66,7 +66,7 @@ lazy val core: Project = (project in file("core"))
   .settings(
     name := "codegen-core",
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "scalameta" % "4.4.31",
+      "org.scalameta" %% "scalameta" % "4.4.32",
       "org.typelevel" %% "cats-core" % "2.7.0"
     ) ++ testDependencies
   )
