@@ -135,8 +135,8 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
   )
 
   private lazy val circeDeps = List(
-    "io.circe" %% "circe-core" % "0.14.1",
-    "io.circe" %% "circe-parser" % "0.14.1",
+    "io.circe" %% "circe-core" % "0.14.2",
+    "io.circe" %% "circe-parser" % "0.14.2",
     "com.softwaremill.sttp.client3" %% "circe" % "3.3.15"
   )
 
