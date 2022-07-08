@@ -7,9 +7,9 @@ import _root_.io.circe.Encoder
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-  implicit val inlineResponse200Decoder: Decoder[InlineResponse200] =
+  implicit lazy val inlineResponse200Decoder: Decoder[InlineResponse200] =
     Decoder.forProduct1("status")(InlineResponse200.apply)
-  implicit val inlineResponse200Encoder: Encoder[InlineResponse200] =
+  implicit lazy val inlineResponse200Encoder: Encoder[InlineResponse200] =
     Encoder.forProduct1("status")(p => p.status)
 }
 object CirceCodecs extends CirceCodecs

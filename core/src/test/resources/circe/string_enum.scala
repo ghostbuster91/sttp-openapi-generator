@@ -1,7 +1,7 @@
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-  implicit val personStatusDecoder: Decoder[PersonStatus] =
+  implicit lazy val personStatusDecoder: Decoder[PersonStatus] =
     Decoder.decodeString.emap {
       case "happy" =>
         Right(PersonStatus.Happy)
@@ -10,7 +10,7 @@ trait CirceCodecs extends SttpCirceApi {
       case other =>
         Left("Unexpected value for enum:" + other)
     }
-  implicit val personStatusEncoder: Encoder[PersonStatus] =
+  implicit lazy val personStatusEncoder: Encoder[PersonStatus] =
     Encoder.encodeString.contramap {
       case PersonStatus.Happy   => "happy"
       case PersonStatus.Neutral => "neutral"

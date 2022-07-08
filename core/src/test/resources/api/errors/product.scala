@@ -8,9 +8,9 @@ import _root_.io.circe.Encoder
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-  implicit val errorModelDecoder: Decoder[ErrorModel] =
+  implicit lazy val errorModelDecoder: Decoder[ErrorModel] =
     Decoder.forProduct1("msg")(ErrorModel.apply)
-  implicit val errorModelEncoder: Encoder[ErrorModel] =
+  implicit lazy val errorModelEncoder: Encoder[ErrorModel] =
     Encoder.forProduct1("msg")(p => p.msg)
 }
 object CirceCodecs extends CirceCodecs

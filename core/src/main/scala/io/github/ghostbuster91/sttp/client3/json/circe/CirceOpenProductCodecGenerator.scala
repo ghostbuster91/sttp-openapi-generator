@@ -27,7 +27,7 @@ private[circe] class CirceOpenProductCodecGenerator {
       val encodedVarName = openProduct.name.toParam.term
       val encoderInit = init"${t"$encoderTpe[$resultClassType]"}()"
       q"""
-    implicit val $encoderName: $encoderTpe[$resultClassType] = 
+    implicit lazy val $encoderName: $encoderTpe[$resultClassType] =
       new $encoderInit {
         override def apply($encodedVarName: $resultClassType): $jsonTpe =
          ${baseEncoderApplication(openProduct)}
@@ -58,7 +58,7 @@ private[circe] class CirceOpenProductCodecGenerator {
       val resultClassType = openProduct.name.typeName
       val decoderInit = init"${t"$decoderTpe[$resultClassType]"}()"
       val decoderName = p"${openProduct.name.toParam.asPrefix("Decoder")}"
-      q"""implicit val $decoderName: $decoderTpe[$resultClassType] = 
+      q"""implicit lazy val $decoderName: $decoderTpe[$resultClassType] =
           new $decoderInit {
             override def apply(c: $hCursor): $decoderRes[$resultClassType] = 
               ${decoderBody(openProduct)}

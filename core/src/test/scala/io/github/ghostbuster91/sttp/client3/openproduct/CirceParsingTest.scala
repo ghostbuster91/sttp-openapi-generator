@@ -34,7 +34,7 @@ object CirceParsingTest extends TestSuite {
     }
   }
 
-  implicit val personDecoder: Decoder[Person[Json]] =
+  implicit lazy val personDecoder: Decoder[Person[Json]] =
     new Decoder[Person[Json]] {
       override def apply(c: HCursor): Result[Person[Json]] =
         for {
@@ -48,7 +48,7 @@ object CirceParsingTest extends TestSuite {
         )
     }
 
-  implicit val personEncoder: Encoder[Person[Json]] =
+  implicit lazy val personEncoder: Encoder[Person[Json]] =
     new Encoder[Person[Json]] {
       override def apply(a: Person[Json]): Json =
         Encoder

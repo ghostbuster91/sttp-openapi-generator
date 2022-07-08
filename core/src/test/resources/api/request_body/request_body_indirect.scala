@@ -6,13 +6,13 @@ import _root_.io.circe.Decoder
 import _root_.io.circe.Encoder
 import _root_.sttp.client3.circe.SttpCirceApi
 trait CirceCodecs extends SttpCirceApi {
-  implicit val petRequestDecoder: Decoder[PetRequest] =
+  implicit lazy val petRequestDecoder: Decoder[PetRequest] =
     Decoder.forProduct1("id")(PetRequest.apply)
-  implicit val petRequestEncoder: Encoder[PetRequest] =
+  implicit lazy val petRequestEncoder: Encoder[PetRequest] =
     Encoder.forProduct1("id")(p => p.id)
-  implicit val petResponseDecoder: Decoder[PetResponse] =
+  implicit lazy val petResponseDecoder: Decoder[PetResponse] =
     Decoder.forProduct1("name")(PetResponse.apply)
-  implicit val petResponseEncoder: Encoder[PetResponse] =
+  implicit lazy val petResponseEncoder: Encoder[PetResponse] =
     Encoder.forProduct1("name")(p => p.name)
 }
 object CirceCodecs extends CirceCodecs

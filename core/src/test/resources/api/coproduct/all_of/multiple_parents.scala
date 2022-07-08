@@ -7,22 +7,22 @@ import _root_.io.circe.Encoder
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-  implicit val dogDecoder: Decoder[Dog] =
+  implicit lazy val dogDecoder: Decoder[Dog] =
     Decoder.forProduct3("className", "color", "breed")(Dog.apply)
-  implicit val dogEncoder: Encoder[Dog] =
+  implicit lazy val dogEncoder: Encoder[Dog] =
     Encoder.forProduct3("className", "color", "breed")(p =>
       (p.className, p.color, p.breed)
     )
-  implicit val animalDecoder: Decoder[Animal] = List[Decoder[Animal]](
+  implicit lazy val animalDecoder: Decoder[Animal] = List[Decoder[Animal]](
     Decoder[Dog].asInstanceOf[Decoder[Animal]]
   ).reduceLeft(_ or _)
-  implicit val animalEncoder: Encoder[Animal] = Encoder.instance {
+  implicit lazy val animalEncoder: Encoder[Animal] = Encoder.instance {
     case dog: Dog => Encoder[Dog].apply(dog)
   }
-  implicit val breedAbleDecoder: Decoder[BreedAble] = List[Decoder[BreedAble]](
+  implicit lazy val breedAbleDecoder: Decoder[BreedAble] = List[Decoder[BreedAble]](
     Decoder[Dog].asInstanceOf[Decoder[BreedAble]]
   ).reduceLeft(_ or _)
-  implicit val breedAbleEncoder: Encoder[BreedAble] = Encoder.instance {
+  implicit lazy val breedAbleEncoder: Encoder[BreedAble] = Encoder.instance {
     case dog: Dog => Encoder[Dog].apply(dog)
   }
 }
