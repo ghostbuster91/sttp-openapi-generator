@@ -6,7 +6,6 @@ import io.github.ghostbuster91.sttp.client3.model.{ClassName, ParameterName, Par
 import io.github.ghostbuster91.sttp.client3.openapi._
 import io.github.ghostbuster91.sttp.client3.ImportRegistry._
 
-import java.time.LocalDateTime
 import scala.meta._
 
 case class Model(

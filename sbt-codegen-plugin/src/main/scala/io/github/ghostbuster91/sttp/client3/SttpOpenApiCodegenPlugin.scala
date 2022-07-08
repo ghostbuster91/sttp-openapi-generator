@@ -4,8 +4,8 @@ import io.github.ghostbuster91.sttp.client3.SbtCodegenAdapter.FileOpts
 import sbt.{AutoPlugin, Def, File}
 import org.scalafmt.interfaces.Scalafmt
 import sbt.internal.util.ManagedLogger
-import sbt.Keys.*
-import sbt.*
+import sbt.Keys._
+import sbt._
 
 object SttpOpenApiCodegenPlugin extends AutoPlugin {
 
