@@ -61,9 +61,9 @@ it will be turned into:
 
 ```scala
 trait CirceCodecs extends SttpCirceApi {
-  implicit val personDecoder: Decoder[Person] =
+  implicit lazy val personDecoder: Decoder[Person] =
     Decoder.forProduct2("name", "age")(Person.apply)
-  implicit val personEncoder: Encoder[Person] =
+  implicit lazy val personEncoder: Encoder[Person] =
     Encoder.forProduct2("name", "age")(p => (p.name, p.age))
 }
 object CirceCodecs extends CirceCodecs
@@ -160,7 +160,7 @@ case class Person(name: String, age: Int) extends Entity()
 trait CirceCodecs extends SttpCirceApi {
   // codecs for Person and Organization omitted for readability
 
-  implicit val entityDecoder: Decoder[Entity] = new Decoder[Entity]() {
+  implicit lazy val entityDecoder: Decoder[Entity] = new Decoder[Entity]() {
     override def apply(c: HCursor): Result[Entity] = c
       .downField("name")
       .as[String]
@@ -171,7 +171,7 @@ trait CirceCodecs extends SttpCirceApi {
           Left(DecodingFailure("Unexpected value for coproduct:" + other, Nil))
       })
   }
-  implicit val entityEncoder: Encoder[Entity] = new Encoder[Entity]() {
+  implicit lazy val entityEncoder: Encoder[Entity] = new Encoder[Entity]() {
     override def apply(entity: Entity): Json = entity match {
       case person: Person => Encoder[Person].apply(person)
       case organization: Organization =>
@@ -295,7 +295,7 @@ components:
 
 ```scala
 trait CirceCodecs extends SttpCirceApi {
-  implicit val personDecoder: Decoder[Person] = new Decoder[Person]() {
+  implicit lazy val personDecoder: Decoder[Person] = new Decoder[Person]() {
     override def apply(c: HCursor): Result[Person] =
       for {
         name <- c.downField("name").as[String]
@@ -307,7 +307,7 @@ trait CirceCodecs extends SttpCirceApi {
         additionalProperties.filterKeys(_ != "name").filterKeys(_ != "age")
       )
   }
-  implicit val personEncoder: Encoder[Person] = new Encoder[Person]() {
+  implicit lazy val personEncoder: Encoder[Person] = new Encoder[Person]() {
     override def apply(person: Person): Json = Encoder
       .forProduct2[Person, String, Int]("name", "age")(p => (p.name, p.age))
       .apply(person)

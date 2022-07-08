@@ -26,7 +26,7 @@ class CirceProductCodecGenerator {
           )
         case head :: Nil =>
           val propNames = head.paramName
-          q"""implicit val $encoderName: $encoderTpe[$resultClassType] = 
+          q"""implicit lazy val $encoderName: $encoderTpe[$resultClassType] =
                 Encoder.forProduct1(${Lit.String(
             propNames.v
           )})(p => p.${propNames.term})"""
@@ -34,7 +34,7 @@ class CirceProductCodecGenerator {
           val productEncoder = Term.Name(s"forProduct${props.size}")
           val propNames = props.map(_.paramName)
           val extractors = propNames.map(p => q"p.${p.term}")
-          q"""implicit val $encoderName: $encoderTpe[$resultClassType] = 
+          q"""implicit lazy val $encoderName: $encoderTpe[$resultClassType] =
                 Encoder.$productEncoder(..${propNames.map(p =>
             Lit.String(p.v)
           )})(p => (..$extractors))"""
@@ -48,7 +48,7 @@ class CirceProductCodecGenerator {
       val productDecoder = Term.Name(s"forProduct${product.properties.size}")
       val productElements =
         product.properties.map(p => Lit.String(p.paramName.v))
-      q"""implicit val $decoderName: $decoderTpe[$resultClassType] = 
+      q"""implicit lazy val $decoderName: $decoderTpe[$resultClassType] =
                 Decoder.$productDecoder(..$productElements)(${product.name.term}.apply)"""
     }
 }

@@ -7,7 +7,7 @@ import _root_.io.circe.Encoder
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-  implicit val personNameDecoder: Decoder[PersonName] =
+  implicit lazy val personNameDecoder: Decoder[PersonName] =
     Decoder.decodeString.emap {
       case "bob" =>
         Right(PersonName.Bob)
@@ -16,24 +16,24 @@ trait CirceCodecs extends SttpCirceApi {
       case other =>
         Left("Unexpected value for enum:" + other)
     }
-  implicit val personNameEncoder: Encoder[PersonName] =
+  implicit lazy val personNameEncoder: Encoder[PersonName] =
     Encoder.encodeString.contramap {
       case PersonName.Bob   => "bob"
       case PersonName.Alice => "alice"
     }
-  implicit val personDecoder: Decoder[Person] =
+  implicit lazy val personDecoder: Decoder[Person] =
     Decoder.forProduct2("name", "age")(Person.apply)
-  implicit val personEncoder: Encoder[Person] =
+  implicit lazy val personEncoder: Encoder[Person] =
     Encoder.forProduct2("name", "age")(p => (p.name, p.age))
-  implicit val organizationDecoder: Decoder[Organization] =
+  implicit lazy val organizationDecoder: Decoder[Organization] =
     Decoder.forProduct1("name")(Organization.apply)
-  implicit val organizationEncoder: Encoder[Organization] =
+  implicit lazy val organizationEncoder: Encoder[Organization] =
     Encoder.forProduct1("name")(p => p.name)
-  implicit val entityDecoder: Decoder[Entity] = List[Decoder[Entity]](
+  implicit lazy val entityDecoder: Decoder[Entity] = List[Decoder[Entity]](
     Decoder[Person].asInstanceOf[Decoder[Entity]],
     Decoder[Organization].asInstanceOf[Decoder[Entity]]
   ).reduceLeft(_ or _)
-  implicit val entityEncoder: Encoder[Entity] = Encoder.instance {
+  implicit lazy val entityEncoder: Encoder[Entity] = Encoder.instance {
     case person: Person             => Encoder[Person].apply(person)
     case organization: Organization => Encoder[Organization].apply(organization)
   }
