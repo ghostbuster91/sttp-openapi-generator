@@ -159,9 +159,6 @@ sealed trait SafeSchema {
   def isEnum: Boolean = enum.nonEmpty
   def isArray = false
   override def toString: String = unsafe.toString
-
-  def getTypeFormat: (String, String) =
-    unsafe.getType -> unsafe.getFormat
 }
 sealed trait SchemaWithProperties extends SafeSchema {
   def properties: Map[String, SafeSchema] = Option(unsafe.getProperties)
