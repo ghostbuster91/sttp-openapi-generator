@@ -10,7 +10,10 @@ import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.6.0`
 import de.tobiasroeser.mill.integrationtest.MillIntegrationTestModule
 
 object parser extends Cross[ParserModule]("2.12.15", "2.13.8")
-class ParserModule(val crossScalaVersion: String) extends BaseModule with CrossSbtModule with CommonPublishModule {
+class ParserModule(val crossScalaVersion: String)
+    extends BaseModule
+    with CrossSbtModule
+    with CommonPublishModule {
   override def ivyDeps = Agg(
     ivy"io.swagger.parser.v3:swagger-parser:2.0.28",
     ivy"com.softwaremill.sttp.model::core:1.4.26"
@@ -19,32 +22,41 @@ class ParserModule(val crossScalaVersion: String) extends BaseModule with CrossS
 }
 
 object core extends Cross[CoreModule]("2.12.15", "2.13.8")
-class CoreModule(val crossScalaVersion: String) extends BaseModule with CrossSbtModule with CommonPublishModule {
+class CoreModule(val crossScalaVersion: String)
+    extends BaseModule
+    with CrossSbtModule
+    with CommonPublishModule {
   override def moduleDeps = Seq(parser())
 
   override def ivyDeps = Agg(
-    ivy"org.scalameta::scalameta::4.5.8",
+    ivy"org.scalameta::scalameta::4.5.9",
     ivy"org.typelevel::cats-core::2.7.0"
   )
   object test extends Tests with CommonTestModule
 }
 
 object `mill-codegen-plugin` extends Cross[MillCodegenPlugin]("2.13.8")
-class MillCodegenPlugin(val crossScalaVersion: String) extends BaseModule with CrossScalaModule with CommonPublishModule  {
+class MillCodegenPlugin(val crossScalaVersion: String)
+    extends BaseModule
+    with CrossScalaModule
+    with CommonPublishModule {
   override def moduleDeps = Seq(core())
 
   val millVersion = "0.10.0" // scala-steward:off
-  val millScalalib = ivy"com.lihaoyi::mill-scalalib:${millVersion}"
+  val millScalalib = ivy"com.lihaoyi::mill-scalalib:$millVersion"
 
   override def ivyDeps = Agg(
-    millScalalib,
+    millScalalib
   )
 }
 
 object `mill-codegen-plugin-itest` extends MillIntegrationTestModule {
   def millTestVersion = T {
     val ctx = T.ctx()
-    ctx.env.get("TEST_MILL_VERSION").filterNot(_.isEmpty).getOrElse(BuildInfo.millVersion)
+    ctx.env
+      .get("TEST_MILL_VERSION")
+      .filterNot(_.isEmpty)
+      .getOrElse(BuildInfo.millVersion)
   }
   def pluginsUnderTest = Seq(`mill-codegen-plugin`("2.13.8"))
 }
@@ -73,9 +85,9 @@ trait BaseModule extends ScalafmtModule with TpolecatModule {
 trait CommonPublishModule extends PublishModule {
   def publishVersion = T {
     val vcsState = VcsVersion.vcsState()
-    if(vcsState.commitsSinceLastTag > 0) {
+    if (vcsState.commitsSinceLastTag > 0) {
       s"${vcsState.format()}-SNAPSHOT"
-    }else {
+    } else {
       vcsState.format()
     }
   }
@@ -84,9 +96,14 @@ trait CommonPublishModule extends PublishModule {
     organization = "io.github.ghostbuster91.sttp-openapi",
     url = "https://github.com/ghostbuster91/sttp-openapi-generator",
     licenses = Seq(License.`Apache-2.0`),
-    versionControl = VersionControl.github("ghostbuster91", "sttp-openapi-generator"),
+    versionControl =
+      VersionControl.github("ghostbuster91", "sttp-openapi-generator"),
     developers = Seq(
-      Developer("ghostbuster91", "Kasper Kondzielski", "https://github.com/ghostbuster91")
+      Developer(
+        "ghostbuster91",
+        "Kasper Kondzielski",
+        "https://github.com/ghostbuster91"
+      )
     )
   )
 }
