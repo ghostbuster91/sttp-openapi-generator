@@ -9,6 +9,8 @@ import scala.meta._
 import sttp.model.MediaType
 import sttp.model.Method
 
+import java.time.LocalDateTime
+
 class Codegen(logger: LogAdapter, config: CodegenConfig) {
   def generateUnsafe(openApiYaml: String, packageName: Option[String]): Source =
     generate(openApiYaml, packageName) match {
@@ -38,7 +40,8 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
 
     val jsonTypeProvider = CirceTypeProvider
     val operations = collectOperations(openApi)
-    val model = createModel(schemas, requestBodies, operations)
+    val model =
+      createModel(schemas, requestBodies, operations, config.typesMapping)
     val (imports, output) = (for {
       apiCalls <- new ApiCallGenerator(model, config, jsonTypeProvider)
         .generate(operations)
@@ -72,13 +75,16 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
   private def createModel(
       schemas: Map[String, SafeSchema],
       requestBodies: Map[String, SafeSchema],
-      operations: List[CollectedOperation]
+      operations: List[CollectedOperation],
+      typeMappings: TypesMapping
   ) = {
-    val model = Model(schemas, requestBodies)
+    val model = Model(schemas, requestBodies, typeMappings)
     if (config.minimize) {
       val usedReferences =
         new ReferenceCollector(model).collect(operations.map(_.operation))
-      model.copy(schemas = model.schemas.filterKeys(usedReferences.contains))
+      model.copy(schemas =
+        model.schemas.filterKeys(usedReferences.contains).toMap
+      )
     } else {
       model
     }
@@ -140,7 +146,6 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
           .get(MediaType.ApplicationJson.toString)
           .map(mt => k -> mt.schema)
       }
-      .toMap
 
   private def collectOperations(openApi: SafeOpenApi) =
     openApi.paths.toList.flatMap { case (path, item) =>
@@ -157,10 +162,14 @@ case class CollectedOperation(
 )
 
 case class CodegenConfig(
-    handleErrors: Boolean,
-    jsonLibrary: JsonLibrary,
-    minimize: Boolean
+    handleErrors: Boolean = false,
+    jsonLibrary: JsonLibrary = JsonLibrary.Circe,
+    minimize: Boolean = true,
+    typesMapping: TypesMapping = TypesMapping()
 )
+
+case class TypesMapping(dateTime: Class[_] = classOf[LocalDateTime])
+
 case class CodegenOutput(
     processedOps: Map[Option[String], List[Defn.Def]],
     enums: List[Enum],

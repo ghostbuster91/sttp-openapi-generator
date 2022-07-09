@@ -26,7 +26,7 @@ val commonSettings = Seq(
   scalacOptions ~= (_.filterNot(Set("-Xfatal-warnings"))),
   testFrameworks += new TestFramework("utest.runner.Framework"),
   addCompilerPlugin(
-    ("org.scalameta" % "semanticdb-scalac" % "4.5.6").cross(CrossVersion.full)
+    ("org.scalameta" % "semanticdb-scalac" % "4.5.8").cross(CrossVersion.full)
   )
 )
 
@@ -42,11 +42,11 @@ lazy val testDependencies = Seq(
   "com.lihaoyi" %% "utest" % "0.7.11",
   "com.softwaremill.diffx" %% "diffx-utest" % "0.7.1",
   "com.softwaremill.diffx" %% "diffx-cats" % "0.7.1",
-  "com.softwaremill.sttp.client3" %% "core" % "3.3.15",
-  "com.softwaremill.sttp.client3" %% "circe" % "3.3.15",
-  "io.circe" %% "circe-core" % "0.14.1",
-  "io.circe" %% "circe-generic" % "0.14.1",
-  "io.circe" %% "circe-parser" % "0.14.1",
+  "com.softwaremill.sttp.client3" %% "core" % "3.3.18",
+  "com.softwaremill.sttp.client3" %% "circe" % "3.3.18",
+  "io.circe" %% "circe-core" % "0.14.2",
+  "io.circe" %% "circe-generic" % "0.14.2",
+  "io.circe" %% "circe-parser" % "0.14.2",
   "io.circe" %% "circe-yaml" % "0.14.1"
 ).map(_ % Test)
 
@@ -66,7 +66,7 @@ lazy val core: Project = (project in file("core"))
   .settings(
     name := "codegen-core",
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "scalameta" % "4.5.6",
+      "org.scalameta" %% "scalameta" % "4.5.8",
       "org.typelevel" %% "cats-core" % "2.7.0"
     ) ++ testDependencies
   )

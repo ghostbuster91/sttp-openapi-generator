@@ -26,6 +26,11 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
     "If true the generator will render model classes only if they are referenced by any of the exiting operations"
   )
 
+  val sttpOpenApiTypesMapping =
+    settingKey[TypesMapping](
+      "Configuration settings for sttp-openapi generator to use"
+    )
+
   object autoImport {
 
     lazy val generateSources =
@@ -37,7 +42,8 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
         val config = CodegenConfig(
           handleErrors = sttpOpenApiHandleErrors.value,
           sttpOpenApiJsonLibrary.value,
-          sttpOpenApiMinimizeOutput.value
+          sttpOpenApiMinimizeOutput.value,
+          sttpOpenApiTypesMapping.value
         )
         val codegen = new SbtCodegenAdapter(
           config,
@@ -131,13 +137,13 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
   import autoImport._
 
   private lazy val coreDeps = List(
-    "com.softwaremill.sttp.client3" %% "core" % "3.3.15"
+    "com.softwaremill.sttp.client3" %% "core" % "3.3.18"
   )
 
   private lazy val circeDeps = List(
-    "io.circe" %% "circe-core" % "0.14.1",
-    "io.circe" %% "circe-parser" % "0.14.1",
-    "com.softwaremill.sttp.client3" %% "circe" % "3.3.15"
+    "io.circe" %% "circe-core" % "0.14.2",
+    "io.circe" %% "circe-parser" % "0.14.2",
+    "com.softwaremill.sttp.client3" %% "circe" % "3.3.18"
   )
 
   override def projectSettings: Seq[Def.Setting[_]] =
@@ -152,7 +158,8 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
       Compile / sourceGenerators += generateSources.taskValue,
       libraryDependencies ++= coreDeps ++ (sttpOpenApiJsonLibrary.value match {
         case JsonLibrary.Circe => circeDeps
-      })
+      }),
+      sttpOpenApiTypesMapping := TypesMapping()
     )
 
   sealed trait Input

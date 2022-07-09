@@ -7,25 +7,27 @@ import _root_.io.circe.Encoder
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-  implicit val personDecoder: Decoder[Person] =
-    Decoder.forProduct2("name", "age")(Person.apply)
-  implicit val personEncoder: Encoder[Person] =
-    Encoder.forProduct2("name", "age")(p => (p.name, p.age))
-  implicit val organizationDecoder: Decoder[Organization] =
+  implicit lazy val organizationDecoder: Decoder[Organization] =
     Decoder.forProduct1("name")(Organization.apply)
-  implicit val organizationEncoder: Encoder[Organization] =
+  implicit lazy val organizationEncoder: Encoder[Organization] =
     Encoder.forProduct1("name")(p => p.name)
-  implicit val getRootGenericSuccessDecoder: Decoder[GetRootGenericSuccess] =
+  implicit lazy val personDecoder: Decoder[Person] =
+    Decoder.forProduct2("name", "age")(Person.apply)
+  implicit lazy val personEncoder: Encoder[Person] =
+    Encoder.forProduct2("name", "age")(p => (p.name, p.age))
+  implicit lazy val getRootGenericSuccessDecoder
+      : Decoder[GetRootGenericSuccess] =
     List[Decoder[GetRootGenericSuccess]](
-      Decoder[Person].asInstanceOf[Decoder[GetRootGenericSuccess]],
-      Decoder[Organization].asInstanceOf[Decoder[GetRootGenericSuccess]]
+      Decoder[Organization].asInstanceOf[Decoder[GetRootGenericSuccess]],
+      Decoder[Person].asInstanceOf[Decoder[GetRootGenericSuccess]]
     ).reduceLeft(_ or _)
-  implicit val getRootGenericSuccessEncoder: Encoder[GetRootGenericSuccess] =
+  implicit lazy val getRootGenericSuccessEncoder
+      : Encoder[GetRootGenericSuccess] =
     Encoder.instance {
-      case person: Person =>
-        Encoder[Person].apply(person)
       case organization: Organization =>
         Encoder[Organization].apply(organization)
+      case person: Person =>
+        Encoder[Person].apply(person)
     }
 }
 object CirceCodecs extends CirceCodecs

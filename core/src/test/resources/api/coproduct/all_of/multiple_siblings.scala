@@ -7,33 +7,38 @@ import _root_.io.circe.Encoder
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-  implicit val dogDecoder: Decoder[Dog] =
-    Decoder.forProduct3("className", "color", "breed")(Dog.apply)
-  implicit val dogEncoder: Encoder[Dog] =
-    Encoder.forProduct3("className", "color", "breed")(p =>
-      (p.className, p.color, p.breed)
-    )
-  implicit val catDecoder: Decoder[Cat] =
+  implicit lazy val catDecoder: Decoder[Cat] =
     Decoder.forProduct3("className", "color", "breed")(Cat.apply)
-  implicit val catEncoder: Encoder[Cat] =
+  implicit lazy val catEncoder: Encoder[Cat] =
     Encoder.forProduct3("className", "color", "breed")(p =>
       (p.className, p.color, p.breed)
     )
-  implicit val animalDecoder: Decoder[Animal] = List[Decoder[Animal]](
-    Decoder[Dog].asInstanceOf[Decoder[Animal]],
-    Decoder[Cat].asInstanceOf[Decoder[Animal]]
+  implicit lazy val dogDecoder: Decoder[Dog] =
+    Decoder.forProduct3("className", "color", "breed")(Dog.apply)
+  implicit lazy val dogEncoder: Encoder[Dog] =
+    Encoder.forProduct3("className", "color", "breed")(p =>
+      (p.className, p.color, p.breed)
+    )
+  implicit lazy val animalDecoder: Decoder[Animal] = List[Decoder[Animal]](
+    Decoder[Cat].asInstanceOf[Decoder[Animal]],
+    Decoder[Dog].asInstanceOf[Decoder[Animal]]
   ).reduceLeft(_ or _)
-  implicit val animalEncoder: Encoder[Animal] = Encoder.instance {
-    case dog: Dog => Encoder[Dog].apply(dog)
-    case cat: Cat => Encoder[Cat].apply(cat)
+  implicit lazy val animalEncoder: Encoder[Animal] = Encoder.instance {
+    case cat: Cat =>
+      Encoder[Cat].apply(cat)
+    case dog: Dog =>
+      Encoder[Dog].apply(dog)
   }
-  implicit val breedAbleDecoder: Decoder[BreedAble] = List[Decoder[BreedAble]](
-    Decoder[Dog].asInstanceOf[Decoder[BreedAble]],
-    Decoder[Cat].asInstanceOf[Decoder[BreedAble]]
-  ).reduceLeft(_ or _)
-  implicit val breedAbleEncoder: Encoder[BreedAble] = Encoder.instance {
-    case dog: Dog => Encoder[Dog].apply(dog)
-    case cat: Cat => Encoder[Cat].apply(cat)
+  implicit lazy val breedAbleDecoder: Decoder[BreedAble] =
+    List[Decoder[BreedAble]](
+      Decoder[Cat].asInstanceOf[Decoder[BreedAble]],
+      Decoder[Dog].asInstanceOf[Decoder[BreedAble]]
+    ).reduceLeft(_ or _)
+  implicit lazy val breedAbleEncoder: Encoder[BreedAble] = Encoder.instance {
+    case cat: Cat =>
+      Encoder[Cat].apply(cat)
+    case dog: Dog =>
+      Encoder[Dog].apply(dog)
   }
 }
 object CirceCodecs extends CirceCodecs

@@ -10,7 +10,7 @@ import _root_.io.circe.Encoder
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-  implicit val personDecoder: Decoder[Person] = new Decoder[Person]() {
+  implicit lazy val personDecoder: Decoder[Person] = new Decoder[Person]() {
     override def apply(c: HCursor): Result[Person] =
       for {
         name <- c.downField("name").as[String]
@@ -19,10 +19,13 @@ trait CirceCodecs extends SttpCirceApi {
       } yield Person(
         name,
         age,
-        additionalProperties.filterKeys(_ != "name").filterKeys(_ != "age")
+        additionalProperties
+          .filterKeys(_ != "name")
+          .filterKeys(_ != "age")
+          .toMap
       )
   }
-  implicit val personEncoder: Encoder[Person] = new Encoder[Person]() {
+  implicit lazy val personEncoder: Encoder[Person] = new Encoder[Person]() {
     override def apply(person: Person): Json = Encoder
       .forProduct2[Person, String, Int]("name", "age")(p => (p.name, p.age))
       .apply(person)

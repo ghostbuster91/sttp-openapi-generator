@@ -10,7 +10,7 @@ import _root_.io.circe.Encoder
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-  implicit val dogDecoder: Decoder[Dog] = new Decoder[Dog]() {
+  implicit lazy val dogDecoder: Decoder[Dog] = new Decoder[Dog]() {
     override def apply(c: HCursor): Result[Dog] = for (
       className <- c.downField("className").as[String];
       color <- c.downField("color").as[Option[String]];
@@ -25,9 +25,10 @@ trait CirceCodecs extends SttpCirceApi {
           .filterKeys(_ != "className")
           .filterKeys(_ != "color")
           .filterKeys(_ != "breed")
+          .toMap
       )
   }
-  implicit val dogEncoder: Encoder[Dog] = new Encoder[Dog]() {
+  implicit lazy val dogEncoder: Encoder[Dog] = new Encoder[Dog]() {
     override def apply(dog: Dog): Json = Encoder
       .forProduct3[Dog, String, Option[String], Option[String]](
         "className",
@@ -37,10 +38,10 @@ trait CirceCodecs extends SttpCirceApi {
       .apply(dog)
       .deepMerge(Encoder[Map[String, Json]].apply(dog._additionalProperties))
   }
-  implicit val animalDecoder: Decoder[Animal] = List[Decoder[Animal]](
+  implicit lazy val animalDecoder: Decoder[Animal] = List[Decoder[Animal]](
     Decoder[Dog].asInstanceOf[Decoder[Animal]]
   ).reduceLeft(_ or _)
-  implicit val animalEncoder: Encoder[Animal] = Encoder.instance {
+  implicit lazy val animalEncoder: Encoder[Animal] = Encoder.instance {
     case dog: Dog =>
       Encoder[Dog].apply(dog)
   }

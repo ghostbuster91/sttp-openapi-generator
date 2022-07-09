@@ -8,19 +8,19 @@ import _root_.io.circe.Encoder
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-  implicit val errorModelDecoder: Decoder[ErrorModel] =
+  implicit lazy val errorModelDecoder: Decoder[ErrorModel] =
     Decoder.forProduct1("msg")(ErrorModel.apply)
-  implicit val errorModelEncoder: Encoder[ErrorModel] =
+  implicit lazy val errorModelEncoder: Encoder[ErrorModel] =
     Encoder.forProduct1("msg")(p => p.msg)
-  implicit val errorModel2Decoder: Decoder[ErrorModel2] =
+  implicit lazy val errorModel2Decoder: Decoder[ErrorModel2] =
     Decoder.forProduct1("msg")(ErrorModel2.apply)
-  implicit val errorModel2Encoder: Encoder[ErrorModel2] =
+  implicit lazy val errorModel2Encoder: Encoder[ErrorModel2] =
     Encoder.forProduct1("msg")(p => p.msg)
-  implicit val entityDecoder: Decoder[Entity] = List[Decoder[Entity]](
+  implicit lazy val entityDecoder: Decoder[Entity] = List[Decoder[Entity]](
     Decoder[ErrorModel].asInstanceOf[Decoder[Entity]],
     Decoder[ErrorModel2].asInstanceOf[Decoder[Entity]]
   ).reduceLeft(_ or _)
-  implicit val entityEncoder: Encoder[Entity] = Encoder.instance {
+  implicit lazy val entityEncoder: Encoder[Entity] = Encoder.instance {
     case errorModel: ErrorModel =>
       Encoder[ErrorModel].apply(errorModel)
     case errorModel2: ErrorModel2 =>

@@ -11,15 +11,15 @@ import _root_.io.circe.Decoder.Result
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-  implicit val personDecoder: Decoder[Person] =
-    Decoder.forProduct2("name", "age")(Person.apply)
-  implicit val personEncoder: Encoder[Person] =
-    Encoder.forProduct2("name", "age")(p => (p.name, p.age))
-  implicit val organizationDecoder: Decoder[Organization] =
+  implicit lazy val organizationDecoder: Decoder[Organization] =
     Decoder.forProduct1("name")(Organization.apply)
-  implicit val organizationEncoder: Encoder[Organization] =
+  implicit lazy val organizationEncoder: Encoder[Organization] =
     Encoder.forProduct1("name")(p => p.name)
-  implicit val entityDecoder: Decoder[Entity] = new Decoder[Entity]() {
+  implicit lazy val personDecoder: Decoder[Person] =
+    Decoder.forProduct2("name", "age")(Person.apply)
+  implicit lazy val personEncoder: Encoder[Person] =
+    Encoder.forProduct2("name", "age")(p => (p.name, p.age))
+  implicit lazy val entityDecoder: Decoder[Entity] = new Decoder[Entity]() {
     override def apply(c: HCursor): Result[Entity] = c
       .downField("name")
       .as[String]
@@ -32,7 +32,7 @@ trait CirceCodecs extends SttpCirceApi {
           Left(DecodingFailure("Unexpected value for coproduct:" + other, Nil))
       }
   }
-  implicit val entityEncoder: Encoder[Entity] = new Encoder[Entity]() {
+  implicit lazy val entityEncoder: Encoder[Entity] = new Encoder[Entity]() {
     override def apply(entity: Entity): Json = entity match {
       case person: Person =>
         Encoder[Person].apply(person)
@@ -50,16 +50,15 @@ case class Person(name: String, age: Int) extends Entity()
 class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
   import circeCodecs._
 
-  def getRoot(): Request[Entity, Any] =
-    basicRequest
-      .get(uri"$baseUrl")
-      .response(
-        fromMetadata(
-          asJson[Entity].getRight,
-          ConditionalResponseAs(
-            _.code == StatusCode.unsafeApply(200),
-            asJson[Entity].getRight
-          )
+  def getRoot(): Request[Entity, Any] = basicRequest
+    .get(uri"$baseUrl")
+    .response(
+      fromMetadata(
+        asJson[Entity].getRight,
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(200),
+          asJson[Entity].getRight
         )
       )
+    )
 }

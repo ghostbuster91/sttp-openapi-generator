@@ -6,13 +6,13 @@ import _root_.io.circe.Decoder
 import _root_.io.circe.Encoder
 import _root_.sttp.client3.circe.SttpCirceApi
 trait CirceCodecs extends SttpCirceApi {
-  implicit val personDecoder: Decoder[Person] =
+  implicit lazy val personDecoder: Decoder[Person] =
     Decoder.forProduct2("name", "age")(Person.apply)
-  implicit val personEncoder: Encoder[Person] =
+  implicit lazy val personEncoder: Encoder[Person] =
     Encoder.forProduct2("name", "age")(p => (p.name, p.age))
-  implicit val personBodyDecoder: Decoder[PersonBody] =
+  implicit lazy val personBodyDecoder: Decoder[PersonBody] =
     Decoder.forProduct2("name", "age")(PersonBody.apply)
-  implicit val personBodyEncoder: Encoder[PersonBody] =
+  implicit lazy val personBodyEncoder: Encoder[PersonBody] =
     Encoder.forProduct2("name", "age")(p => (p.name, p.age))
 }
 object CirceCodecs extends CirceCodecs

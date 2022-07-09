@@ -3,7 +3,7 @@ package io.github.ghostbuster91.sttp.client3.openapi
 import io.swagger.v3.oas.models.media.ComposedSchema
 import sttp.model.StatusCode
 
-import scala.jdk.CollectionConverters.seqAsJavaListConverter
+import scala.collection.JavaConverters._
 
 object OpenApiCoproductGenerator {
   def generate(openApi: SafeOpenApi): SafeOpenApi = {

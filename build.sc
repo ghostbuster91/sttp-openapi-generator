@@ -1,49 +1,92 @@
-import mill._, scalalib._
+import mill._
+import scalalib._
 import mill.scalalib.publish._
 import mill.scalalib.scalafmt.ScalafmtModule
-import $ivy.`io.github.davidgregory084::mill-tpolecat:0.2.0`
+import $ivy.`io.github.davidgregory084::mill-tpolecat_mill0.10:0.3.0`
 import io.github.davidgregory084.TpolecatModule
-import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.9:0.1.1`
+import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.10:0.1.4`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
+import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.6.0`
+import de.tobiasroeser.mill.integrationtest.MillIntegrationTestModule
 
-object parser extends BaseModule with SbtModule {
-  def scalaVersion = "2.12.15"
-
-  def ivyDeps = Agg(
+object parser extends Cross[ParserModule]("2.12.15", "2.13.8")
+class ParserModule(val crossScalaVersion: String) extends BaseModule with CrossSbtModule with CommonPublishModule {
+  override def ivyDeps = Agg(
     ivy"io.swagger.parser.v3:swagger-parser:2.0.28",
     ivy"com.softwaremill.sttp.model::core:1.4.26"
   )
   object test extends Tests with CommonTestModule
 }
 
-object core extends BaseModule with SbtModule {
-  def scalaVersion = "2.12.15"
-  def moduleDeps = Seq(parser)
+object core extends Cross[CoreModule]("2.12.15", "2.13.8")
+class CoreModule(val crossScalaVersion: String) extends BaseModule with CrossSbtModule with CommonPublishModule {
+  override def moduleDeps = Seq(parser())
 
-  def ivyDeps = Agg(
-    ivy"org.scalameta::scalameta::4.5.6",
+  override def ivyDeps = Agg(
+    ivy"org.scalameta::scalameta::4.5.8",
     ivy"org.typelevel::cats-core::2.7.0"
   )
   object test extends Tests with CommonTestModule
 }
 
+object `mill-codegen-plugin` extends Cross[MillCodegenPlugin]("2.13.8")
+class MillCodegenPlugin(val crossScalaVersion: String) extends BaseModule with CrossScalaModule with CommonPublishModule  {
+  override def moduleDeps = Seq(core())
+
+  val millVersion = "0.10.0" // scala-steward:off
+  val millScalalib = ivy"com.lihaoyi::mill-scalalib:${millVersion}"
+
+  override def ivyDeps = Agg(
+    millScalalib,
+  )
+}
+
+object `mill-codegen-plugin-itest` extends MillIntegrationTestModule {
+  def millTestVersion = T {
+    val ctx = T.ctx()
+    ctx.env.get("TEST_MILL_VERSION").filterNot(_.isEmpty).getOrElse(BuildInfo.millVersion)
+  }
+  def pluginsUnderTest = Seq(`mill-codegen-plugin`("2.13.8"))
+}
+
 trait CommonTestModule extends BaseModule with TestModule {
-  def ivyDeps = Agg(
+  override def ivyDeps = Agg(
     ivy"com.lihaoyi::utest::0.7.11",
     ivy"com.softwaremill.diffx::diffx-utest::0.7.1",
     ivy"com.softwaremill.diffx::diffx-cats::0.7.1",
-    ivy"com.softwaremill.sttp.client3::core::3.3.15",
-    ivy"com.softwaremill.sttp.client3::circe::3.3.15",
-    ivy"io.circe::circe-core::0.14.1",
-    ivy"io.circe::circe-generic::0.14.1",
-    ivy"io.circe::circe-parser::0.14.1",
+    ivy"com.softwaremill.sttp.client3::core::3.3.18",
+    ivy"com.softwaremill.sttp.client3::circe::3.3.18",
+    ivy"io.circe::circe-core::0.14.2",
+    ivy"io.circe::circe-generic::0.14.2",
+    ivy"io.circe::circe-parser::0.14.2",
     ivy"io.circe::circe-yaml::0.14.1"
   )
-  def testFrameworks = Seq("utest.runner.Framework")
+  override def testFramework = "utest.runner.Framework"
 }
 
 trait BaseModule extends ScalafmtModule with TpolecatModule {
-  def scalacOptions = T {
+  override def scalacOptions = T {
     super.scalacOptions().filterNot(Set("-Xfatal-warnings"))
   }
+}
+
+trait CommonPublishModule extends PublishModule {
+  def publishVersion = T {
+    val vcsState = VcsVersion.vcsState()
+    if(vcsState.commitsSinceLastTag > 0) {
+      s"${vcsState.format()}-SNAPSHOT"
+    }else {
+      vcsState.format()
+    }
+  }
+  def pomSettings = PomSettings(
+    description = artifactName(),
+    organization = "io.github.ghostbuster91.sttp-openapi",
+    url = "https://github.com/ghostbuster91/sttp-openapi-generator",
+    licenses = Seq(License.`Apache-2.0`),
+    versionControl = VersionControl.github("ghostbuster91", "sttp-openapi-generator"),
+    developers = Seq(
+      Developer("ghostbuster91", "Kasper Kondzielski", "https://github.com/ghostbuster91")
+    )
+  )
 }

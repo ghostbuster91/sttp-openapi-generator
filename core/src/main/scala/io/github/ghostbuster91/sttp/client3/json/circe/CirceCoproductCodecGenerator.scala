@@ -25,7 +25,7 @@ private[circe] class CirceCoproductCodecGenerator() {
         } yield {
           val cases = encoderCasesWithMapping(discriminator)
           val encoderInit = init"${t"$encoderTpe[$coproductType]"}()"
-          q"""implicit val $encoderName: $encoderTpe[$coproductType] = new $encoderInit {
+          q"""implicit lazy val $encoderName: $encoderTpe[$coproductType] = new $encoderInit {
             override def apply(${coproduct.toVar}: $coproductType): $jsonTpe = 
               ${coproduct.toVar} match {
                 ..case $cases
@@ -39,7 +39,7 @@ private[circe] class CirceCoproductCodecGenerator() {
         } yield {
           val cases = encoderCases(coproduct)
           val encoderInit = init"${t"$encoderTpe[$coproductType]"}()"
-          q"""implicit val $encoderName: $encoderTpe[$coproductType] = Encoder.instance {
+          q"""implicit lazy val $encoderName: $encoderTpe[$coproductType] = Encoder.instance {
                 ..case $cases
             }
             """
@@ -65,7 +65,7 @@ private[circe] class CirceCoproductCodecGenerator() {
             case Discriminator.EnumDsc(_, enum, _) => enum.typeName
           }
           val decoderInit = init"${t"$decoderTpe[$coproductType]"}()"
-          q"""implicit val $decoderName: $decoderTpe[$coproductType] = new $decoderInit {
+          q"""implicit lazy val $decoderName: $decoderTpe[$coproductType] = new $decoderInit {
             override def apply(c: $hCursorTpe): $resultTpe[$coproductType] =
               c.downField(${discriminator.fieldName}).as[$dscType].flatMap {
                 ..case $cases
@@ -75,21 +75,25 @@ private[circe] class CirceCoproductCodecGenerator() {
       case _ =>
         for {
           decoderTpe <- CirceTypeProvider.DecoderTpe
-        } yield q"""implicit val $decoderName: $decoderTpe[$coproductType] = List[$decoderTpe[$coproductType]](..${decoderCases(
+        } yield q"""implicit lazy val $decoderName: $decoderTpe[$coproductType] = List[$decoderTpe[$coproductType]](..${decoderCases(
           coproduct
         )}).reduceLeft(_ or _)"""
     }
   }
 
   private def encoderCases(coproduct: Coproduct) =
-    coproduct.childs.toList.map { child =>
-      p"case ${child.asPattern} => Encoder[${child.typeName}].apply(${child.toParam.term})"
-    }
+    coproduct.childs.toList
+      .sortBy(_.v)
+      .map { child =>
+        p"case ${child.asPattern} => Encoder[${child.typeName}].apply(${child.toParam.term})"
+      }
 
   private def decoderCases(coproduct: Coproduct) =
-    coproduct.childs.toList.map(child =>
-      q"Decoder[${child.typeName}].asInstanceOf[Decoder[${coproduct.typeName}]]"
-    )
+    coproduct.childs.toList
+      .sortBy(_.v)
+      .map(child =>
+        q"Decoder[${child.typeName}].asInstanceOf[Decoder[${coproduct.typeName}]]"
+      )
 
   private def encoderCasesWithMapping(
       discriminator: Discriminator[_]
@@ -116,11 +120,17 @@ private[circe] class CirceCoproductCodecGenerator() {
   ): List[Case] = {
     val mappedCases = discriminator match {
       case Discriminator.StringDsc(_, mapping) =>
-        mapping.map { case (k, v) => decoderCaseForString(k, v) }.toList
+        mapping.toList.sortBy(_._1).map { case (k, v) =>
+          decoderCaseForString(k, v)
+        }
       case Discriminator.IntDsc(_, mapping) =>
-        mapping.map { case (k, v) => decoderCaseForInt(k, v) }.toList
+        mapping.toList.sortBy(_._1).map { case (k, v) =>
+          decoderCaseForInt(k, v)
+        }
       case Discriminator.EnumDsc(_, enum, mapping) =>
-        mapping.map { case (k, v) => decoderCaseForEnum(enum)(k, v) }.toList
+        mapping.toList.sortBy(_._1.simpleName.value).map { case (k, v) =>
+          decoderCaseForEnum(enum)(k, v)
+        }
     }
     mappedCases :+ decoderOtherwiseCase(failureTpe)
   }
