@@ -87,7 +87,7 @@ jobs:
       - name: Publish to maven repository
         run: |
           ./millw -i mill.scalalib.PublishModule/publishAll \
-              --sonatypeCreds "${{ secrets.SONATYPE_PASSWORD }}:${{ secrets.SONATYPE_USERNAME }}" \
+              --sonatypeCreds "${{ secrets.SONATYPE_USERNAME }}:${{ secrets.SONATYPE_PASSWORD }}" \
               --sonatypeUri "https://s01.oss.sonatype.org/service/local" \
               --gpgArgs "--passphrase=${{ secrets.PGP_PASSPHRASE }},--batch,--yes,-a,-b,--pinentry-mode,loopback" \
               --publishArtifacts _[2.13.8].publishArtifacts \
