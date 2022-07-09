@@ -44,7 +44,7 @@ object CirceParsingTest extends TestSuite {
         } yield Person(
           name,
           age,
-          props.filterKeys(_ != "name").filterKeys(_ != "age")
+          props.filterKeys(_ != "name").filterKeys(_ != "age").toMap
         )
     }
 

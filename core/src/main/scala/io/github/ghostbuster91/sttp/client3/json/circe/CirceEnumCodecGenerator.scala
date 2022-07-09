@@ -43,14 +43,14 @@ private[circe] object CirceEnumCodecGenerator {
       }
 
   private def encoderCases(enum: Enum): List[Case] =
-    enum.values.map { ev =>
+    enum.values.sortBy(_.simpleName.value).map { ev =>
       val pThen = evToLit(ev)
       val pWhen = p"${enum.name.term}.${ev.simpleName}"
       p"case $pWhen => $pThen"
     }
 
   private def decoderCases(enum: Enum): List[Case] = {
-    val cases = enum.values.map { ev =>
+    val cases = enum.values.sortBy(_.simpleName.value).map { ev =>
       val pWhen = p"${evToLit(ev)}"
       p"case $pWhen => Right(${ev.fqnName(enum)})"
     }

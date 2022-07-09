@@ -99,7 +99,9 @@ object GeneratorTest extends TestSuite {
       "float" - test()
       "uuid" - test()
       "date-time" - test()
-      "date-time-as-instant" - test(CodegenConfig(typesMapping = TypesMapping(dateTime = classOf[Instant])))
+      "date-time-as-instant" - test(
+        CodegenConfig(typesMapping = TypesMapping(dateTime = classOf[Instant]))
+      )
     }
 
     "header" - {
@@ -120,7 +122,9 @@ object GeneratorTest extends TestSuite {
     }
   }
 
-  def testNoCompile(codeGenConfig: CodegenConfig = CodegenConfig())(implicit testPath: utest.framework.TestPath) = {
+  def testNoCompile(
+      codeGenConfig: CodegenConfig = CodegenConfig()
+  )(implicit testPath: utest.framework.TestPath) = {
     val testName = testPath.value.mkString("/")
     val yaml = load(s"$testName.yaml")
     val result = new Codegen(
@@ -135,7 +139,9 @@ object GeneratorTest extends TestSuite {
     assert(result.structure == expected.parse[Source].get.structure)
   }
 
-  def test(codeGenConfig: CodegenConfig = CodegenConfig())(implicit testPath: utest.framework.TestPath) = {
+  def test(
+      codeGenConfig: CodegenConfig = CodegenConfig()
+  )(implicit testPath: utest.framework.TestPath) = {
     testNoCompile(codeGenConfig)
     val testName = testPath.value.mkString("/")
     val expected = load(s"$testName.scala")

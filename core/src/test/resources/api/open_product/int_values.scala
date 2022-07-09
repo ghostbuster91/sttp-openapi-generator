@@ -23,6 +23,7 @@ trait CirceCodecs extends SttpCirceApi {
           additionalProperties
             .filterKeys(_ != "name")
             .filterKeys(_ != "age")
+            .toMap
         )
   }
   implicit lazy val personEncoder: Encoder[Person] = new Encoder[Person]() {

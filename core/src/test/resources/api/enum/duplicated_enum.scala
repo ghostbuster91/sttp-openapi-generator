@@ -7,19 +7,7 @@ import _root_.io.circe.Encoder
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-  implicit lazy val status2Decoder: Decoder[Status2] = Decoder.decodeString.emap {
-    case "new" =>
-      Right(Status2.New)
-    case "old" =>
-      Right(Status2.Old)
-    case other =>
-      Left("Unexpected value for enum:" + other)
-  }
-  implicit lazy val status2Encoder: Encoder[Status2] =
-    Encoder.encodeString.contramap {
-      case Status2.New => "new"
-      case Status2.Old => "old"
-    }
+
   implicit lazy val statusDecoder: Decoder[Status] = Decoder.decodeString.emap {
     case "happy" =>
       Right(Status.Happy)
@@ -33,6 +21,24 @@ trait CirceCodecs extends SttpCirceApi {
       case Status.Happy   => "happy"
       case Status.Neutral => "neutral"
     }
+  implicit lazy val status2Decoder: Decoder[Status2] =
+    Decoder.decodeString.emap {
+      case "new" =>
+        Right(Status2.New)
+      case "old" =>
+        Right(Status2.Old)
+      case other =>
+        Left("Unexpected value for enum:" + other)
+    }
+  implicit lazy val status2Encoder: Encoder[Status2] =
+    Encoder.encodeString.contramap {
+      case Status2.New => "new"
+      case Status2.Old => "old"
+    }
+  implicit lazy val coupleDecoder: Decoder[Couple] =
+    Decoder.forProduct2("p1", "p2")(Couple.apply)
+  implicit lazy val coupleEncoder: Encoder[Couple] =
+    Encoder.forProduct2("p1", "p2")(p => (p.p1, p.p2))
   implicit lazy val person1Decoder: Decoder[Person1] =
     Decoder.forProduct1("status")(Person1.apply)
   implicit lazy val person1Encoder: Encoder[Person1] =
@@ -41,10 +47,7 @@ trait CirceCodecs extends SttpCirceApi {
     Decoder.forProduct1("status")(Person2.apply)
   implicit lazy val person2Encoder: Encoder[Person2] =
     Encoder.forProduct1("status")(p => p.status)
-  implicit lazy val coupleDecoder: Decoder[Couple] =
-    Decoder.forProduct2("p1", "p2")(Couple.apply)
-  implicit lazy val coupleEncoder: Encoder[Couple] =
-    Encoder.forProduct2("p1", "p2")(p => (p.p1, p.p2))
+
 }
 object CirceCodecs extends CirceCodecs
 
@@ -64,17 +67,15 @@ case class Person2(status: Status2)
 
 class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
   import circeCodecs._
-
-  def getPerson(): Request[Couple, Any] =
-    basicRequest
-      .get(uri"$baseUrl/person")
-      .response(
-        fromMetadata(
-          asJson[Couple].getRight,
-          ConditionalResponseAs(
-            _.code == StatusCode.unsafeApply(200),
-            asJson[Couple].getRight
-          )
+  def getPerson(): Request[Couple, Any] = basicRequest
+    .get(uri"$baseUrl/person")
+    .response(
+      fromMetadata(
+        asJson[Couple].getRight,
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(200),
+          asJson[Couple].getRight
         )
       )
+    )
 }
