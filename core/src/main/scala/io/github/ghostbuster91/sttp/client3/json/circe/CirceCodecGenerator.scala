@@ -18,16 +18,20 @@ class CirceCodecGenerator() extends JsonCodecGenerator {
     for {
       productCodecs <- products
         .collect { case p: Product.Regular => p }
+        .sortBy(_.name)
         .traverse(productGen.generate)
         .map(_.flatten)
       openProductCodecs <- products
         .collect { case p: Product.Open => p }
+        .sortBy(_.name)
         .traverse(openProductGen.generate)
         .map(_.flatten)
       coproductCodecs <- coproducts
+        .sortBy(_.name)
         .traverse(coproductGen.generate)
         .map(_.flatten)
       enumCodecs <- enums
+        .sortBy(_.name)
         .traverse(CirceEnumCodecGenerator.generate)
         .map(_.flatten)
     } yield source"""

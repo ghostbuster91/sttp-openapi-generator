@@ -33,7 +33,7 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: Run tests with mill
-        run: ./mill _.test
+        run: ./millw _.test
 
   generate-lsif:
     runs-on: ubuntu-20.04

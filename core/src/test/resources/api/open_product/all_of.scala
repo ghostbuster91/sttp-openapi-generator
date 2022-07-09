@@ -25,6 +25,7 @@ trait CirceCodecs extends SttpCirceApi {
           .filterKeys(_ != "className")
           .filterKeys(_ != "color")
           .filterKeys(_ != "breed")
+          .toMap
       )
   }
   implicit lazy val dogEncoder: Encoder[Dog] = new Encoder[Dog]() {

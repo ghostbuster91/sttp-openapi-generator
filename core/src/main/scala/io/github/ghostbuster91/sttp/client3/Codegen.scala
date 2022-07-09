@@ -82,7 +82,9 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
     if (config.minimize) {
       val usedReferences =
         new ReferenceCollector(model).collect(operations.map(_.operation))
-      model.copy(schemas = model.schemas.filterKeys(usedReferences.contains))
+      model.copy(schemas =
+        model.schemas.filterKeys(usedReferences.contains).toMap
+      )
     } else {
       model
     }
@@ -144,7 +146,6 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
           .get(MediaType.ApplicationJson.toString)
           .map(mt => k -> mt.schema)
       }
-      .toMap
 
   private def collectOperations(openApi: SafeOpenApi) =
     openApi.paths.toList.flatMap { case (path, item) =>

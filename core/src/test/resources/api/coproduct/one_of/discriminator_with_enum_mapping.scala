@@ -13,35 +13,35 @@ import _root_.sttp.client3.circe.SttpCirceApi
 trait CirceCodecs extends SttpCirceApi {
   implicit lazy val personNameDecoder: Decoder[PersonName] =
     Decoder.decodeString.emap {
-      case "bob" =>
-        Right(PersonName.Bob)
       case "alice" =>
         Right(PersonName.Alice)
+      case "bob" =>
+        Right(PersonName.Bob)
       case other =>
         Left("Unexpected value for enum:" + other)
     }
   implicit lazy val personNameEncoder: Encoder[PersonName] =
     Encoder.encodeString.contramap {
-      case PersonName.Bob   => "bob"
       case PersonName.Alice => "alice"
+      case PersonName.Bob   => "bob"
     }
-  implicit lazy val personDecoder: Decoder[Person] =
-    Decoder.forProduct2("name", "age")(Person.apply)
-  implicit lazy val personEncoder: Encoder[Person] =
-    Encoder.forProduct2("name", "age")(p => (p.name, p.age))
   implicit lazy val organizationDecoder: Decoder[Organization] =
     Decoder.forProduct1("name")(Organization.apply)
   implicit lazy val organizationEncoder: Encoder[Organization] =
     Encoder.forProduct1("name")(p => p.name)
+  implicit lazy val personDecoder: Decoder[Person] =
+    Decoder.forProduct2("name", "age")(Person.apply)
+  implicit lazy val personEncoder: Encoder[Person] =
+    Encoder.forProduct2("name", "age")(p => (p.name, p.age))
   implicit lazy val entityDecoder: Decoder[Entity] = new Decoder[Entity]() {
     override def apply(c: HCursor): Result[Entity] = c
       .downField("name")
       .as[PersonName]
       .flatMap {
-        case PersonName.Bob =>
-          Decoder[Person].apply(c)
         case PersonName.Alice =>
           Decoder[Organization].apply(c)
+        case PersonName.Bob =>
+          Decoder[Person].apply(c)
         case other =>
           Left(DecodingFailure("Unexpected value for coproduct:" + other, Nil))
       }
@@ -69,17 +69,15 @@ case class Person(name: PersonName, age: Int) extends Entity()
 
 class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
   import circeCodecs._
-
-  def getRoot(): Request[Entity, Any] =
-    basicRequest
-      .get(uri"$baseUrl")
-      .response(
-        fromMetadata(
-          asJson[Entity].getRight,
-          ConditionalResponseAs(
-            _.code == StatusCode.unsafeApply(200),
-            asJson[Entity].getRight
-          )
+  def getRoot(): Request[Entity, Any] = basicRequest
+    .get(uri"$baseUrl")
+    .response(
+      fromMetadata(
+        asJson[Entity].getRight,
+        ConditionalResponseAs(
+          _.code == StatusCode.unsafeApply(200),
+          asJson[Entity].getRight
         )
       )
+    )
 }
