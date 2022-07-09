@@ -83,21 +83,16 @@ jobs:
       - name: Setup GPG secrets for publish
         run: |
           gpg --version
-          cat <(echo "$PGP_SECRET") | base64 --decode | gpg --batch --import
+          cat <(echo "${{ secrets.PGP_SECRET }}") | base64 --decode | gpg --batch --import
       - name: Publish to maven repository
         run: |
           ./millw -i mill.scalalib.PublishModule/publishAll \
-              --sonatypeCreds "$SONATYPE_USERNAME:$SONATYPE_PASSWORD" \
+              --sonatypeCreds "${{ secrets.SONATYPE_PASSWORD }}:${{ secrets.SONATYPE_USERNAME }}" \
               --sonatypeUri "https://s01.oss.sonatype.org/service/local" \
-              --gpgArgs "--passphrase=$PGP_PASSPHRASE,--batch,--yes,-a,-b,--pinentry-mode,loopback" \
+              --gpgArgs "--passphrase=${{ secrets.PGP_PASSPHRASE }},--batch,--yes,-a,-b,--pinentry-mode,loopback" \
               --publishArtifacts _[2.13.8].publishArtifacts \
               --release true \
               --signed true
-        env:
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          PGP_SECRET: ${{ secrets.PGP_SECRET }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
 
   publish-notes:
     name: Publish release notes
