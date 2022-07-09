@@ -67,7 +67,7 @@ lazy val core: Project = (project in file("core"))
     name := "codegen-core",
     libraryDependencies ++= Seq(
       "org.scalameta" %% "scalameta" % "4.5.8",
-      "org.typelevel" %% "cats-core" % "2.7.0"
+      "org.typelevel" %% "cats-core" % "2.8.0"
     ) ++ testDependencies
   )
   .dependsOn(parser)
