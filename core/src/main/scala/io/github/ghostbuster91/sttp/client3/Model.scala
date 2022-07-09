@@ -2,7 +2,11 @@ package io.github.ghostbuster91.sttp.client3
 
 import cats.data.NonEmptyList
 import cats.syntax.all._
-import io.github.ghostbuster91.sttp.client3.model.{ClassName, ParameterName, ParameterRef}
+import io.github.ghostbuster91.sttp.client3.model.{
+  ClassName,
+  ParameterName,
+  ParameterRef
+}
 import io.github.ghostbuster91.sttp.client3.openapi._
 import io.github.ghostbuster91.sttp.client3.ImportRegistry._
 
@@ -135,7 +139,7 @@ object Model {
     new Model(
       refToSchema,
       modelClassNames,
-      childToParentRef,
+      childToParentRef.toMap,
       typeMappings
     )
   }

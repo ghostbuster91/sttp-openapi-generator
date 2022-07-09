@@ -166,6 +166,7 @@ class CoproductCollector(
           dsc.propertyName,
           dsc.mapping
             .mapValues(ref => model.classNameFor(ref))
+            .toMap
         )
       case _: SafeIntegerSchema =>
         Discriminator.IntDsc(
