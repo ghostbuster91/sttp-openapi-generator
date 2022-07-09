@@ -1,6 +1,8 @@
 package io.github.ghostbuster91.sttp.client3
 
 import utest._
+
+import java.time.Instant
 import scala.meta._
 import scala.tools.reflect.ToolBox
 
@@ -66,7 +68,7 @@ object GeneratorTest extends TestSuite {
       "all_of" - {
         "simple" - test()
         "multiple_parents" - test()
-        "multiple_siblings" - test(minimize = false)
+        "multiple_siblings" - test(CodegenConfig(minimize = false))
       }
       "one_of" - {
         "simple" - test()
@@ -96,6 +98,8 @@ object GeneratorTest extends TestSuite {
       "double" - test()
       "float" - test()
       "uuid" - test()
+      "date-time" - test()
+      "date-time-as-instant" - test(CodegenConfig(typesMapping = TypesMapping(dateTime = classOf[Instant])))
     }
 
     "header" - {
@@ -105,9 +109,9 @@ object GeneratorTest extends TestSuite {
       "int" - test()
     }
     "errors" - {
-      "product" - test(handleErrors = true)
-      "multiple_errors" - test(handleErrors = true)
-      "multiple_errors_with_parent" - test(handleErrors = true)
+      "product" - test(CodegenConfig(handleErrors = true))
+      "multiple_errors" - test(CodegenConfig(handleErrors = true))
+      "multiple_errors_with_parent" - test(CodegenConfig(handleErrors = true))
     }
     "multiple_success" - {
       "separate_products" - test()
@@ -116,19 +120,12 @@ object GeneratorTest extends TestSuite {
     }
   }
 
-  def testNoCompile(
-      handleErrors: Boolean = false,
-      minimize: Boolean = true
-  )(implicit testPath: utest.framework.TestPath) = {
+  def testNoCompile(codeGenConfig: CodegenConfig = CodegenConfig())(implicit testPath: utest.framework.TestPath) = {
     val testName = testPath.value.mkString("/")
     val yaml = load(s"$testName.yaml")
     val result = new Codegen(
       LogAdapter.StdOut,
-      CodegenConfig(
-        handleErrors,
-        JsonLibrary.Circe,
-        minimize
-      )
+      codeGenConfig
     )
       .generateUnsafe(
         yaml,
@@ -138,11 +135,8 @@ object GeneratorTest extends TestSuite {
     assert(result.structure == expected.parse[Source].get.structure)
   }
 
-  def test(
-      handleErrors: Boolean = false,
-      minimize: Boolean = true
-  )(implicit testPath: utest.framework.TestPath) = {
-    testNoCompile(handleErrors, minimize)
+  def test(codeGenConfig: CodegenConfig = CodegenConfig())(implicit testPath: utest.framework.TestPath) = {
+    testNoCompile(codeGenConfig)
     val testName = testPath.value.mkString("/")
     val expected = load(s"$testName.scala")
     expected.shouldCompile()

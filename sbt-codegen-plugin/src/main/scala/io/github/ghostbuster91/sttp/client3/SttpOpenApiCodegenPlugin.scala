@@ -26,6 +26,11 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
     "If true the generator will render model classes only if they are referenced by any of the exiting operations"
   )
 
+  val sttpOpenApiTypesMapping =
+    settingKey[TypesMapping](
+      "Configuration settings for sttp-openapi generator to use"
+    )
+
   object autoImport {
 
     lazy val generateSources =
@@ -37,7 +42,8 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
         val config = CodegenConfig(
           handleErrors = sttpOpenApiHandleErrors.value,
           sttpOpenApiJsonLibrary.value,
-          sttpOpenApiMinimizeOutput.value
+          sttpOpenApiMinimizeOutput.value,
+          sttpOpenApiTypesMapping.value
         )
         val codegen = new SbtCodegenAdapter(
           config,
@@ -152,7 +158,8 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
       Compile / sourceGenerators += generateSources.taskValue,
       libraryDependencies ++= coreDeps ++ (sttpOpenApiJsonLibrary.value match {
         case JsonLibrary.Circe => circeDeps
-      })
+      }),
+      sttpOpenApiTypesMapping := TypesMapping()
     )
 
   sealed trait Input

@@ -2,11 +2,7 @@ package io.github.ghostbuster91.sttp.client3
 
 import cats.data.NonEmptyList
 import cats.syntax.all._
-import io.github.ghostbuster91.sttp.client3.model.{
-  ClassName,
-  ParameterName,
-  ParameterRef
-}
+import io.github.ghostbuster91.sttp.client3.model.{ClassName, ParameterName, ParameterRef}
 import io.github.ghostbuster91.sttp.client3.openapi._
 import io.github.ghostbuster91.sttp.client3.ImportRegistry._
 
@@ -15,7 +11,8 @@ import scala.meta._
 case class Model(
     schemas: Map[SchemaRef, SafeSchema],
     classNames: Map[SchemaRef, ClassName],
-    childToParentRef: Map[SchemaRef, List[SchemaRef]]
+    childToParentRef: Map[SchemaRef, List[SchemaRef]],
+    typeMappings: TypesMapping
 ) {
 
   def classNameFor(schemaRef: SchemaRef): ClassName = classNames(schemaRef)
@@ -65,9 +62,12 @@ case class Model(
         registerExternalTpe(q"import _root_.java.time.LocalDate").map(tpe =>
           ParameterRef(tpe, ParameterName("localDate"), None)
         )
-      case _: SafeDateTimeSchema =>
-        registerExternalTpe(q"import _root_.java.time.LocalDateTime").map(tpe =>
-          ParameterRef(tpe, ParameterName("localDateTime"), None)
+      case sdt: SafeDateTimeSchema =>
+        val dateTimeType = s"_root_.${typeMappings.dateTime.getName}"
+        val importer = Import(List(dateTimeType.parse[Importer].get))
+
+        registerExternalTpe(importer).map(tpe =>
+          ParameterRef(tpe, ParameterName("dateTime"), None)
         )
       case s: SafeArraySchema =>
         schemaToParameter(s.items).map { itemTypeRef =>
@@ -118,7 +118,8 @@ case class Model(
 object Model {
   def apply(
       schemas: Map[String, SafeSchema],
-      requestBodies: Map[String, SafeSchema]
+      requestBodies: Map[String, SafeSchema],
+      typeMappings: TypesMapping
   ): Model = {
     val adjSchemas = schemas.map { case (k, v) => SchemaRef.schema(k) -> v }
     val adjReqBodies = requestBodies.map { case (k, v) =>
@@ -134,7 +135,8 @@ object Model {
     new Model(
       refToSchema,
       modelClassNames,
-      childToParentRef
+      childToParentRef,
+      typeMappings
     )
   }
 
