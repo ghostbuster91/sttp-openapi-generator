@@ -39,11 +39,11 @@ lazy val rootProject = (project in file("."))
   .aggregate(core, codegenSbtPlugin, parser)
 
 lazy val testDependencies = Seq(
-  "com.lihaoyi" %% "utest" % "0.7.11",
+  "com.lihaoyi" %% "utest" % "0.8.0",
   "com.softwaremill.diffx" %% "diffx-utest" % "0.7.1",
   "com.softwaremill.diffx" %% "diffx-cats" % "0.7.1",
-  "com.softwaremill.sttp.client3" %% "core" % "3.3.18",
-  "com.softwaremill.sttp.client3" %% "circe" % "3.3.18",
+  "com.softwaremill.sttp.client3" %% "core" % "3.6.2",
+  "com.softwaremill.sttp.client3" %% "circe" % "3.6.2",
   "io.circe" %% "circe-core" % "0.14.2",
   "io.circe" %% "circe-generic" % "0.14.2",
   "io.circe" %% "circe-parser" % "0.14.2",
@@ -57,7 +57,7 @@ lazy val parser: Project = (project in file("parser"))
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
       "io.swagger.parser.v3" % "swagger-parser" % "2.0.28",
-      "com.softwaremill.sttp.model" %% "core" % "1.4.26"
+      "com.softwaremill.sttp.model" %% "core" % "1.4.27"
     ) ++ testDependencies
   )
 
@@ -67,7 +67,7 @@ lazy val core: Project = (project in file("core"))
     name := "codegen-core",
     libraryDependencies ++= Seq(
       "org.scalameta" %% "scalameta" % "4.5.8",
-      "org.typelevel" %% "cats-core" % "2.7.0"
+      "org.typelevel" %% "cats-core" % "2.8.0"
     ) ++ testDependencies
   )
   .dependsOn(parser)
