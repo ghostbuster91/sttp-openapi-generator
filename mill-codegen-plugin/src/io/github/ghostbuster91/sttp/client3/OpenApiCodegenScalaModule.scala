@@ -7,6 +7,10 @@ import mill.scalalib.*
 import os.{Path, RelPath}
 import upickle.default.*
 
+import java.time.LocalDateTime
+
+import implicits._
+
 trait OpenApiCodegenScalaModule extends ScalaModule {
 
   /** Input resources for sttp-openapi generator
@@ -61,9 +65,9 @@ trait OpenApiCodegenScalaModule extends ScalaModule {
         )
         val config = CodegenConfig(
           handleErrors = sttpOpenApiHandleErrors(),
-          sttpOpenApiJsonLibrary(),
+          sttpOpenApiJsonLibrary().convert,
           sttpOpenApiMinimizeOutput(),
-          sttpOpenApiTypesMapping()
+          sttpOpenApiTypesMapping().convert
         )
         val input = os.read.lines(path).mkString("\n")
         val result =
@@ -178,31 +182,15 @@ object OpenApiCodegenScalaModule {
       ReadWriter.merge(SingleFile.rw, Directory.rw)
   }
 
-  implicit def relPathRw: ReadWriter[RelPath] =
-    implicitly[ReadWriter[IndexedSeq[String]]]
-      .bimap[RelPath](
-        v => v.segments,
-        g => RelPath(g, 0)
-      )
+  case class TypesMapping(dateTime: Class[_] = classOf[LocalDateTime])
+
+  sealed trait JsonLibrary
+  object JsonLibrary {
+    object Circe extends JsonLibrary
+  }
 
   case class FileOpts(pkg: String, relPath: RelPath)
   object FileOpts {
     implicit val rw: ReadWriter[FileOpts] = macroRW
   }
-
-//  implicit def classRw: ReadWriter[Class[Any]] = implicitly[ReadWriter[String]]
-//    .bimap[Class[Any]](
-//      v => v.getName,
-//      g => Class.forName(g).asInstanceOf[Class[Any]]
-//    )
-
-  implicit val typesMappingRw: ReadWriter[TypesMapping] =
-    implicitly[ReadWriter[Map[String, String]]].bimap[TypesMapping](
-      v => Map("dateTime" -> v.dateTime.getName),
-      g => TypesMapping(dateTime = Class.forName(g("dateTime")))
-    )
-
-  implicit val jsonLibraryCirceRw: ReadWriter[JsonLibrary.Circe.type] = macroRW
-  implicit val jsonLibraryRw: ReadWriter[JsonLibrary] =
-    ReadWriter.merge(jsonLibraryCirceRw)
 }
