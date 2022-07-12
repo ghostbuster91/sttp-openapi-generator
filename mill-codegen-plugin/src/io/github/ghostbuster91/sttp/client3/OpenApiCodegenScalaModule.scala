@@ -9,7 +9,7 @@ import upickle.default.*
 
 import java.time.LocalDateTime
 
-import implicits._
+import Implicits._
 
 trait OpenApiCodegenScalaModule extends ScalaModule {
 
@@ -167,19 +167,11 @@ object OpenApiCodegenScalaModule {
   sealed trait Input
   object Input {
     case class SingleFile(file: Path, pkg: String) extends Input
-    object SingleFile {
-      implicit val rw: ReadWriter[SingleFile] = macroRW
-    }
+
     case class Directory(directory: Path, basePkg: Option[String]) extends Input
-    object Directory {
-      implicit val rw: ReadWriter[Directory] = macroRW
-    }
 
     def dir(path: Path, basePkg: Option[String] = None): Input =
       Input.Directory(path, basePkg)
-
-    implicit val rw: ReadWriter[Input] =
-      ReadWriter.merge(SingleFile.rw, Directory.rw)
   }
 
   case class TypesMapping(dateTime: Class[_] = classOf[LocalDateTime])
@@ -190,7 +182,4 @@ object OpenApiCodegenScalaModule {
   }
 
   case class FileOpts(pkg: String, relPath: RelPath)
-  object FileOpts {
-    implicit val rw: ReadWriter[FileOpts] = macroRW
-  }
 }
