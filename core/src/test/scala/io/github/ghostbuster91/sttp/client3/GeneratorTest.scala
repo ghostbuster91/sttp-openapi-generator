@@ -104,6 +104,9 @@ object GeneratorTest extends TestSuite {
         CodegenConfig(typesMapping = TypesMapping(dateTime = classOf[Instant]))
       )
       "date" - test()
+      "date-as-instant" - test(
+        CodegenConfig(typesMapping = TypesMapping(date = classOf[Instant]))
+      )
     }
 
     "header" - {
