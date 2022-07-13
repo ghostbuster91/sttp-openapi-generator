@@ -1,7 +1,4 @@
 val Scala212 = "2.12.15"
-val Scala213 = "2.13.8"
-
-lazy val supportedScalaVersions = List(Scala213, Scala212)
 
 ThisBuild / scalaVersion := Scala212
 
@@ -54,7 +51,6 @@ lazy val parser: Project = (project in file("parser"))
   .settings(commonSettings)
   .settings(
     name := "parser",
-    crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
       "io.swagger.parser.v3" % "swagger-parser" % "2.0.28",
       "com.softwaremill.sttp.model" %% "core" % "1.4.27"
