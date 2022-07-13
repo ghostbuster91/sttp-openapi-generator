@@ -28,12 +28,12 @@ trait CirceCodecs extends SttpCirceApi {
         Left(DecodingFailure("Unexpected value for coproduct:" + other, Nil))
     })
   }
-  implicit lazy val entityEncoder: Encoder[Entity] = Encoder.instance({
+  implicit lazy val entityEncoder: Encoder[Entity] = Encoder.instance{
     case organization: Organization =>
       Encoder[Organization].apply(organization)
     case person: Person =>
       Encoder[Person].apply(person)
-  })
+  }
 }
 object CirceCodecs extends CirceCodecs
 
@@ -48,9 +48,9 @@ class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
     .get(uri"$baseUrl")
     .response(
       fromMetadata(
-        asJson[Entity].getRight, 
+        asJson[Entity].getRight,
         ConditionalResponseAs(
-          _.code == StatusCode.unsafeApply(200), 
+          _.code == StatusCode.unsafeApply(200),
           asJson[Entity].getRight
         )
       )
