@@ -4,34 +4,40 @@ import _root_.sttp.client3._
 import _root_.sttp.model._
 import _root_.io.circe.Decoder
 import _root_.io.circe.Encoder
+import _root_.io.circe.HCursor
+import _root_.io.circe.DecodingFailure
+import _root_.io.circe.Decoder.Result
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-
-  implicit lazy val organizationDecoder: Decoder[Organization] =
+  implicit lazy val organizationDecoder: Decoder[Organization] = 
     Decoder.forProduct1("name")(Organization.apply)
-  implicit lazy val organizationEncoder: Encoder[Organization] =
+  implicit lazy val organizationEncoder: Encoder[Organization] = 
     Encoder.forProduct1("name")(p => p.name)
-  implicit lazy val personDecoder: Decoder[Person] =
+  implicit lazy val personDecoder: Decoder[Person] = 
     Decoder.forProduct2("name", "age")(Person.apply)
-  implicit lazy val personEncoder: Encoder[Person] =
+  implicit lazy val personEncoder: Encoder[Person] = 
     Encoder.forProduct2("name", "age")(p => (p.name, p.age))
-  implicit lazy val entityDecoder: Decoder[Entity] = List[Decoder[Entity]](
-    Decoder[Organization].asInstanceOf[Decoder[Entity]],
-    Decoder[Person].asInstanceOf[Decoder[Entity]]
-  ).reduceLeft(_ or _)
-  implicit lazy val entityEncoder: Encoder[Entity] = Encoder.instance {
+  implicit lazy val entityDecoder: Decoder[Entity] = new Decoder[Entity]() {
+    override def apply(c: HCursor): Result[Entity] = c.downField("name").as[String].flatMap({
+      case "Organization" =>
+        Decoder[Organization].apply(c)
+      case "Person" =>
+        Decoder[Person].apply(c)
+      case other =>
+        Left(DecodingFailure("Unexpected value for coproduct:" + other, Nil))
+    })
+  }
+  implicit lazy val entityEncoder: Encoder[Entity] = Encoder.instance({
     case organization: Organization =>
       Encoder[Organization].apply(organization)
     case person: Person =>
       Encoder[Person].apply(person)
-  }
+  })
 }
 object CirceCodecs extends CirceCodecs
 
-sealed trait Entity {
-  def name: String
-}
+sealed trait Entity { def name: String }
 case class Organization(name: String) extends Entity()
 case class Person(name: String, age: Int) extends Entity()
 
@@ -42,9 +48,9 @@ class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
     .get(uri"$baseUrl")
     .response(
       fromMetadata(
-        asJson[Entity].getRight,
+        asJson[Entity].getRight, 
         ConditionalResponseAs(
-          _.code == StatusCode.unsafeApply(200),
+          _.code == StatusCode.unsafeApply(200), 
           asJson[Entity].getRight
         )
       )

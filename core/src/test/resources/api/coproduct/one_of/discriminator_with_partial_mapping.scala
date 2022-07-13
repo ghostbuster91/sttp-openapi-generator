@@ -20,10 +20,10 @@ trait CirceCodecs extends SttpCirceApi {
     Encoder.forProduct2("name", "age")(p => (p.name, p.age))
   implicit lazy val entityDecoder: Decoder[Entity] = new Decoder[Entity]() {
     override def apply(c: HCursor): Result[Entity] = c.downField("name").as[String].flatMap({
+      case "Organization" =>
+        Decoder[Organization].apply(c)
       case "john" =>
         Decoder[Person].apply(c)
-      case "sml" =>
-        Decoder[Organization].apply(c)
       case other =>
         Left(DecodingFailure("Unexpected value for coproduct:" + other, Nil))
     })
