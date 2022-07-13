@@ -7,9 +7,8 @@ import sbt.internal.util.ManagedLogger
 import sbt.Keys.*
 import sbt.*
 
-import java.time.LocalDateTime
-
-import implicits._
+import java.time.{LocalDate, LocalDateTime}
+import implicits.*
 
 object SttpOpenApiCodegenPlugin extends AutoPlugin {
 
@@ -172,7 +171,10 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
     case class Directory(directory: File, basePkg: Option[String]) extends Input
   }
 
-  case class TypesMapping(dateTime: Class[_] = classOf[LocalDateTime])
+  case class TypesMapping(
+      dateTime: Class[_] = classOf[LocalDateTime],
+      date: Class[_] = classOf[LocalDate]
+  )
 
   sealed trait JsonLibrary
   object JsonLibrary {

@@ -9,7 +9,7 @@ import scala.meta._
 import sttp.model.MediaType
 import sttp.model.Method
 
-import java.time.LocalDateTime
+import java.time.{LocalDate, LocalDateTime}
 
 class Codegen(logger: LogAdapter, config: CodegenConfig) {
   def generateUnsafe(openApiYaml: String, packageName: Option[String]): Source =
@@ -168,7 +168,8 @@ case class CodegenConfig(
     typesMapping: TypesMapping = TypesMapping()
 )
 
-case class TypesMapping(dateTime: Class[_] = classOf[LocalDateTime])
+case class TypesMapping(dateTime: Class[_] = classOf[LocalDateTime],
+                        date: Class[_] = classOf[LocalDate])
 
 case class CodegenOutput(
     processedOps: Map[Option[String], List[Defn.Def]],

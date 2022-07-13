@@ -7,9 +7,8 @@ import mill.scalalib.*
 import os.{Path, RelPath}
 import upickle.default.*
 
-import java.time.LocalDateTime
-
-import Implicits._
+import java.time.{LocalDate, LocalDateTime}
+import Implicits.*
 
 trait OpenApiCodegenScalaModule extends ScalaModule {
 
@@ -174,7 +173,10 @@ object OpenApiCodegenScalaModule {
       Input.Directory(path, basePkg)
   }
 
-  case class TypesMapping(dateTime: Class[_] = classOf[LocalDateTime])
+  case class TypesMapping(
+      dateTime: Class[_] = classOf[LocalDateTime],
+      date: Class[_] = classOf[LocalDate]
+  )
 
   sealed trait JsonLibrary
   object JsonLibrary {
