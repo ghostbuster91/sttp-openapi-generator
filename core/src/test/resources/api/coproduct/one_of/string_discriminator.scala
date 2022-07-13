@@ -10,13 +10,13 @@ import _root_.io.circe.Decoder.Result
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
-  implicit lazy val organizationDecoder: Decoder[Organization] = 
+  implicit lazy val organizationDecoder: Decoder[Organization] =
     Decoder.forProduct1("name")(Organization.apply)
-  implicit lazy val organizationEncoder: Encoder[Organization] = 
+  implicit lazy val organizationEncoder: Encoder[Organization] =
     Encoder.forProduct1("name")(p => p.name)
-  implicit lazy val personDecoder: Decoder[Person] = 
+  implicit lazy val personDecoder: Decoder[Person] =
     Decoder.forProduct2("name", "age")(Person.apply)
-  implicit lazy val personEncoder: Encoder[Person] = 
+  implicit lazy val personEncoder: Encoder[Person] =
     Encoder.forProduct2("name", "age")(p => (p.name, p.age))
   implicit lazy val entityDecoder: Decoder[Entity] = new Decoder[Entity]() {
     override def apply(c: HCursor): Result[Entity] = c.downField("name").as[String].flatMap({

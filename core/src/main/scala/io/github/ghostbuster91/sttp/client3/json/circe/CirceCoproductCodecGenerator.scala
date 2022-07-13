@@ -143,12 +143,11 @@ private[circe] class CirceCoproductCodecGenerator() {
   private def mergeMappings(
       explicitMapping: Map[String, ClassName],
       implicitMapping: Map[String, ClassName]
-  ): Map[String, ClassName] =
-    (explicitMapping.toSeq ++ implicitMapping.toSeq)
-      .groupBy(_._2)
-      .values
-      .map(_.head)
-      .toMap
+  ): Map[String, ClassName] = {
+    val explicitMappingByClassName = explicitMapping.map(_.swap)
+    val implicitMappingByClassName = implicitMapping.map(_.swap)
+    (implicitMappingByClassName ++ explicitMappingByClassName).map(_.swap)
+  }
 
   private def decoderCaseForString(discValue: String, child: ClassName) =
     p"case $discValue => Decoder[${child.typeName}].apply(c)"
