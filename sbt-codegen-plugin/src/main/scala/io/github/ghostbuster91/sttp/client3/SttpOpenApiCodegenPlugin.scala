@@ -4,8 +4,12 @@ import io.github.ghostbuster91.sttp.client3.SbtCodegenAdapter.FileOpts
 import sbt.{AutoPlugin, Def, File}
 import org.scalafmt.interfaces.Scalafmt
 import sbt.internal.util.ManagedLogger
-import sbt.Keys._
-import sbt._
+import sbt.Keys.*
+import sbt.*
+
+import java.time.LocalDateTime
+
+import implicits._
 
 object SttpOpenApiCodegenPlugin extends AutoPlugin {
 
@@ -41,9 +45,9 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
         val scalafmt = Scalafmt.create(this.getClass.getClassLoader)
         val config = CodegenConfig(
           handleErrors = sttpOpenApiHandleErrors.value,
-          sttpOpenApiJsonLibrary.value,
+          sttpOpenApiJsonLibrary.value.convert,
           sttpOpenApiMinimizeOutput.value,
-          sttpOpenApiTypesMapping.value
+          sttpOpenApiTypesMapping.value.convert
         )
         val codegen = new SbtCodegenAdapter(
           config,
@@ -137,13 +141,13 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
   import autoImport._
 
   private lazy val coreDeps = List(
-    "com.softwaremill.sttp.client3" %% "core" % "3.3.18"
+    "com.softwaremill.sttp.client3" %% "core" % "3.6.2"
   )
 
   private lazy val circeDeps = List(
     "io.circe" %% "circe-core" % "0.14.2",
     "io.circe" %% "circe-parser" % "0.14.2",
-    "com.softwaremill.sttp.client3" %% "circe" % "3.3.18"
+    "com.softwaremill.sttp.client3" %% "circe" % "3.6.2"
   )
 
   override def projectSettings: Seq[Def.Setting[_]] =
@@ -166,5 +170,12 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
   object Input {
     case class SingleFile(file: File, pkg: String) extends Input
     case class Directory(directory: File, basePkg: Option[String]) extends Input
+  }
+
+  case class TypesMapping(dateTime: Class[_] = classOf[LocalDateTime])
+
+  sealed trait JsonLibrary
+  object JsonLibrary {
+    object Circe extends JsonLibrary
   }
 }
