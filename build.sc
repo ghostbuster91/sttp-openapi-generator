@@ -85,10 +85,15 @@ trait BaseModule extends ScalafmtModule with TpolecatModule {
 trait CommonPublishModule extends PublishModule {
   def publishVersion = T {
     val vcsState = VcsVersion.vcsState()
+    val formattedTag = vcsState.format(tagModifier = t => if(t.startsWith("v")){
+      t.drop(1)
+    }else {
+      t
+    })
     if (vcsState.commitsSinceLastTag > 0) {
-      s"${vcsState.format()}-SNAPSHOT"
+      s"$formattedTag-SNAPSHOT"
     } else {
-      vcsState.format()
+      formattedTag
     }
   }
   def pomSettings = PomSettings(
