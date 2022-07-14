@@ -63,12 +63,15 @@ case class Model(
       case sb: SafeBooleanSchema =>
         ParameterRef("Boolean", sb.default.map(Lit.Boolean(_))).pure[IM]
       case _: SafeDateSchema =>
-        registerExternalTpe(q"import _root_.java.time.LocalDate").map(tpe =>
-          ParameterRef(tpe, ParameterName("localDate"), None)
+        val mappingType = s"_root_.${typeMappings.date.getName}"
+        val importer = Import(List(mappingType.parse[Importer].get))
+
+        registerExternalTpe(importer).map(tpe =>
+          ParameterRef(tpe, ParameterName("date"), None)
         )
-      case sdt: SafeDateTimeSchema =>
-        val dateTimeType = s"_root_.${typeMappings.dateTime.getName}"
-        val importer = Import(List(dateTimeType.parse[Importer].get))
+      case _: SafeDateTimeSchema =>
+        val mappingType = s"_root_.${typeMappings.dateTime.getName}"
+        val importer = Import(List(mappingType.parse[Importer].get))
 
         registerExternalTpe(importer).map(tpe =>
           ParameterRef(tpe, ParameterName("dateTime"), None)

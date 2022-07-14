@@ -12,6 +12,6 @@ package object implicits {
 
   implicit class TypesMappingHelper(value: PluginTypesMapping) {
     def convert: CoreTypesMapping =
-      CoreTypesMapping(dateTime = value.dateTime)
+      CoreTypesMapping(dateTime = value.dateTime, date = value.date)
   }
 }

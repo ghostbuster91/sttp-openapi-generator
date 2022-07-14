@@ -5,8 +5,5 @@ trait LogAdapter {
 }
 
 object LogAdapter {
-  val StdOut: LogAdapter = new LogAdapter {
-    override def warn(msg: String): Unit =
-      println(s"Warning: $msg")
-  }
+  val StdOut: LogAdapter = (msg: String) => println(s"Warning: $msg")
 }

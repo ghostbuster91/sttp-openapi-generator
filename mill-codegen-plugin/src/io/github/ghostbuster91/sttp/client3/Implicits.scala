@@ -23,7 +23,7 @@ object Implicits extends JsonFormatters {
 
   implicit class TypesMappingHelper(value: PluginTypesMapping) {
     def convert: CoreTypesMapping =
-      CoreTypesMapping(dateTime = value.dateTime)
+      CoreTypesMapping(dateTime = value.dateTime, date = value.date)
   }
 
   implicit val relPathRw: ReadWriter[RelPath] =
@@ -35,8 +35,16 @@ object Implicits extends JsonFormatters {
 
   implicit val typesMappingRw: ReadWriter[PluginTypesMapping] =
     implicitly[ReadWriter[Map[String, String]]].bimap[PluginTypesMapping](
-      v => Map("dateTime" -> v.dateTime.getName),
-      g => PluginTypesMapping(dateTime = Class.forName(g("dateTime")))
+      v =>
+        Map(
+          "dateTime" -> v.dateTime.getName,
+          "date" -> v.date.getName
+        ),
+      g =>
+        PluginTypesMapping(
+          dateTime = Class.forName(g("dateTime")),
+          date = Class.forName(g("date"))
+        )
     )
 
   implicit val jsonLibraryCirceRw: ReadWriter[PluginJsonLibrary.Circe.type] =
@@ -47,9 +55,9 @@ object Implicits extends JsonFormatters {
   implicit val fileOpts: ReadWriter[FileOpts] = macroRW
 
   implicit val singleFileRw
-  : ReadWriter[OpenApiCodegenScalaModule.Input.SingleFile] = macroRW
+      : ReadWriter[OpenApiCodegenScalaModule.Input.SingleFile] = macroRW
   implicit val directoryRw
-  : ReadWriter[OpenApiCodegenScalaModule.Input.Directory] = macroRW
+      : ReadWriter[OpenApiCodegenScalaModule.Input.Directory] = macroRW
 
   implicit val inputRw: ReadWriter[OpenApiCodegenScalaModule.Input] =
     ReadWriter.merge(
@@ -57,4 +65,3 @@ object Implicits extends JsonFormatters {
       directoryRw
     )
 }
-
