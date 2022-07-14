@@ -22,7 +22,7 @@ trait CirceCodecs extends SttpCirceApi {
     override def apply(c: HCursor): Result[Entity] = c.downField("name").as[String].flatMap({
       case "Organization" =>
         Decoder[Organization].apply(c)
-      case "Person" =>
+      case "john" =>
         Decoder[Person].apply(c)
       case other =>
         Left(DecodingFailure("Unexpected value for coproduct:" + other, Nil))
