@@ -393,5 +393,9 @@ See the list of issues and pick one! Or report your own.
 If you are having doubts on the why or how something works, don't hesitate to ask a question.
 
 
+## Releasing a new version
+
+Push a new tag to the master branch.
+
 ## License
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fghostbuster91%2Fsttp-openapi-generator.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fghostbuster91%2Fsttp-openapi-generator?ref=badge_large)
