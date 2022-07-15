@@ -16,7 +16,7 @@ class ParserModule(val crossScalaVersion: String)
     with CommonPublishModule {
   override def ivyDeps = Agg(
     ivy"io.swagger.parser.v3:swagger-parser:2.0.28",
-    ivy"com.softwaremill.sttp.model::core:1.4.27"
+    ivy"com.softwaremill.sttp.model::core:1.5.0"
   )
   object test extends Tests with CommonTestModule
 }
@@ -85,11 +85,14 @@ trait BaseModule extends ScalafmtModule with TpolecatModule {
 trait CommonPublishModule extends PublishModule {
   def publishVersion = T {
     val vcsState = VcsVersion.vcsState()
-    val formattedTag = vcsState.format(tagModifier = t => if(t.startsWith("v")){
-      t.drop(1)
-    }else {
-      t
-    })
+    val formattedTag = vcsState.format(tagModifier =
+      t =>
+        if (t.startsWith("v")) {
+          t.drop(1)
+        } else {
+          t
+        }
+    )
     if (vcsState.commitsSinceLastTag > 0) {
       s"$formattedTag-SNAPSHOT"
     } else {
