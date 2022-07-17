@@ -1,5 +1,6 @@
 package io.github.ghostbuster91.sttp.client3
 
+import org.joda.time.DateTime
 import utest._
 
 import java.time.Instant
@@ -76,6 +77,7 @@ object GeneratorTest extends TestSuite {
         "string_discriminator" - test()
         "int_discriminator" - test()
         "discriminator_with_mapping" - test()
+        "discriminator_with_partial_mapping" - test()
         // Following case is actually invalid because there is no way to create discriminator mapping using empty value as a key
         //"optional_discriminator" - test()
         "discriminator_enum" - test()
@@ -102,6 +104,10 @@ object GeneratorTest extends TestSuite {
       "date-time-as-instant" - test(
         CodegenConfig(typesMapping = TypesMapping(dateTime = classOf[Instant]))
       )
+      "date" - test()
+      "date-as-instant" - test(
+        CodegenConfig(typesMapping = TypesMapping(date = classOf[Instant]))
+      )
     }
 
     "header" - {
@@ -124,7 +130,7 @@ object GeneratorTest extends TestSuite {
 
   def testNoCompile(
       codeGenConfig: CodegenConfig = CodegenConfig()
-  )(implicit testPath: utest.framework.TestPath) = {
+  )(implicit testPath: utest.framework.TestPath): Unit = {
     val testName = testPath.value.mkString("/")
     val yaml = load(s"$testName.yaml")
     val result = new Codegen(
@@ -141,7 +147,7 @@ object GeneratorTest extends TestSuite {
 
   def test(
       codeGenConfig: CodegenConfig = CodegenConfig()
-  )(implicit testPath: utest.framework.TestPath) = {
+  )(implicit testPath: utest.framework.TestPath): Unit = {
     testNoCompile(codeGenConfig)
     val testName = testPath.value.mkString("/")
     val expected = load(s"$testName.scala")

@@ -4,7 +4,6 @@ import _root_.sttp.client3._
 import _root_.sttp.model._
 import _root_.io.circe.Decoder
 import _root_.io.circe.Encoder
-import _root_.io.circe.Json
 import _root_.io.circe.HCursor
 import _root_.io.circe.DecodingFailure
 import _root_.io.circe.Decoder.Result
@@ -20,25 +19,20 @@ trait CirceCodecs extends SttpCirceApi {
   implicit lazy val personEncoder: Encoder[Person] =
     Encoder.forProduct2("name", "age")(p => (p.name, p.age))
   implicit lazy val entityDecoder: Decoder[Entity] = new Decoder[Entity]() {
-    override def apply(c: HCursor): Result[Entity] = c
-      .downField("name")
-      .as[String]
-      .flatMap {
-        case "john" =>
-          Decoder[Person].apply(c)
-        case "sml" =>
-          Decoder[Organization].apply(c)
-        case other =>
-          Left(DecodingFailure("Unexpected value for coproduct:" + other, Nil))
-      }
+    override def apply(c: HCursor): Result[Entity] = c.downField("name").as[String].flatMap({
+      case "john" =>
+        Decoder[Person].apply(c)
+      case "sml" =>
+        Decoder[Organization].apply(c)
+      case other =>
+        Left(DecodingFailure("Unexpected value for coproduct:" + other, Nil))
+    })
   }
-  implicit lazy val entityEncoder: Encoder[Entity] = new Encoder[Entity]() {
-    override def apply(entity: Entity): Json = entity match {
-      case person: Person =>
-        Encoder[Person].apply(person)
-      case organization: Organization =>
-        Encoder[Organization].apply(organization)
-    }
+  implicit lazy val entityEncoder: Encoder[Entity] = Encoder.instance{
+    case organization: Organization =>
+      Encoder[Organization].apply(organization)
+    case person: Person =>
+      Encoder[Person].apply(person)
   }
 }
 object CirceCodecs extends CirceCodecs
