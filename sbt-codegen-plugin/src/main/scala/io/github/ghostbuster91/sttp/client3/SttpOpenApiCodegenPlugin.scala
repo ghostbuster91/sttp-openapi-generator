@@ -140,13 +140,13 @@ object SttpOpenApiCodegenPlugin extends AutoPlugin {
   import autoImport._
 
   private lazy val coreDeps = List(
-    "com.softwaremill.sttp.client3" %% "core" % "3.7.1"
+    "com.softwaremill.sttp.client3" %% "core" % "3.7.4"
   )
 
   private lazy val circeDeps = List(
     "io.circe" %% "circe-core" % "0.14.2",
     "io.circe" %% "circe-parser" % "0.14.2",
-    "com.softwaremill.sttp.client3" %% "circe" % "3.7.1"
+    "com.softwaremill.sttp.client3" %% "circe" % "3.7.4"
   )
 
   override def projectSettings: Seq[Def.Setting[_]] =
