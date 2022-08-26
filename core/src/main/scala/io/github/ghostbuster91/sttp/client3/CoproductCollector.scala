@@ -203,7 +203,8 @@ class CoproductCollector(
       dsc: SafeDiscriminator,
       children: NonEmptyList[ClassName]
   ): Map[String, ClassName] = {
-    val explicitMapping = dsc.mapping.mapValues(ref => model.classNameFor(ref))
+    val explicitMapping =
+      dsc.mapping.mapValues(ref => model.classNameFor(ref)).toMap
     val implicitMapping = implicitMappingForCoproductDiscriminator(children)
     mergeMappings(explicitMapping, implicitMapping)
   }
