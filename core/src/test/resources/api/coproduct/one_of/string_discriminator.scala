@@ -11,11 +11,11 @@ import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
   implicit lazy val organizationDecoder: Decoder[Organization] =
-    Decoder.forProduct0()(Organization.apply)
+    Decoder.const(Organization.apply)
   implicit lazy val organizationEncoder: Encoder[Organization] =
-    Encoder.forProduct1("name")(p => "Organisation")
+    Encoder.forProduct1("name")(_ => "Organization")
   implicit lazy val personDecoder: Decoder[Person] =
-    Decoder.forProduct2("age")(Person.apply)
+    Decoder.forProduct1("age")(Person.apply)
   implicit lazy val personEncoder: Encoder[Person] =
     Encoder.forProduct2("name", "age")(p => ("Person", p.age))
   implicit lazy val entityDecoder: Decoder[Entity] = new Decoder[Entity]() {
