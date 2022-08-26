@@ -11,13 +11,13 @@ import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
   implicit lazy val organizationDecoder: Decoder[Organization] =
-    Decoder.forProduct1("name")(Organization.apply)
+    Decoder.forProduct0()(Organization.apply)
   implicit lazy val organizationEncoder: Encoder[Organization] =
-    Encoder.forProduct1("name")(p => p.name)
+    Encoder.forProduct1("name")(p => "Organisation")
   implicit lazy val personDecoder: Decoder[Person] =
-    Decoder.forProduct2("name", "age")(Person.apply)
+    Decoder.forProduct2("age")(Person.apply)
   implicit lazy val personEncoder: Encoder[Person] =
-    Encoder.forProduct2("name", "age")(p => (p.name, p.age))
+    Encoder.forProduct2("name", "age")(p => ("Person", p.age))
   implicit lazy val entityDecoder: Decoder[Entity] = new Decoder[Entity]() {
     override def apply(c: HCursor): Result[Entity] = c.downField("name").as[String].flatMap({
       case "Organization" =>
@@ -37,9 +37,9 @@ trait CirceCodecs extends SttpCirceApi {
 }
 object CirceCodecs extends CirceCodecs
 
-sealed trait Entity { def name: String }
-case class Organization(name: String) extends Entity()
-case class Person(name: String, age: Int) extends Entity()
+sealed trait Entity
+case class Organization() extends Entity()
+case class Person(age: Int) extends Entity()
 
 class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
   import circeCodecs._
