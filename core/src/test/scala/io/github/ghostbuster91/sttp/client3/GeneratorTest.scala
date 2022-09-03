@@ -1,6 +1,5 @@
 package io.github.ghostbuster91.sttp.client3
 
-import org.joda.time.DateTime
 import utest._
 
 import java.time.Instant
@@ -68,6 +67,7 @@ object GeneratorTest extends TestSuite {
     "coproduct" - {
       "all_of" - {
         "simple" - test()
+        "simple_with_discriminator" - test()
         "multiple_parents" - test()
         "multiple_siblings" - test(CodegenConfig(minimize = false))
       }
