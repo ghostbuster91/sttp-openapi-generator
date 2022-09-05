@@ -129,6 +129,9 @@ class CirceProductCodecGenerator {
                 .find { case (_, className) => className == product.name }
                 .map(_._1)
                 .map {
+                  /* For the Enum we use the Literal value as the value instead of the Enum term itself, to avoid additional complexity.
+                   * As we are responsible for generating both the enum and the codecs that use it, we can be sure the outcome is the same.
+                   */
                   case EnumValue.StringEv(v) => Lit.String(v)
                   case EnumValue.IntEv(v)    => Lit.Int(v)
                 }
