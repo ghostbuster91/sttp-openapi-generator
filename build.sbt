@@ -36,7 +36,7 @@ lazy val rootProject = (project in file("."))
   .aggregate(core, codegenSbtPlugin, parser)
 
 lazy val testDependencies = Seq(
-  "com.lihaoyi" %% "utest" % "0.8.0",
+  "com.lihaoyi" %% "utest" % "0.8.1",
   "com.softwaremill.diffx" %% "diffx-utest" % "0.7.1",
   "com.softwaremill.diffx" %% "diffx-cats" % "0.7.1",
   "com.softwaremill.sttp.client3" %% "core" % "3.7.6",

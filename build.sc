@@ -63,7 +63,7 @@ object `mill-codegen-plugin-itest` extends MillIntegrationTestModule {
 
 trait CommonTestModule extends BaseModule with TestModule {
   override def ivyDeps = Agg(
-    ivy"com.lihaoyi::utest::0.8.0",
+    ivy"com.lihaoyi::utest::0.8.1",
     ivy"com.softwaremill.diffx::diffx-utest::0.7.1",
     ivy"com.softwaremill.diffx::diffx-cats::0.7.1",
     ivy"com.softwaremill.sttp.client3::core::3.7.6",
