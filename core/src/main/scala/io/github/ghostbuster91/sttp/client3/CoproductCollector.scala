@@ -41,7 +41,8 @@ class CoproductCollector(
               .schemaFor(oneOf.head.ref)
               .asInstanceOf[SafeObjectSchema]
           val discriminatorSchema = child.properties(dsc.propertyName)
-
+          val children =
+            oneOf.map(childRef => model.classNameFor(childRef.ref))
           model
             .schemaToParameter(
               discriminatorSchema,
@@ -51,9 +52,11 @@ class CoproductCollector(
               Coproduct(
                 model.classNameFor(key),
                 List(paramRef.withName(dsc.propertyName)),
-                Some(coproductDiscriminator(dsc, discriminatorSchema)),
+                Some(
+                  coproductDiscriminator(dsc, discriminatorSchema, children)
+                ),
                 None,
-                oneOf.map(childRef => model.classNameFor(childRef.ref))
+                children
               )
             }
         case None =>
@@ -140,33 +143,34 @@ class CoproductCollector(
       val parentSchema = model
         .schemaFor(parent.ref)
         .asInstanceOf[SchemaWithProperties]
+      val children = NonEmptyList.fromListUnsafe(
+        parentToChilds(parent.ref).map(model.classNameFor)
+      )
+
       Coproduct(
         model.classNameFor(parent.ref),
         props,
         parentSchema.discriminator
           .map { dsc =>
             val discriminatorSchema = parentSchema.properties(dsc.propertyName)
-            coproductDiscriminator(dsc, discriminatorSchema)
+            coproductDiscriminator(dsc, discriminatorSchema, children)
           },
         addProps,
-        NonEmptyList.fromListUnsafe(
-          parentToChilds(parent.ref).map(model.classNameFor)
-        )
+        children
       )
     }
   }
 
   private def coproductDiscriminator(
       dsc: SafeDiscriminator,
-      discriminatorSchema: SafeSchema
+      discriminatorSchema: SafeSchema,
+      children: NonEmptyList[ClassName]
   ): Discriminator[_] =
     discriminatorSchema match {
       case _: SafeStringSchema =>
         Discriminator.StringDsc(
           dsc.propertyName,
-          dsc.mapping
-            .mapValues(ref => model.classNameFor(ref))
-            .toMap
+          stringDiscriminatorMapping(dsc, children)
         )
       case _: SafeIntegerSchema =>
         Discriminator.IntDsc(
@@ -194,5 +198,31 @@ class CoproductCollector(
           enumMap
         )
     }
+
+  private def stringDiscriminatorMapping(
+      dsc: SafeDiscriminator,
+      children: NonEmptyList[ClassName]
+  ): Map[String, ClassName] = {
+    val explicitMapping =
+      dsc.mapping.mapValues(ref => model.classNameFor(ref)).toMap
+    val implicitMapping = implicitMappingForCoproductDiscriminator(children)
+    mergeMappings(explicitMapping, implicitMapping)
+  }
+
+  private def implicitMappingForCoproductDiscriminator(
+      children: NonEmptyList[ClassName]
+  ): Map[String, ClassName] =
+    children.toList.map { child: ClassName =>
+      child.typeName.value -> child
+    }.toMap
+
+  private def mergeMappings(
+      explicitMapping: Map[String, ClassName],
+      implicitMapping: Map[String, ClassName]
+  ): Map[String, ClassName] = {
+    val explicitMappingByClassName = explicitMapping.map(_.swap)
+    val implicitMappingByClassName = implicitMapping.map(_.swap)
+    (implicitMappingByClassName ++ explicitMappingByClassName).map(_.swap)
+  }
 
 }

@@ -4,21 +4,30 @@ import _root_.sttp.client3._
 import _root_.sttp.model._
 import _root_.io.circe.Decoder
 import _root_.io.circe.Encoder
+import _root_.io.circe.HCursor
+import _root_.io.circe.DecodingFailure
+import _root_.io.circe.Decoder.Result
 import _root_.sttp.client3.circe.SttpCirceApi
 
 trait CirceCodecs extends SttpCirceApi {
   implicit lazy val organizationDecoder: Decoder[Organization] =
-    Decoder.forProduct1("name")(Organization.apply)
+    Decoder.const(Organization.apply)
   implicit lazy val organizationEncoder: Encoder[Organization] =
-    Encoder.forProduct1("name")(p => p.name)
+    Encoder.forProduct1("name")(_ => 2)
   implicit lazy val personDecoder: Decoder[Person] =
-    Decoder.forProduct2("name", "age")(Person.apply)
+    Decoder.forProduct1("age")(Person.apply)
   implicit lazy val personEncoder: Encoder[Person] =
-    Encoder.forProduct2("name", "age")(p => (p.name, p.age))
-  implicit lazy val entityDecoder: Decoder[Entity] = List[Decoder[Entity]](
-    Decoder[Organization].asInstanceOf[Decoder[Entity]],
-    Decoder[Person].asInstanceOf[Decoder[Entity]]
-  ).reduceLeft(_ or _)
+    Encoder.forProduct2("name", "age")(p => (1, p.age))
+  implicit lazy val entityDecoder: Decoder[Entity] = new Decoder[Entity]() {
+    override def apply(c: HCursor): Result[Entity] = c.downField("name").as[Int].flatMap({
+      case 1 =>
+        Decoder[Person].apply(c)
+      case 2 =>
+        Decoder[Organization].apply(c)
+      case other =>
+        Left(DecodingFailure("Unexpected value for coproduct:" + other, Nil))
+    })
+  }
   implicit lazy val entityEncoder: Encoder[Entity] = Encoder.instance {
     case organization: Organization =>
       Encoder[Organization].apply(organization)
@@ -27,9 +36,9 @@ trait CirceCodecs extends SttpCirceApi {
   }
 }
 object CirceCodecs extends CirceCodecs
-sealed trait Entity { def name: Int }
-case class Organization(name: Int) extends Entity()
-case class Person(name: Int, age: Int) extends Entity()
+sealed trait Entity
+case class Organization() extends Entity()
+case class Person(age: Int) extends Entity()
 
 class DefaultApi(baseUrl: String, circeCodecs: CirceCodecs = CirceCodecs) {
   import circeCodecs._

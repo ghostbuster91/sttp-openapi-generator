@@ -21,6 +21,9 @@ components:
         - $ref: "#/components/schemas/Organization"
       discriminator:
         propertyName: name
+        mapping:
+          1: "#/components/schemas/Person"
+          2: "#/components/schemas/Organization"
     Person:
       required:
         - name

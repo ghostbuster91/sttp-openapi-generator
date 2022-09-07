@@ -168,8 +168,10 @@ case class CodegenConfig(
     typesMapping: TypesMapping = TypesMapping()
 )
 
-case class TypesMapping(dateTime: Class[_] = classOf[LocalDateTime],
-                        date: Class[_] = classOf[LocalDate])
+case class TypesMapping(
+    dateTime: Class[_] = classOf[LocalDateTime],
+    date: Class[_] = classOf[LocalDate]
+)
 
 case class CodegenOutput(
     processedOps: Map[Option[String], List[Defn.Def]],
