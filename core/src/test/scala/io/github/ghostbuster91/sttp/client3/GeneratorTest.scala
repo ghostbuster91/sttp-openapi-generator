@@ -1,6 +1,5 @@
 package io.github.ghostbuster91.sttp.client3
 
-import org.joda.time.DateTime
 import utest._
 
 import java.time.Instant
@@ -68,6 +67,7 @@ object GeneratorTest extends TestSuite {
     "coproduct" - {
       "all_of" - {
         "simple" - test()
+        "simple_with_discriminator" - test()
         "multiple_parents" - test()
         "multiple_siblings" - test(CodegenConfig(minimize = false))
       }
@@ -75,12 +75,11 @@ object GeneratorTest extends TestSuite {
         "simple" - test()
         "multiple_parents" - test()
         "string_discriminator" - test()
-        "int_discriminator" - test()
+        "int_discriminator_with_mapping" - test()
         "discriminator_with_mapping" - test()
         "discriminator_with_partial_mapping" - test()
         // Following case is actually invalid because there is no way to create discriminator mapping using empty value as a key
         //"optional_discriminator" - test()
-        "discriminator_enum" - test()
         "discriminator_with_enum_mapping" - test()
       }
     }

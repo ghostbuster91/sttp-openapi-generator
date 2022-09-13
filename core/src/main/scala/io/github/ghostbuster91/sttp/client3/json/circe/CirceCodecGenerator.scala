@@ -19,7 +19,9 @@ class CirceCodecGenerator() extends JsonCodecGenerator {
       productCodecs <- products
         .collect { case p: Product.Regular => p }
         .sortBy(_.name)
-        .traverse(productGen.generate)
+        .traverse { product: Product.Regular =>
+          productGen.generate(product, coproducts)
+        }
         .map(_.flatten)
       openProductCodecs <- products
         .collect { case p: Product.Open => p }

@@ -13,17 +13,23 @@ object ModelGenerator {
       .map(schemaToSealedTrait)
     val traits = products
       .sortBy(_.name)
-      .map(schemaToClassDef)
+      .map(product => schemaToClassDef(product, coproducts))
     classes ++ traits
   }
 
   private def schemaToClassDef(
-      product: Product
+      product: Product,
+      coproducts: List[Coproduct]
   ): Defn =
     product.parents match {
       case parents if parents.nonEmpty =>
+        val parentCoproducts = coproducts.filter { coproduct: Coproduct =>
+          parents.contains(coproduct.name)
+        }
         val parentInits = parents.sortBy(_.v).map(p => init"${p.typeName}()")
-        q"case class ${product.name.typeName}(..${product.allProperties.map(_.asParam)}) extends ..$parentInits"
+        q"case class ${product.name.typeName}(..${product.allProperties
+          .filterNot(property => isDiscriminatorProperty(property, parentCoproducts))
+          .map(_.asParam)}) extends ..$parentInits"
       case Nil =>
         q"case class ${product.name.typeName}(..${product.allProperties.map(_.asParam)})"
     }
@@ -32,10 +38,24 @@ object ModelGenerator {
       coproduct: Coproduct
   ): Defn.Trait = {
     val defParams =
-      (coproduct.properties ++ coproduct.additionalProperties).map(_.asDef)
+      (coproduct.properties ++ coproduct.additionalProperties)
+        .filterNot { property =>
+          isDiscriminatorProperty(property, List(coproduct))
+        }
+        .map(_.asDef)
     q"""sealed trait ${coproduct.name.typeName} {
             ..$defParams
         }
         """
   }
+
+  private def isDiscriminatorProperty(
+      property: ParameterRef,
+      coproducts: List[Coproduct]
+  ): Boolean =
+    coproducts
+      .flatMap(_.discriminator)
+      .exists { discriminator =>
+        property.paramName.term.value == discriminator.fieldName
+      }
 }

@@ -284,7 +284,7 @@ object SchemaRef {
     } else if (ref.contains("#/components/requestBodies/")) {
       SchemaRef.RequestBody(ref.replaceAll("#/components/requestBodies/", ""))
     } else {
-      throw new IllegalArgumentException(ref)
+      SchemaRef.Schema(ref)
     }
 }
 case class StatusCodeResponse(schema: SafeSchema, statusCode: Int)

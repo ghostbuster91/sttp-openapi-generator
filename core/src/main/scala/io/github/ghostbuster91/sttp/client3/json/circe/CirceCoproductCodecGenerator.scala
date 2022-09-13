@@ -52,8 +52,6 @@ private[circe] class CirceCoproductCodecGenerator() {
   ): IM[Defn.Val] = {
     val coproductType = coproduct.typeName
     val decoderName = coproduct.asPrefix("Decoder")
-    val implicitMapping: Map[String, ClassName] =
-      implicitMappingForCoproductDiscriminator(coproduct)
     for {
       hCursorTpe <- CirceTypeProvider.HCursorTpe
       decoderTpe <- CirceTypeProvider.DecoderTpe
@@ -61,7 +59,7 @@ private[circe] class CirceCoproductCodecGenerator() {
       resultTpe <- CirceTypeProvider.DecodingResultTpe
     } yield {
       val cases =
-        decoderCasesWithMapping(discriminator, failureTpe, implicitMapping)
+        decoderCasesWithMapping(discriminator, failureTpe)
       val dscType = discriminator match {
         case _: Discriminator.StringDsc        => t"String"
         case _: Discriminator.IntDsc           => t"Int"
@@ -119,13 +117,11 @@ private[circe] class CirceCoproductCodecGenerator() {
 
   private def decoderCasesWithMapping(
       discriminator: Discriminator[_],
-      failureTpe: Type.Name,
-      implicitMapping: Map[String, ClassName]
+      failureTpe: Type.Name
   ): List[Case] = {
     val mappedCases = discriminator match {
       case Discriminator.StringDsc(_, mapping) =>
-        val mergedMapping = mergeMappings(mapping, implicitMapping)
-        mergedMapping.toList.sortBy(_._1).map { case (k, v) =>
+        mapping.toList.sortBy(_._1).map { case (k, v) =>
           decoderCaseForString(k, v)
         }
       case Discriminator.IntDsc(_, mapping) =>
@@ -138,15 +134,6 @@ private[circe] class CirceCoproductCodecGenerator() {
         }
     }
     mappedCases :+ decoderOtherwiseCase(failureTpe)
-  }
-
-  private def mergeMappings(
-      explicitMapping: Map[String, ClassName],
-      implicitMapping: Map[String, ClassName]
-  ): Map[String, ClassName] = {
-    val explicitMappingByClassName = explicitMapping.map(_.swap)
-    val implicitMappingByClassName = implicitMapping.map(_.swap)
-    (implicitMappingByClassName ++ explicitMappingByClassName).map(_.swap)
   }
 
   private def decoderCaseForString(discValue: String, child: ClassName) =

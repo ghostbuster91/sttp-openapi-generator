@@ -6,7 +6,7 @@ import $ivy.`io.github.davidgregory084::mill-tpolecat_mill0.10:0.3.0`
 import io.github.davidgregory084.TpolecatModule
 import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.10:0.1.4`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
-import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.6.0`
+import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.6.1`
 import de.tobiasroeser.mill.integrationtest.MillIntegrationTestModule
 
 object parser extends Cross[ParserModule]("2.12.15", "2.13.8")
@@ -16,7 +16,7 @@ class ParserModule(val crossScalaVersion: String)
     with CommonPublishModule {
   override def ivyDeps = Agg(
     ivy"io.swagger.parser.v3:swagger-parser:2.0.28",
-    ivy"com.softwaremill.sttp.model::core:1.5.1"
+    ivy"com.softwaremill.sttp.model::core:1.5.2"
   )
   object test extends Tests with CommonTestModule
 }
@@ -63,11 +63,11 @@ object `mill-codegen-plugin-itest` extends MillIntegrationTestModule {
 
 trait CommonTestModule extends BaseModule with TestModule {
   override def ivyDeps = Agg(
-    ivy"com.lihaoyi::utest::0.8.0",
+    ivy"com.lihaoyi::utest::0.8.1",
     ivy"com.softwaremill.diffx::diffx-utest::0.7.1",
     ivy"com.softwaremill.diffx::diffx-cats::0.7.1",
-    ivy"com.softwaremill.sttp.client3::core::3.7.1",
-    ivy"com.softwaremill.sttp.client3::circe::3.7.1",
+    ivy"com.softwaremill.sttp.client3::core::3.7.6",
+    ivy"com.softwaremill.sttp.client3::circe::3.7.6",
     ivy"io.circe::circe-core::0.14.2",
     ivy"io.circe::circe-generic::0.14.2",
     ivy"io.circe::circe-parser::0.14.2",
