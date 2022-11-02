@@ -71,7 +71,7 @@ trait CommonTestModule extends BaseModule with TestModule {
     ivy"io.circe::circe-core::0.14.2",
     ivy"io.circe::circe-generic::0.14.2",
     ivy"io.circe::circe-parser::0.14.2",
-    ivy"io.circe::circe-yaml::0.14.1"
+    ivy"io.circe::circe-yaml::0.14.2"
   )
   override def testFramework = "utest.runner.Framework"
 }
