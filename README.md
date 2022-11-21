@@ -125,7 +125,7 @@ You can use sttp-openapi-codegen seamlessly with mill via a dedicated mill plugi
 import mill._, mill.scalalib._
 
 import $ivy.`io.github.ghostbuster91.sttp-openapi::mill-codegen-plugin:<version>`
-import import io.github.ghostbuster91.sttp.client3.OpenApiCodegenScalaModule
+import io.github.ghostbuster91.sttp.client3.OpenApiCodegenScalaModule
 
 object app extends OpenApiCodegenScalaModule {
   def scalaVersion = "2.13.2"
@@ -196,15 +196,18 @@ components:
     Organization:
       required:
         - name
+        - size
       type: object
       properties:
         name:
           type: string
+        size:
+          type: integer
 ```
 
 ```scala
-sealed trait Entity { def name: String }
-case class Organization(name: String) extends Entity()
+sealed trait Entity
+case class Organization(size: Int) extends Entity()
 case class Person(name: String, age: Int) extends Entity()
 
 trait CirceCodecs extends SttpCirceApi {
