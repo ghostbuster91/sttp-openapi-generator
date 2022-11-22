@@ -43,12 +43,12 @@ trait OpenApiCodegenScalaModule extends ScalaModule {
   }
 
   private lazy val coreDeps =
-    Agg(ivy"com.softwaremill.sttp.client3::core::3.8.3")
+    Agg(ivy"com.softwaremill.sttp.client3::core::3.7.6")
 
   private lazy val circeDeps = Agg(
     ivy"io.circe::circe-core::0.14.2",
     ivy"io.circe::circe-parser::0.14.2",
-    ivy"com.softwaremill.sttp.client3::circe::3.8.3"
+    ivy"com.softwaremill.sttp.client3::circe::3.7.6"
   )
 
   override def generatedSources = T {
