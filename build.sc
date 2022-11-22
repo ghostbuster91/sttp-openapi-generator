@@ -16,7 +16,7 @@ class ParserModule(val crossScalaVersion: String)
     with CommonPublishModule {
   override def ivyDeps = Agg(
     ivy"io.swagger.parser.v3:swagger-parser:2.0.28",
-    ivy"com.softwaremill.sttp.model::core:1.5.2"
+    ivy"com.softwaremill.sttp.model::core:1.5.3"
   )
   object test extends Tests with CommonTestModule
 }
@@ -30,7 +30,7 @@ class CoreModule(val crossScalaVersion: String)
 
   override def ivyDeps = Agg(
     ivy"org.scalameta::scalameta::4.5.8",
-    ivy"org.typelevel::cats-core::2.8.0"
+    ivy"org.typelevel::cats-core::2.9.0"
   )
   object test extends Tests with CommonTestModule
 }
@@ -68,9 +68,9 @@ trait CommonTestModule extends BaseModule with TestModule {
     ivy"com.softwaremill.diffx::diffx-cats::0.8.2",
     ivy"com.softwaremill.sttp.client3::core::3.7.6",
     ivy"com.softwaremill.sttp.client3::circe::3.7.6",
-    ivy"io.circe::circe-core::0.14.2",
-    ivy"io.circe::circe-generic::0.14.2",
-    ivy"io.circe::circe-parser::0.14.2",
+    ivy"io.circe::circe-core::0.14.3",
+    ivy"io.circe::circe-generic::0.14.3",
+    ivy"io.circe::circe-parser::0.14.3",
     ivy"io.circe::circe-yaml::0.14.2"
   )
   override def testFramework = "utest.runner.Framework"
