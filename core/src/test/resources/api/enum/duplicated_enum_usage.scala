@@ -15,10 +15,11 @@ trait CirceCodecs extends SttpCirceApi {
     case other =>
       Left("Unexpected value for enum:" + other)
   }
-  implicit lazy val statusEncoder: Encoder[Status] = Encoder.encodeString.contramap {
-    case Status.Happy   => "happy"
-    case Status.Neutral => "neutral"
-  }
+  implicit lazy val statusEncoder: Encoder[Status] =
+    Encoder.encodeString.contramap {
+      case Status.Happy   => "happy"
+      case Status.Neutral => "neutral"
+    }
   implicit lazy val coupleDecoder: Decoder[Couple] =
     Decoder.forProduct2("p1", "p2")(Couple.apply)
   implicit lazy val coupleEncoder: Encoder[Couple] =
