@@ -41,9 +41,9 @@ lazy val testDependencies = Seq(
   "com.softwaremill.diffx" %% "diffx-cats" % "0.8.2",
   "com.softwaremill.sttp.client3" %% "core" % "3.7.6",
   "com.softwaremill.sttp.client3" %% "circe" % "3.7.6",
-  "io.circe" %% "circe-core" % "0.14.2",
-  "io.circe" %% "circe-generic" % "0.14.2",
-  "io.circe" %% "circe-parser" % "0.14.2",
+  "io.circe" %% "circe-core" % "0.14.3",
+  "io.circe" %% "circe-generic" % "0.14.3",
+  "io.circe" %% "circe-parser" % "0.14.3",
   "io.circe" %% "circe-yaml" % "0.14.2"
 ).map(_ % Test)
 
@@ -53,7 +53,7 @@ lazy val parser: Project = (project in file("parser"))
     name := "parser",
     libraryDependencies ++= Seq(
       "io.swagger.parser.v3" % "swagger-parser" % "2.0.28",
-      "com.softwaremill.sttp.model" %% "core" % "1.5.3"
+      "com.softwaremill.sttp.model" %% "core" % "1.5.4"
     ) ++ testDependencies
   )
 
