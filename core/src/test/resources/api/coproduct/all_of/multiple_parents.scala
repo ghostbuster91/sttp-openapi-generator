@@ -19,9 +19,10 @@ trait CirceCodecs extends SttpCirceApi {
   implicit lazy val animalEncoder: Encoder[Animal] = Encoder.instance {
     case dog: Dog => Encoder[Dog].apply(dog)
   }
-  implicit lazy val breedAbleDecoder: Decoder[BreedAble] = List[Decoder[BreedAble]](
-    Decoder[Dog].asInstanceOf[Decoder[BreedAble]]
-  ).reduceLeft(_ or _)
+  implicit lazy val breedAbleDecoder: Decoder[BreedAble] =
+    List[Decoder[BreedAble]](
+      Decoder[Dog].asInstanceOf[Decoder[BreedAble]]
+    ).reduceLeft(_ or _)
   implicit lazy val breedAbleEncoder: Encoder[BreedAble] = Encoder.instance {
     case dog: Dog => Encoder[Dog].apply(dog)
   }

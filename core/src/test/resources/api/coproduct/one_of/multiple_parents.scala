@@ -20,10 +20,12 @@ trait CirceCodecs extends SttpCirceApi {
       Decoder[Organization].asInstanceOf[Decoder[DoubledEntity]],
       Decoder[Person].asInstanceOf[Decoder[DoubledEntity]]
     ).reduceLeft(_ or _)
-  implicit lazy val doubledEntityEncoder: Encoder[DoubledEntity] = Encoder.instance {
-    case organization: Organization => Encoder[Organization].apply(organization)
-    case person: Person             => Encoder[Person].apply(person)
-  }
+  implicit lazy val doubledEntityEncoder: Encoder[DoubledEntity] =
+    Encoder.instance {
+      case organization: Organization =>
+        Encoder[Organization].apply(organization)
+      case person: Person => Encoder[Person].apply(person)
+    }
   implicit lazy val entityDecoder: Decoder[Entity] = List[Decoder[Entity]](
     Decoder[Organization].asInstanceOf[Decoder[Entity]],
     Decoder[Person].asInstanceOf[Decoder[Entity]]
