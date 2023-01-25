@@ -45,13 +45,13 @@ class CirceProductCodecGenerator {
             case Some((name, value)) if name == propName =>
               q"""implicit lazy val $encoderName: $encoderTpe[$resultClassType] =
                   Encoder.forProduct1(${Lit.String(
-                propName.v
-              )})(_ => $value)"""
+                  propName.v
+                )})(_ => $value)"""
             case _ =>
               q"""implicit lazy val $encoderName: $encoderTpe[$resultClassType] =
                     Encoder.forProduct1(${Lit.String(
-                propName.v
-              )})(p => p.${propName.term})"""
+                  propName.v
+                )})(p => p.${propName.term})"""
           }
         case props @ _ :: _ =>
           val productEncoder = Term.Name(s"forProduct${props.size}")
@@ -66,8 +66,8 @@ class CirceProductCodecGenerator {
           }
           q"""implicit lazy val $encoderName: $encoderTpe[$resultClassType] =
                 Encoder.$productEncoder(..${propNames.map(p =>
-            Lit.String(p.v)
-          )})(p => (..$extractors))"""
+              Lit.String(p.v)
+            )})(p => (..$extractors))"""
       }
     }
 

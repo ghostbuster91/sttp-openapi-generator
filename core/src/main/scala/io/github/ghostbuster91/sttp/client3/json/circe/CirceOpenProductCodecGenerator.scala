@@ -73,8 +73,8 @@ private[circe] class CirceOpenProductCodecGenerator {
     val allProps = knownProps :+ ForCompStatement(
       enumerator"additionalProperties <- c.as[${openProduct.additionalProperties.tpe}]",
       q"${openProduct.properties
-        .map(_.paramName)
-        .foldLeft(q"additionalProperties": Term)((acc, item) => filterOutProperty(acc, item))}.toMap"
+          .map(_.paramName)
+          .foldLeft(q"additionalProperties": Term)((acc, item) => filterOutProperty(acc, item))}.toMap"
     )
     q"""for {
         ..${allProps.map(_.forStat)}
