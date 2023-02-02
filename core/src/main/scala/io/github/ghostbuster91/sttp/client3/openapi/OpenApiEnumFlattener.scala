@@ -12,7 +12,7 @@ object OpenApiEnumFlattener {
     val operationSchemas = collectFromOperations(safeApi)
     val enums = collectEnums(
       schemas ++ rbSchemas ++ operationSchemas
-    ) //todo there can naming conflicts with other entities
+    ) // todo there can naming conflicts with other entities
     val nameMap = generateUniqueName(NameGeneratorProgress(), enums).nameMap
     registerEnumsAndUpdateLinks(safeApi, nameMap)
   }
@@ -38,7 +38,8 @@ object OpenApiEnumFlattener {
         cmp.schemas.toList.map { case (k, v) =>
           k -> SchemaWithReassign(
             v,
-            _ => () //intentionally noop as this is the place where it should be
+            _ =>
+              () // intentionally noop as this is the place where it should be
           )
         }
       }

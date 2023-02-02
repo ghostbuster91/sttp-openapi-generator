@@ -53,7 +53,7 @@ lazy val parser: Project = (project in file("parser"))
     name := "parser",
     libraryDependencies ++= Seq(
       "io.swagger.parser.v3" % "swagger-parser" % "2.0.28",
-      "com.softwaremill.sttp.model" %% "core" % "1.5.4"
+      "com.softwaremill.sttp.model" %% "core" % "1.5.5"
     ) ++ testDependencies
   )
 
@@ -78,7 +78,7 @@ lazy val codegenSbtPlugin: Project = (project in file("sbt-codegen-plugin"))
       scriptedLaunchOpts.value ++
         Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
     },
-    libraryDependencies += "org.scalameta" %% "scalafmt-dynamic" % "3.0.3",
+    libraryDependencies += "org.scalameta" %% "scalafmt-dynamic" % "3.0.8",
     scripted := {
       val x = (core / publishLocal).value
       scripted.evaluated

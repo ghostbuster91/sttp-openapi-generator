@@ -134,7 +134,7 @@ trait OpenApiCodegenScalaModule extends ScalaModule {
   ) = {
     val relativePath = file.relativeTo(
       topLevel
-    ) //TODO handle case where file is not within topLevel directory
+    ) // TODO handle case where file is not within topLevel directory
     val calculatedPkg = relativePath.segments.dropRight(1).mkString(".")
     val fullPkg = (basePkg, calculatedPkg) match {
       case (Some(b), p) => s"$b.$p"

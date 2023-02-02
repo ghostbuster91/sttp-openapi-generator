@@ -129,7 +129,7 @@ private class ResponseSpecGenerator(
           .commonAncestor(
             NonEmptyList(head, tl).map(
               _.asInstanceOf[SafeRefSchema].ref
-            ) //primitives can't be inherited
+            ) // primitives can't be inherited
           )
           .head
         Option(model.classNameFor(errorAncestor).typeName: Type).pure[IM]
