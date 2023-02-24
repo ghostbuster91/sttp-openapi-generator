@@ -28,8 +28,8 @@ object ModelGenerator {
         }
         val parentInits = parents.sortBy(_.v).map(p => init"${p.typeName}()")
         q"case class ${product.name.typeName}(..${product.allProperties
-          .filterNot(property => isDiscriminatorProperty(property, parentCoproducts))
-          .map(_.asParam)}) extends ..$parentInits"
+            .filterNot(property => isDiscriminatorProperty(property, parentCoproducts))
+            .map(_.asParam)}) extends ..$parentInits"
       case Nil =>
         q"case class ${product.name.typeName}(..${product.allProperties.map(_.asParam)})"
     }
