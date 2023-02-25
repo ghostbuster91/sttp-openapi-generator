@@ -3,18 +3,20 @@ info:
   title: Entities
   version: "1.0"
 servers:
-  - url: /
+- url: /
 paths:
   /:
     get:
       operationId: getRoot
       responses:
         "200":
+          description: ""
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Person"
         "201":
+          description: ""
           content:
             application/json:
               schema:
@@ -23,12 +25,12 @@ components:
   schemas:
     Entity:
       oneOf:
-        - $ref: "#/components/schemas/Person"
-        - $ref: "#/components/schemas/Organization"
+      - $ref: "#/components/schemas/Person"
+      - $ref: "#/components/schemas/Organization"
     Person:
       required:
-        - age
-        - name
+      - age
+      - name
       type: object
       properties:
         name:
@@ -37,7 +39,7 @@ components:
           type: integer
     Organization:
       required:
-        - name
+      - name
       type: object
       properties:
         name:

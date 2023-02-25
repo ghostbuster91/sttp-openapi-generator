@@ -3,25 +3,26 @@ info:
   title: Entities
   version: "1.0"
 servers:
-  - url: /
+- url: /
 paths:
   /:
     get:
       operationId: getRoot
       parameters:
-        - name: key
-          in: header
-          required: true
-          style: simple
-          explode: false
-          schema:
-            $ref: "#/components/schemas/Key"
+      - name: key
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: "#/components/schemas/Key"
       responses:
-        "200": {}
+        "200": 
+            description: ""
 components:
   schemas:
     Key:
       type: string
       enum:
-        - a
-        - b
+      - a
+      - b
