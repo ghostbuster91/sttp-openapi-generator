@@ -9,7 +9,7 @@ import de.tobiasroeser.mill.vcs.version.VcsVersion
 import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.6.1`
 import de.tobiasroeser.mill.integrationtest.MillIntegrationTestModule
 
-object parser extends Cross[ParserModule]("2.12.15", "2.13.8")
+object parser extends Cross[ParserModule]("2.12.17", "2.13.8")
 class ParserModule(val crossScalaVersion: String)
     extends BaseModule
     with CrossSbtModule
@@ -21,7 +21,7 @@ class ParserModule(val crossScalaVersion: String)
   object test extends Tests with CommonTestModule
 }
 
-object core extends Cross[CoreModule]("2.12.15", "2.13.8")
+object core extends Cross[CoreModule]("2.12.17", "2.13.8")
 class CoreModule(val crossScalaVersion: String)
     extends BaseModule
     with CrossSbtModule
