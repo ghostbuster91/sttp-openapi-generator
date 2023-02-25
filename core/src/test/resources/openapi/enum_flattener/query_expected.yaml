@@ -3,21 +3,22 @@ info:
   title: Entities
   version: "1.0"
 servers:
-  - url: /
+- url: /
 paths:
   /:
     get:
       operationId: getRoot
       parameters:
-        - name: id
-          in: query
-          required: true
-          style: form
-          explode: true
-          schema:
-            $ref: "#/components/schemas/Id"
+      - name: id
+        in: query
+        required: true
+        style: form
+        explode: true
+        schema:
+          $ref: "#/components/schemas/Id"
       responses:
         "200":
+          description: ""
           content:
             application/json:
               schema:
@@ -26,8 +27,8 @@ components:
   schemas:
     Person:
       required:
-        - age
-        - name
+      - age
+      - name
       type: object
       properties:
         name:
@@ -38,5 +39,5 @@ components:
     Id:
       type: string
       enum:
-        - a
-        - b
+      - a
+      - b
