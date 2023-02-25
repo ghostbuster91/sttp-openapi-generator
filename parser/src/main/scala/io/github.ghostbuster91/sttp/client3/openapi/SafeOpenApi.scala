@@ -57,9 +57,13 @@ case class SafePathItem(unsafe: PathItem) {
       unsafe
         .readOperationsMap()
     )
-      .map(_.asScala.map { case (m, o) =>
-        SafePathItem.openapiMethodToSttp(m) -> SafeOperation(o)
-      }.toMap)
+      .map(
+        _.asScala
+          .map { case (m, o) =>
+            SafePathItem.openapiMethodToSttp(m) -> SafeOperation(o)
+          }
+          .toMap
+      )
       .getOrElse(Map.empty)
 
   override def toString: String = unsafe.toString
@@ -96,12 +100,16 @@ case class SafeOperation(op: Operation) {
 
   def responses: Map[SttpStatusCode, SafeApiResponse] =
     Option(op.getResponses)
-      .map(_.asScala.collect {
-        case (code, r) if code != "default" =>
-          SttpStatusCode.unsafeApply(code.toInt) -> new SafeApiResponse(r)
-        case ("default", r) =>
-          SttpStatusCode.Ok -> new SafeApiResponse(r)
-      }.toMap)
+      .map(
+        _.asScala
+          .collect {
+            case (code, r) if code != "default" =>
+              SttpStatusCode.unsafeApply(code.toInt) -> new SafeApiResponse(r)
+            case ("default", r) =>
+              SttpStatusCode.Ok -> new SafeApiResponse(r)
+          }
+          .toMap
+      )
       .getOrElse(Map.empty)
 
   def requestBody: Option[SafeRequestBody] =

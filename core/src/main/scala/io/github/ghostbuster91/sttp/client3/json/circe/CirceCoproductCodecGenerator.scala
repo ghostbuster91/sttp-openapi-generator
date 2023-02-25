@@ -42,8 +42,8 @@ private[circe] class CirceCoproductCodecGenerator() {
         for {
           decoderTpe <- CirceTypeProvider.DecoderTpe
         } yield q"""implicit lazy val $decoderName: $decoderTpe[$coproductType] = List[$decoderTpe[$coproductType]](..${decoderCases(
-          coproduct
-        )}).reduceLeft(_ or _)"""
+            coproduct
+          )}).reduceLeft(_ or _)"""
     }
 
   private def decoderForCoproductWithMappedDiscriminator[T](
@@ -154,8 +154,8 @@ private[circe] class CirceCoproductCodecGenerator() {
     val otherTermBind = Pat.Var(otherTerm)
     val failureInit =
       q"""${Term.Name(
-        failureTpe.value
-      )}("Unexpected value for coproduct:" + $otherTerm, Nil)"""
+          failureTpe.value
+        )}("Unexpected value for coproduct:" + $otherTerm, Nil)"""
     p"""case $otherTermBind => Left($failureInit)"""
   }
 }

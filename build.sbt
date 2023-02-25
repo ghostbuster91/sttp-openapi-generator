@@ -39,11 +39,11 @@ lazy val testDependencies = Seq(
   "com.lihaoyi" %% "utest" % "0.8.1",
   "com.softwaremill.diffx" %% "diffx-utest" % "0.8.2",
   "com.softwaremill.diffx" %% "diffx-cats" % "0.8.2",
-  "com.softwaremill.sttp.client3" %% "core" % "3.7.6",
-  "com.softwaremill.sttp.client3" %% "circe" % "3.7.6",
-  "io.circe" %% "circe-core" % "0.14.3",
-  "io.circe" %% "circe-generic" % "0.14.3",
-  "io.circe" %% "circe-parser" % "0.14.3",
+  "com.softwaremill.sttp.client3" %% "core" % "3.8.11",
+  "com.softwaremill.sttp.client3" %% "circe" % "3.8.11",
+  "io.circe" %% "circe-core" % "0.14.4",
+  "io.circe" %% "circe-generic" % "0.14.4",
+  "io.circe" %% "circe-parser" % "0.14.4",
   "io.circe" %% "circe-yaml" % "0.14.2"
 ).map(_ % Test)
 
@@ -78,7 +78,7 @@ lazy val codegenSbtPlugin: Project = (project in file("sbt-codegen-plugin"))
       scriptedLaunchOpts.value ++
         Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
     },
-    libraryDependencies += "org.scalameta" %% "scalafmt-dynamic" % "3.0.8",
+    libraryDependencies += "org.scalameta" %% "scalafmt-dynamic" % "3.7.2",
     scripted := {
       val x = (core / publishLocal).value
       scripted.evaluated
