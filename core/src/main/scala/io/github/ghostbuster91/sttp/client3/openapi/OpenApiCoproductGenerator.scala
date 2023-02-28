@@ -17,7 +17,7 @@ object OpenApiCoproductGenerator {
       collectCandidates(openApi, childToParent, collectSuccessResponses)
     val newCoproducts = errorsWithoutCommonParent
       .map(kv =>
-        createCoproduct(kv._1, kv._2, "GenericError")
+        createCoproduct(kv._1, kv._2.distinct, "GenericError")
       ) ++ successesWithoutCommonParent
       .map(kv => createCoproduct(kv._1, kv._2, "GenericSuccess"))
 
