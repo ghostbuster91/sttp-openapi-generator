@@ -7,7 +7,7 @@ on:
 jobs:
   scip:
     runs-on: ubuntu-latest
-    name: "Upload SCIP"
+    name: "generate-scip"
     steps:
       - uses: actions/checkout@v3
       - uses: coursier/setup-action@v1
@@ -23,5 +23,6 @@ jobs:
 
       - name: Upload SCIP file
         run: src code-intel upload -github-token $GITHUB_TOKEN
+        if: github.head_ref == 'master' 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
