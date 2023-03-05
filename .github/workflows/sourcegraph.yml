@@ -1,8 +1,7 @@
 name: Sourcegraph
 on:
   push:
-    branches:
-      - main
+    branches: ["**"]
   pull_request:
 
 jobs:
