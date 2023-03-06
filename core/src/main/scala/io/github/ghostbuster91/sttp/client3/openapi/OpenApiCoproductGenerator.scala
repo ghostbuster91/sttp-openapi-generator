@@ -1,5 +1,6 @@
 package io.github.ghostbuster91.sttp.client3.openapi
 
+import cats.implicits.catsSyntaxEq
 import io.swagger.v3.oas.models.media.ComposedSchema
 import sttp.model.StatusCode
 
@@ -15,6 +16,17 @@ object OpenApiCoproductGenerator {
       collectCandidates(openApi, childToParent, collectErrorResponses)
     val successesWithoutCommonParent =
       collectCandidates(openApi, childToParent, collectSuccessResponses)
+
+    errorsWithoutCommonParent.foreach { case (operationId, schemas) =>
+      require(
+        schemas.distinct.map(_.ref.ref) === schemas
+          .map(_.ref.ref)
+          .distinct,
+        s"$operationId cannot have different schemas for the same ref: ${schemas.distinct
+            .map(_.ref)}"
+      )
+    }
+
     val newCoproducts = errorsWithoutCommonParent
       .map(kv =>
         createCoproduct(kv._1, kv._2.distinct, "GenericError")
