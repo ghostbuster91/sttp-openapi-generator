@@ -1,0 +1,32 @@
+openapi: 3.0.2
+info:
+  title: Single Error
+  version: "1.0"
+paths:
+  /person:
+    put:
+      summary: Update an existing person
+      description: Update an existing person by Id
+      operationId: updatePerson
+      responses:
+        "400":
+          description: Returns a 400
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+        "401":
+          description: Returns a 401
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+components:
+  schemas:
+    ErrorModel:
+      required:
+        - msg
+      type: object
+      properties:
+        msg:
+          type: string
