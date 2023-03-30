@@ -119,7 +119,9 @@ object GeneratorTest extends TestSuite {
       "product" - test(CodegenConfig(handleErrors = true))
       "multiple_errors" - test(CodegenConfig(handleErrors = true))
       "multiple_errors_with_parent" - test(CodegenConfig(handleErrors = true))
-      "single_error_for_multiple_status_codes" - test(CodegenConfig(handleErrors = true))
+      "single_error_for_multiple_status_codes" - test(
+        CodegenConfig(handleErrors = true)
+      )
     }
     "multiple_success" - {
       "separate_products" - test()
