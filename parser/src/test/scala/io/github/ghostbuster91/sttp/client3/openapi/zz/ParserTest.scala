@@ -6,6 +6,7 @@ import cats.implicits._
 import io.circe._
 import OpenapiModels._
 import OpenapiSchemaType._
+import io.swagger.util.Yaml
 
 object ParserTest extends TestSuite {
 
@@ -74,7 +75,12 @@ object ParserTest extends TestSuite {
           )
       )
     }
+
+    "parse simple-api.yaml" - {
+      val res = YamlParser.parseFile(load("simple-api.yaml"))
+      assert(res.isRight == true)
+    }
   }
   private def load(fileName: String): String =
-    FileLoader.loadFile("circe", fileName)
+    FileLoader.loadFile("specs", fileName)
 }
