@@ -6,7 +6,7 @@ import $ivy.`io.github.davidgregory084::mill-tpolecat_mill0.10:0.3.0`
 import io.github.davidgregory084.TpolecatModule
 import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.10:0.1.4`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
-import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.7.0`
+import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.7.1`
 import de.tobiasroeser.mill.integrationtest.MillIntegrationTestModule
 
 object parser extends Cross[ParserModule]("2.12.17", "2.13.8")
