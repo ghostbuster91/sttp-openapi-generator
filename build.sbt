@@ -1,4 +1,4 @@
-val Scala212 = "2.12.17"
+val Scala212 = "2.12.18"
 
 ThisBuild / scalaVersion := Scala212
 
@@ -23,7 +23,7 @@ val commonSettings = Seq(
   scalacOptions ~= (_.filterNot(Set("-Xfatal-warnings"))),
   testFrameworks += new TestFramework("utest.runner.Framework"),
   addCompilerPlugin(
-    ("org.scalameta" % "semanticdb-scalac" % "4.7.7").cross(CrossVersion.full)
+    ("org.scalameta" % "semanticdb-scalac" % "4.7.8").cross(CrossVersion.full)
   )
 )
 
@@ -53,7 +53,7 @@ lazy val parser: Project = (project in file("parser"))
     name := "parser",
     libraryDependencies ++= Seq(
       "io.swagger.parser.v3" % "swagger-parser" % "2.1.12",
-      "com.softwaremill.sttp.model" %% "core" % "1.5.5"
+      "com.softwaremill.sttp.model" %% "core" % "1.6.0"
     ) ++ testDependencies
   )
 
@@ -78,7 +78,7 @@ lazy val codegenSbtPlugin: Project = (project in file("sbt-codegen-plugin"))
       scriptedLaunchOpts.value ++
         Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
     },
-    libraryDependencies += "org.scalameta" %% "scalafmt-dynamic" % "3.7.3",
+    libraryDependencies += "org.scalameta" %% "scalafmt-dynamic" % "3.7.4",
     scripted := {
       val x = (core / publishLocal).value
       scripted.evaluated

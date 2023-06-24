@@ -6,7 +6,7 @@ import $ivy.`io.github.davidgregory084::mill-tpolecat_mill0.10:0.3.0`
 import io.github.davidgregory084.TpolecatModule
 import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.10:0.1.4`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
-import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.7.0`
+import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.7.1`
 import de.tobiasroeser.mill.integrationtest.MillIntegrationTestModule
 
 object parser extends Cross[ParserModule]("2.12.17", "2.13.8")
@@ -16,7 +16,7 @@ class ParserModule(val crossScalaVersion: String)
     with CommonPublishModule {
   override def ivyDeps = Agg(
     ivy"io.swagger.parser.v3:swagger-parser:2.1.12",
-    ivy"com.softwaremill.sttp.model::core:1.5.5"
+    ivy"com.softwaremill.sttp.model::core:1.6.0"
   )
   object test extends Tests with CommonTestModule
 }
