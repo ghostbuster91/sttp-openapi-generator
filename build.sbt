@@ -23,7 +23,7 @@ val commonSettings = Seq(
   scalacOptions ~= (_.filterNot(Set("-Xfatal-warnings"))),
   testFrameworks += new TestFramework("utest.runner.Framework"),
   addCompilerPlugin(
-    ("org.scalameta" % "semanticdb-scalac" % "4.7.8").cross(CrossVersion.full)
+    ("org.scalameta" % "semanticdb-scalac" % "4.8.4").cross(CrossVersion.full)
   )
 )
 
