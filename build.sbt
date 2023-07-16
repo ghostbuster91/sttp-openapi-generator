@@ -52,7 +52,7 @@ lazy val parser: Project = (project in file("parser"))
   .settings(
     name := "parser",
     libraryDependencies ++= Seq(
-      "io.swagger.parser.v3" % "swagger-parser" % "2.1.12",
+      "io.swagger.parser.v3" % "swagger-parser" % "2.1.16",
       "com.softwaremill.sttp.model" %% "core" % "1.7.0"
     ) ++ testDependencies
   )
