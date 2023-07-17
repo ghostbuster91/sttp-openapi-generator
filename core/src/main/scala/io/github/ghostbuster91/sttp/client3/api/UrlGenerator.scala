@@ -6,16 +6,17 @@ import io.github.ghostbuster91.sttp.client3.openapi.{
   SafeQueryParameter
 }
 import scala.meta._
+import _root_.io.github.ghostbuster91.sttp.client3.openapi.zz.OpenapiModels
 
 object UrlGenerator {
-  def apply(path: String, params: List[SafeParameter]): Term = {
-    val queryParams = params.collect { case q: SafeQueryParameter =>
+  def apply(path: String, params: Seq[OpenapiModels.OpenapiParameter]): Term = {
+    val queryParams = params.collect { case q if q.in == "query" =>
       Term.Name(q.name)
-    }
+    }.toList
     val queryList = queryParamsToElements(queryParams)
     val pathList = pathFragmentsToElements(path)
     val pathAndQuery = combinePathAndQueryElements(pathList, queryList)
-    val pathParams = params.collect { case p: SafePathParameter =>
+    val pathParams = params.collect { case p if p.in == "path" =>
       Term.Name(p.name)
     }
     Term.Interpolate(
