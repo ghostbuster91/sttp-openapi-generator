@@ -2,9 +2,9 @@ import mill._
 import scalalib._
 import mill.scalalib.publish._
 import mill.scalalib.scalafmt.ScalafmtModule
-// import io.github.davidgregory084.TpolecatModule
-trait TpolecatModule {} // TODO: Use real mill-tpolecat once released
-// import $ivy.`io.github.davidgregory084::mill-tpolecat_mill0.10:0.3.0`
+import io.github.davidgregory084.TpolecatModule
+// trait TpolecatModule {} // TODO: Use real mill-tpolecat once released
+import $ivy.`io.github.davidgregory084::mill-tpolecat_mill0.11:0.3.5`
 import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.11:0.4.0`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.7.1`
@@ -87,9 +87,9 @@ trait CommonTestModule extends BaseModule with TestModule {
 }
 
 trait BaseModule extends ScalafmtModule with TpolecatModule {
-  // override def scalacOptions = T {
-  //   super.scalacOptions().filterNot(Set("-Xfatal-warnings"))
-  // }
+  override def scalacOptions = T {
+    super.scalacOptions().filterNot(Set("-Xfatal-warnings"))
+  }
 }
 
 trait CommonPublishModule extends PublishModule {
