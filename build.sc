@@ -2,18 +2,21 @@ import mill._
 import scalalib._
 import mill.scalalib.publish._
 import mill.scalalib.scalafmt.ScalafmtModule
-import $ivy.`io.github.davidgregory084::mill-tpolecat_mill0.10:0.3.0`
-import io.github.davidgregory084.TpolecatModule
-import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.10:0.1.4`
+// import io.github.davidgregory084.TpolecatModule
+trait TpolecatModule {} // TODO: Use real mill-tpolecat once released
+// import $ivy.`io.github.davidgregory084::mill-tpolecat_mill0.10:0.3.0`
+import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.11:0.4.0`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
-import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.7.0`
+import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.7.1`
 import de.tobiasroeser.mill.integrationtest.MillIntegrationTestModule
+import mill.main.BuildInfo
 
 object parser extends Cross[ParserModule]("2.12.18", "2.13.11")
-class ParserModule(val crossScalaVersion: String)
+trait ParserModule
     extends BaseModule
     with CrossSbtModule
     with CommonPublishModule {
+
   override def ivyDeps = Agg(
     ivy"io.swagger.parser.v3:swagger-parser:2.1.12",
     ivy"com.softwaremill.sttp.model::core:1.5.5",
@@ -26,10 +29,11 @@ class ParserModule(val crossScalaVersion: String)
 }
 
 object core extends Cross[CoreModule]("2.12.18", "2.13.11")
-class CoreModule(val crossScalaVersion: String)
+trait CoreModule
     extends BaseModule
     with CrossSbtModule
     with CommonPublishModule {
+
   override def moduleDeps = Seq(parser())
 
   override def ivyDeps = Agg(
@@ -40,7 +44,7 @@ class CoreModule(val crossScalaVersion: String)
 }
 
 object `mill-codegen-plugin` extends Cross[MillCodegenPlugin]("2.13.8")
-class MillCodegenPlugin(val crossScalaVersion: String)
+trait MillCodegenPlugin
     extends BaseModule
     with CrossScalaModule
     with CommonPublishModule {
@@ -81,9 +85,9 @@ trait CommonTestModule extends BaseModule with TestModule {
 }
 
 trait BaseModule extends ScalafmtModule with TpolecatModule {
-  override def scalacOptions = T {
-    super.scalacOptions().filterNot(Set("-Xfatal-warnings"))
-  }
+  // override def scalacOptions = T {
+  //   super.scalacOptions().filterNot(Set("-Xfatal-warnings"))
+  // }
 }
 
 trait CommonPublishModule extends PublishModule {
