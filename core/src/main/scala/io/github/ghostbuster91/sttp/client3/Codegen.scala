@@ -11,6 +11,8 @@ import sttp.model.Method
 
 import java.time.{LocalDate, LocalDateTime}
 import _root_.io.github.ghostbuster91.sttp.client3.openapi.zz.OpenapiModels._
+import _root_.io.github.ghostbuster91.sttp.client3.openapi.zz.YamlParser
+import _root_.io.github.ghostbuster91.sttp.client3.openapi.zz.OpenapiSchemaType
 
 class Codegen(logger: LogAdapter, config: CodegenConfig) {
   def generateUnsafe(openApiYaml: String, packageName: Option[String]): Source =
@@ -74,8 +76,8 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
   }
 
   private def createModel(
-      schemas: Map[String, SafeSchema],
-      requestBodies: Map[String, SafeSchema],
+      schemas: Map[String, OpenapiSchemaType],
+      requestBodies: Map[String, OpenapiSchemaType],
       operations: List[CollectedOperation],
       typeMappings: TypesMapping
   ) = {
@@ -138,20 +140,27 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       """
     }.toList
 
-  private def collectRequestBodies(openApi: SafeOpenApi) =
-    openApi.components
-      .map(_.requestBodies)
-      .getOrElse(Map.empty)
-      .flatMap { case (k, rb) =>
-        rb.content
-          .get(MediaType.ApplicationJson.toString)
-          .map(mt => k -> mt.schema)
-      }
+  private def collectRequestBodies(openApi: OpenapiDocument) = {
+    // openApi.components
+    //   .map(_.requestBodies)
+    //   .getOrElse(Map.empty)
+    //   .flatMap { case (k, rb) =>
+    //     rb.content
+    //       .get(MediaType.ApplicationJson.toString)
+    //       .map(mt => k -> mt.schema)
+    //   }
+    //   TODO add request bodies
+    Map.empty[String, OpenapiSchemaType]
+  }
 
-  private def collectOperations(openApi: SafeOpenApi) =
-    openApi.paths.toList.flatMap { case (path, item) =>
-      item.operations.map { case (method, operation) =>
-        CollectedOperation(path, method, operation)
+  private def collectOperations(openApi: OpenapiDocument) =
+    openApi.paths.toList.flatMap { path =>
+      path.methods.map { method =>
+        CollectedOperation(
+          path.url,
+          Method.unsafeApply(method.methodType),
+          method
+        )
       }
     }
 }
@@ -159,7 +168,7 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
 case class CollectedOperation(
     path: String,
     method: Method,
-    operation: SafeOperation
+    operation: OpenapiPathMethod
 )
 
 case class CodegenConfig(

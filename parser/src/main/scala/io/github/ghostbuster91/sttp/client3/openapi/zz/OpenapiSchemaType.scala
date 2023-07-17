@@ -54,9 +54,11 @@ object OpenapiSchemaType {
   // no minLength/maxLength, pattern support
   sealed trait OpenapiSchemaStringType extends OpenapiSchemaSimpleType
 
+  //TODO add default
   case class OpenapiSchemaString(
       nullable: Boolean
   ) extends OpenapiSchemaStringType
+
   case class OpenapiSchemaDate(
       nullable: Boolean
   ) extends OpenapiSchemaStringType
