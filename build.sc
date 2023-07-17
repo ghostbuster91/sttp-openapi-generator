@@ -22,8 +22,10 @@ trait ParserModule
     ivy"com.softwaremill.sttp.model::core:1.5.5",
     ivy"io.circe::circe-yaml:0.14.2",
     ivy"org.typelevel::cats-core::2.9.0",
+    ivy"io.circe::circe-core:0.14.2",
     ivy"io.circe::circe-generic:0.14.2",
-    ivy"io.circe::circe-generic-extras:0.14.3"
+    ivy"io.circe::circe-parser:0.14.2",
+    ivy"io.circe::circe-yaml:0.14.2"
   )
   object test extends Tests with CommonTestModule
 }

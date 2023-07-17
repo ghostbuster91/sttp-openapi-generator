@@ -10,6 +10,7 @@ import sttp.model.MediaType
 import sttp.model.Method
 
 import java.time.{LocalDate, LocalDateTime}
+import _root_.io.github.ghostbuster91.sttp.client3.openapi.zz.OpenapiModels._
 
 class Codegen(logger: LogAdapter, config: CodegenConfig) {
   def generateUnsafe(openApiYaml: String, packageName: Option[String]): Source =
@@ -22,14 +23,14 @@ class Codegen(logger: LogAdapter, config: CodegenConfig) {
       openApiYaml: String,
       packageName: Option[String]
   ): Either[Seq[String], Source] =
-    new SafeOpenApiParser(
-      List(
-        OpenApiEnumFlattener.flatten,
-        OpenApiCoproductGenerator.generate
-      )
-    ).parse(openApiYaml).map(openApi => generate(packageName, openApi))
+    YamlParser
+      .parseFile(openApiYaml)
+      .map(openApi => generate(packageName, openApi))
 
-  private def generate(packageName: Option[String], openApi: SafeOpenApi) = {
+  private def generate(
+      packageName: Option[String],
+      openApi: OpenapiDocument
+  ) = {
     val schemas = openApi.components.map(_.schemas).getOrElse(Map.empty)
     val requestBodies = collectRequestBodies(openApi)
     val enums = EnumCollector.collectEnums(schemas)
