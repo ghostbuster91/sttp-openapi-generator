@@ -15,7 +15,7 @@ class ParserModule(val crossScalaVersion: String)
     with CrossSbtModule
     with CommonPublishModule {
   override def ivyDeps = Agg(
-    ivy"io.swagger.parser.v3:swagger-parser:2.1.16",
+    ivy"io.swagger.parser.v3:swagger-parser:2.1.12",
     ivy"com.softwaremill.sttp.model::core:1.7.1"
   )
   object test extends Tests with CommonTestModule
