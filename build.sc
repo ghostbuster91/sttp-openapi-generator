@@ -30,7 +30,7 @@ class CoreModule(val crossScalaVersion: String)
 
   override def ivyDeps = Agg(
     ivy"org.scalameta::scalameta::4.5.8",
-    ivy"org.typelevel::cats-core::2.9.0"
+    ivy"org.typelevel::cats-core::2.10.0"
   )
   object test extends Tests with CommonTestModule
 }
