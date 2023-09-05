@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     name: "generate-scip"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: coursier/setup-action@v1
         with:
           jvm: "temurin:17"
