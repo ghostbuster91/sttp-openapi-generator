@@ -37,8 +37,8 @@ lazy val rootProject = (project in file("."))
 
 lazy val testDependencies = Seq(
   "com.lihaoyi" %% "utest" % "0.8.1",
-  "com.softwaremill.diffx" %% "diffx-utest" % "0.8.3",
-  "com.softwaremill.diffx" %% "diffx-cats" % "0.8.3",
+  "com.softwaremill.diffx" %% "diffx-utest" % "0.9.0",
+  "com.softwaremill.diffx" %% "diffx-cats" % "0.9.0",
   "com.softwaremill.sttp.client3" %% "core" % "3.9.0",
   "com.softwaremill.sttp.client3" %% "circe" % "3.9.0",
   "io.circe" %% "circe-core" % "0.14.6",
