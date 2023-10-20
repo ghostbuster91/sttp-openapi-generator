@@ -4,9 +4,17 @@
 [<img alt="Maven Central" src="https://img.shields.io/maven-central/v/io.github.ghostbuster91.sttp-openapi/codegen-core_2.12?style=for-the-badge" height="24">](https://search.maven.org/artifact/io.github.ghostbuster91.sttp-openapi/codegen-core_2.12)
 [<img src="https://github.com/ghostbuster91/sttp-openapi-generator/raw/master/sourcegraph-mark.svg" width="25">](https://sourcegraph.com/github.com/ghostbuster91/sttp-openapi-generator)
 
-_This project is in a very early stage, use it at your own risk!_
-
 The generator can be used in projects with following scala versions: 2.12, 2.13 and 3.x
+
+## Farewell
+
+I decided to archive this project. I kept putting off the rewrite of its internals to make the parser more robust but I think that it will never happen. 
+I no longer have the energy nor the ambition to keep this project alive. Also, nowadays there are better alternatives to describe a service interface (e.g. [smithy](https://smithy.io/2.0/index.html) or [protobufs](https://protobuf.dev/)). 
+
+If you came here looking for a solution to generate scala code from some description of your api/interface I can recommend following options:
+- [Guardrail](https://github.com/guardrail-dev/guardrail) if you already have openapi spec
+- [smithy4s](https://github.com/disneystreaming/smithy4s) if you don't have yet openapi, and you are willing to use something better than yaml/json
+
 
 ## Why?
 
